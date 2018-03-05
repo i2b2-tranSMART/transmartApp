@@ -63,6 +63,7 @@ grails.project.dependency.resolution = {
 		runtime 'com.oracle:ojdbc7:12.1.0.1'
 
 		test 'org.gmock:gmock:0.9.0-r435-hyve2', { transitive = false }
+		test 'org.grails:grails-datastore-test-support:1.0-grails-2.3'
 		test 'org.hamcrest:hamcrest-core:1.3'
 		test 'org.hamcrest:hamcrest-library:1.3'
 	}
@@ -74,6 +75,7 @@ grails.project.dependency.resolution = {
 		compile ':codenarc:0.21'
 		compile ':hibernate:3.6.10.19'
 		compile ':quartz:1.0-RC2'
+		compile ':rest-client-builder:2.1.1'
 		compile ':spring-security-core:2.0.0'
 		compile ':spring-security-kerberos:1.0.0'
 		compile ':spring-security-ldap:2.0.0'
@@ -85,24 +87,26 @@ grails.project.dependency.resolution = {
 		runtime ':resources:1.2.1'
 
 		if (!dm) {
-			compile ':biomart-domain:16.2'
-			compile ':blend4j-plugin:16.2'
-			compile ':dalliance-plugin:16.2'
-			compile ':folder-management:16.2'
-			compile ':rdc-rmodules:16.2'
-			compile ':search-domain:16.2'
-			compile ':transmart-core:16.2'
-			compile ':transmart-gwas:16.2'
-			compile ':transmart-java:16.2'
-			compile ':transmart-legacy-db:16.2'
-			compile ':transmart-metacore-plugin:16.2'
-			compile ':transmart-mydas:16.2'
-			compile ':transmart-rest-api:16.2'
-			compile ':transmart-xnat-importer:16.2'
-			compile ':xnat-viewer:16.2'
+			compile ':biomart-domain:18.1-SNAPSHOT'
+			compile ':blend4j-plugin:18.1-SNAPSHOT'
+			compile ':dalliance-plugin:18.1-SNAPSHOT'
+			compile ':folder-management:18.1-SNAPSHOT'
+			compile ':rdc-rmodules:18.1-SNAPSHOT'
+			compile ':search-domain:18.1-SNAPSHOT'
+			compile ':spring-security-auth0:0.1-SNAPSHOT'
+			compile ':transmart-core:18.1-SNAPSHOT'
+			compile ':transmart-fractalis:0.1-SNAPSHOT'
+			compile ':transmart-gwas:18.1-SNAPSHOT'
+			compile ':transmart-java:18.1-SNAPSHOT'
+			compile ':transmart-legacy-db:18.1-SNAPSHOT'
+			compile ':transmart-metacore-plugin:18.1-SNAPSHOT'
+			compile ':transmart-mydas:18.1-SNAPSHOT'
+			compile ':transmart-rest-api:18.1-SNAPSHOT'
+			compile ':transmart-xnat-importer:18.1-SNAPSHOT'
+			compile ':xnat-viewer:18.1-SNAPSHOT'
 
 			//test ":code-coverage:1.2.6" // Doesn't work with forked tests yet
-			test ':transmart-core-db-tests:16.2'
+			test ':transmart-core-db-tests:18.1-SNAPSHOT'
 		}
 		else {
 			dm.internalDependencies delegate
