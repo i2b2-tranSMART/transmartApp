@@ -1,24 +1,27 @@
 import com.google.common.collect.ImmutableMap
-import com.recomdata.security.ActiveDirectoryLdapAuthenticationExtension
-import grails.plugin.springsecurity.SpringSecurityUtils
 import com.recomdata.extensions.ExtensionsRegistry
+import com.recomdata.security.ActiveDirectoryLdapAuthenticationExtension
+import com.recomdata.security.AuthUserDetailsService
+import com.recomdata.security.LdapAuthUserDetailsMapper
+import grails.plugin.springsecurity.SpringSecurityUtils
+import grails.plugins.rest.client.RestBuilder
 import org.apache.log4j.Logger
 import org.codehaus.groovy.grails.commons.spring.DefaultBeanConfiguration
 import org.springframework.beans.factory.config.CustomScopeConfigurer
+import org.springframework.beans.factory.config.MapFactoryBean
 import org.springframework.security.core.session.SessionRegistryImpl
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider
-import org.springframework.security.web.DefaultRedirectStrategy
 import org.springframework.security.web.access.AccessDeniedHandlerImpl
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler
 import org.springframework.security.web.authentication.session.ConcurrentSessionControlStrategy
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler
+import org.springframework.security.web.DefaultRedirectStrategy
 import org.springframework.security.web.session.ConcurrentSessionFilter
-import org.transmart.SavedRequestAwareAndResponseHeaderSettingKerberosAuthenticationSuccessHandler
 import org.transmart.authorization.CurrentUserBeanFactoryBean
 import org.transmart.authorization.CurrentUserBeanProxyFactory
 import org.transmart.authorization.QueriesResourceAuthorizationDecorator
 import org.transmart.marshallers.MarshallerRegistrarService
+import org.transmart.SavedRequestAwareAndResponseHeaderSettingKerberosAuthenticationSuccessHandler
 import org.transmart.spring.QuartzSpringScope
-
 import org.transmartproject.core.users.User
 import org.transmartproject.export.HighDimExporter
 import org.transmartproject.security.AuthSuccessEventListener
@@ -90,7 +93,7 @@ beans = {
         logger.info "Disabling hostname and certification verification"
         SSLCertificateValidation.disable()
     }
-    restBuilder(grails.plugins.rest.client.RestBuilder)
+    restBuilder(RestBuilder)
 
 
     sessionRegistry(SessionRegistryImpl)
@@ -115,13 +118,13 @@ beans = {
     }
 
     //overrides bean implementing GormUserDetailsService?
-    userDetailsService(com.recomdata.security.AuthUserDetailsService)
+    userDetailsService(AuthUserDetailsService)
 
     marshallerRegistrarService(MarshallerRegistrarService)
 
     def transmartSecurity = grailsApplication.config.org.transmart.security
     if (SpringSecurityUtils.securityConfig.ldap.active) {
-        ldapUserDetailsMapper(com.recomdata.security.LdapAuthUserDetailsMapper) {
+        ldapUserDetailsMapper(LdapAuthUserDetailsMapper) {
             springSecurityService = ref('springSecurityService')
             bruteForceLoginLockService = ref('bruteForceLoginLockService')
             // pattern for newly created user, can include <ID> for record id or <FEDERATED_ID> for external user name
@@ -187,7 +190,7 @@ beans = {
         bruteForceLoginLockService = ref('bruteForceLoginLockService')
     }
 
-    acghBedExporterRgbColorScheme(org.springframework.beans.factory.config.MapFactoryBean) {
+    acghBedExporterRgbColorScheme(MapFactoryBean) {
         sourceMap = grailsApplication.config.dataExport.bed.acgh.rgbColorScheme
     }
 
