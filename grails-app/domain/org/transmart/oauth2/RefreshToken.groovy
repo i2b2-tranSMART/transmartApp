@@ -2,18 +2,18 @@ package org.transmart.oauth2
 
 class RefreshToken {
 
-    String value
-    Date expiration
-    byte[] authentication
+	byte[] authentication
+	Date expiration
+	String value
 
-    static constraints = {
-        value nullable: false, blank: false, unique: true
-        expiration nullable: true
-        authentication nullable: false, minSize: 1, maxSize: 1024 * 4
-    }
+	static mapping = {
+		version false
+		datasource 'oauth2'
+	}
 
-    static mapping = {
-        datasource 'oauth2'
-        version false
-    }
+	static constraints = {
+		authentication minSize: 1, maxSize: 1024 * 4
+		expiration nullable: true
+		value blank: false, unique: true
+	}
 }

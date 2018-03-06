@@ -1,21 +1,15 @@
-package com.recomdata.transmart.domain.i2b2;
+package com.recomdata.transmart.domain.i2b2
 
 class ModifierMetadata {
 
-    String id
-    String valtypeCd
-    String stdUnits
-    String visitInd
+	String id
+	String stdUnits
+	String valtypeCd
+	String visitInd
 
-    static mapping = {
-        table 'I2B2DEMODATA.MODIFIER_METADATA'
-        version false
-
-        id column: 'MODIFIER_CD'
-        valtypeCd column: 'VALTYPE_CD'
-        stdUnits column: 'STD_UNITS'
-        visitInd column: 'VISIT_IND'
-    }
-
-
+	static mapping = {
+		table 'I2B2DEMODATA.MODIFIER_METADATA'
+		id column: 'MODIFIER_CD'
+		version false
+	}
 }

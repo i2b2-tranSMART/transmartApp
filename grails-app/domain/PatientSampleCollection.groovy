@@ -1,18 +1,12 @@
 class PatientSampleCollection {
 
-    String id
-    String patientId
-    String resultInstanceId
+	String id
+	String patientId
+	String resultInstanceId
 
-    static mapping = {
-        table 'QT_PATIENT_SAMPLE_COLLECTION'
-        version false
-
-        columns {
-            id column: 'SAMPLE_ID'
-            patientId column: 'PATIENT_ID'
-            resultInstanceId column: 'RESULT_INSTANCE_ID'
-        }
-
-    }
+	static mapping = {
+		table 'I2B2DEMODATA.QT_PATIENT_SAMPLE_COLLECTION'
+		id column: 'SAMPLE_ID'
+		version false
+	}
 }
