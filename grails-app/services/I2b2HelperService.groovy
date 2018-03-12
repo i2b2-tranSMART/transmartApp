@@ -996,7 +996,7 @@ class I2b2HelperService {
                         select distinct patient_num
                         from I2B2DEMODATA.qt_patient_set_collection
                         where result_instance_id = ?)
-            ) as subjectList
+            )
         """
         sql.eachRow(sqlt, [
                 fullnameLike,
