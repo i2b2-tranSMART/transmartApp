@@ -6,11 +6,7 @@ package com.recomdata.util
 
 /**
  * @author jspencer
- * @version 0
  */
-public class ModelDetails {
-
-    // logged in user
-    def loggedInUser
-
+class ModelDetails {
+	def loggedInUser
 }

@@ -19,7 +19,7 @@ class LiteratureQueryService {
      *
      * @return the count of records
      */
-    def executeLitQueryCount(String table, LinkedHashMap namedParams,
+    int executeLitQueryCount(String table, LinkedHashMap namedParams,
                              GlobalFilter gfilter, LiteratureDataQuery query) {
         if (gfilter == null || gfilter.isTextOnly()) {
             return 0
@@ -155,7 +155,7 @@ class LiteratureQueryService {
     /*************************************************************************
      * Julilant Oncology Alteration methods
      *************************************************************************/
-    def litJubOncAltCount(SearchFilter sfilter) {
+    int litJubOncAltCount(SearchFilter sfilter) {
         def query = new LiteratureDataQuery(mainTableAlias: "data")
         return executeLitQueryCount("LiteratureAlterationData data",
                 litAltConditions(sfilter.litFilter, "JUBILANT_ONCOLOGY_ALTERATION", query),
@@ -169,7 +169,7 @@ class LiteratureQueryService {
                 sfilter.globalFilter, params, query)
     }
 
-    def litJubAsthmaAltCount(SearchFilter sfilter) {
+    int litJubAsthmaAltCount(SearchFilter sfilter) {
         def query = new LiteratureDataQuery(mainTableAlias: "data")
         return executeLitQueryCount("LiteratureAlterationData data",
                 litAltConditions(sfilter.litFilter, "JUBILANT_ASTHMA_ALTERATION", query),
@@ -183,7 +183,7 @@ class LiteratureQueryService {
                 sfilter.globalFilter, params, query)
     }
 
-    def litJubOncAltSumCount(SearchFilter sfilter) {
+    int litJubOncAltSumCount(SearchFilter sfilter) {
         def query = new LiteratureDataQuery(mainTableAlias: "data")
         return executeLitSumQueryCount("LiteratureAlterationData data",
                 litAltConditions(sfilter.litFilter, "JUBILANT_ONCOLOGY_ALTERATION", query),
@@ -276,7 +276,7 @@ class LiteratureQueryService {
     /*************************************************************************
      * Julilant Oncology Inhibitor methods
      *************************************************************************/
-    def litJubOncInhCount(SearchFilter sfilter) {
+    int litJubOncInhCount(SearchFilter sfilter) {
         def query = new LiteratureDataQuery(mainTableAlias: "data")
         return executeLitQueryCount("LiteratureInhibitorData data",
                 litInhConditions(sfilter.litFilter, "JUBILANT_ONCOLOGY_INHIBITOR", query),
@@ -290,7 +290,7 @@ class LiteratureQueryService {
                 sfilter.globalFilter, params, query)
     }
 
-    def litJubAsthmaInhCount(SearchFilter sfilter) {
+    int litJubAsthmaInhCount(SearchFilter sfilter) {
         return 0
 // TODO: Uncomment this code after the asthma inhibitor data has been loaded.
 //      def query = new LiteratureDataQuery(mainTableAlias:"data")
@@ -357,7 +357,7 @@ class LiteratureQueryService {
     /*************************************************************************
      * Julilant Oncology Interaction methods
      *************************************************************************/
-    def litJubOncIntCount(SearchFilter sfilter) {
+    int litJubOncIntCount(SearchFilter sfilter) {
         def query = new LiteratureDataQuery(mainTableAlias: "data")
         def table = "org.transmart.biomart.LiteratureInteractionData data"
         if (sfilter.litFilter.hasExperimentalModel()) {
@@ -379,7 +379,7 @@ class LiteratureQueryService {
                 sfilter.globalFilter, params, query)
     }
 
-    def litJubAsthmaIntCount(SearchFilter sfilter) {
+    int litJubAsthmaIntCount(SearchFilter sfilter) {
         def query = new LiteratureDataQuery(mainTableAlias: "data")
         def table = "org.transmart.biomart.LiteratureInteractionData data"
         if (sfilter.litFilter.hasExperimentalModel()) {
@@ -452,7 +452,7 @@ class LiteratureQueryService {
     /*************************************************************************
      * Julilant Protein Effect methods
      *************************************************************************/
-    def litJubAsthmaPECount(SearchFilter sfilter) {
+    int litJubAsthmaPECount(SearchFilter sfilter) {
         def query = new LiteratureDataQuery(mainTableAlias: "data")
         return executeLitQueryCount("LiteratureProteinEffectData data",
                 litPEConditions(sfilter.litFilter, "JUBILANT_ASTHMA_PROTEIN_EFFECT", query),

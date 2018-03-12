@@ -28,14 +28,8 @@ public class StudyDao {
     /**
      * This method will gather study data and write it to a file.
      *  The file will contain basic study metadata
-     * @param fileName
-     * @param jobName
-     * @param studyAccessions
      */
-    public void getData(File studyDir, String fileName, String jobName, List<String> studyAccessions) {
-        //Log the action of data access.
-        //def al = new AccessLog(username:springSecurityService.getPrincipal().username, event:"i2b2DAO - getData", eventmessage:"RID:"+result_instance_ids.toString()+" Concept:"+conceptCodeList.toString(), accesstime:new java.util.Date())
-        //al.save()
+    void getData(File studyDir, String fileName, String jobName, List<String> studyAccessions) {
 
         log.info("loading study metadata for " + studyAccessions)
         // try to find it by Clinical Trial

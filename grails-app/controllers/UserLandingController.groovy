@@ -1,54 +1,53 @@
+import grails.plugin.springsecurity.SpringSecurityService
+import org.springframework.context.MessageSource
 import org.springframework.web.servlet.support.RequestContextUtils
-import org.transmart.searchapp.AccessLog
+import org.transmartproject.db.log.AccessLogService
 
 class UserLandingController {
-    /**
-     * Dependency injection for the springSecurityService.
-     */
-    def springSecurityService
-    def messageSource
 
-    private String getUserLandingPath() {
-        grailsApplication.config.with {
-            com.recomdata.defaults.landing ?: ui.tabs.browse.hide ? '/datasetExplorer' : '/RWG'
-        }
-    }
+	AccessLogService accessLogService
+	MessageSource messageSource
+	SpringSecurityService springSecurityService
 
-    def index = {
-        new AccessLog(username: springSecurityService?.principal?.username, event: "Login",
-                eventmessage: request.getHeader("user-agent"),
-                accesstime: new Date()).save()
-        def skip_disclaimer = grailsApplication.config.com.recomdata?.skipdisclaimer ?: false;
-        if (skip_disclaimer) {
-            if (springSecurityService?.currentUser?.changePassword) {
-                flash.message = messageSource.getMessage('changePassword', new Objects[0], RequestContextUtils.getLocale(request))
-                redirect(controller: 'changeMyPassword')
-            } else {
-                redirect(uri: userLandingPath)
-            }
-        } else {
-            redirect(uri: '/userLanding/disclaimer.gsp')
-        }
-    }
-    def agree = {
-        new AccessLog(username: springSecurityService?.principal?.username, event: "Disclaimer accepted",
-                accesstime: new Date()).save()
-        if (springSecurityService?.currentUser?.changePassword) {
-            flash.message = messageSource.getMessage('changePassword', new Objects[0], RequestContextUtils.getLocale(request))
-            redirect(controller: 'changeMyPassword')
-        } else {
-            redirect(uri: userLandingPath)
-        }
-    }
+	private String getUserLandingPath() {
+		grailsApplication.config.with {
+			com.recomdata.defaults.landing ?: ui.tabs.browse.hide ? '/datasetExplorer' : '/RWG'
+		}
+	}
 
-    def disagree = {
-        new AccessLog(username: springSecurityService?.principal?.username, event: "Disclaimer not accepted",
-                accesstime: new Date()).save()
-        redirect(uri: '/logout')
-    }
+	def index = {
+		accessLogService.report "Login", request.getHeader("user-agent")
+		def skip_disclaimer = grailsApplication.config.com.recomdata?.skipdisclaimer ?: false;
+		if (skip_disclaimer) {
+			if (springSecurityService?.currentUser?.changePassword) {
+				flash.message = messageSource.getMessage('changePassword', new Objects[0], RequestContextUtils.getLocale(request))
+				redirect(controller: 'changeMyPassword')
+			}
+			else {
+				redirect(uri: userLandingPath)
+			}
+		}
+		else {
+			redirect(uri: '/userLanding/disclaimer.gsp')
+		}
+	}
+	def agree = {
+		accessLogService.report "Disclaimer accepted", null
+		if (springSecurityService?.currentUser?.changePassword) {
+			flash.message = messageSource.getMessage('changePassword', new Objects[0], RequestContextUtils.getLocale(request))
+			redirect(controller: 'changeMyPassword')
+		}
+		else {
+			redirect(uri: userLandingPath)
+		}
+	}
 
-    def checkHeartBeat = {
-        render(text: "OK")
-    }
+	def disagree = {
+		accessLogService.report "Disclaimer not accepted", null
+		redirect(uri: '/logout')
+	}
 
+	def checkHeartBeat = {
+		render(text: "OK")
+	}
 }

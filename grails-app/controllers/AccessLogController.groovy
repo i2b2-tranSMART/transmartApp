@@ -3,185 +3,162 @@ import com.recomdata.util.ExcelSheet
 import org.transmart.AccessLogFilter
 import org.transmart.searchapp.AccessLog
 
-import java.text.SimpleDateFormat;
+import java.text.SimpleDateFormat
 
 class AccessLogController {
 
-    def searchService
+	private static final List<String> headers = ['Access Time', 'User', 'Event', 'Event Message'].asImmutable()
 
-    def index = { redirect(action: "list", params: params) }
+	static allowedMethods = [delete: 'POST', save: 'POST', update: 'POST']
+	static defaultAction = 'list'
 
-    // the delete, save and update actions only accept POST requests
-    static allowedMethods = [delete: 'POST', save: 'POST', update: 'POST']
+	SearchService searchService
 
-    def list = {
+	def list() {
 
-        def filter = session.accesslogFilter
-        if (filter == null) {
-            filter = new AccessLogFilter()
-            session.accesslogFilter = filter
-        }
+		def filter = configureFilter()
 
-        SimpleDateFormat df1 = new SimpleDateFormat("dd/MM/yyyy");
-        GregorianCalendar calendar = new GregorianCalendar()
+		def pageMap = searchService.createPagingParamMap(params, grailsApplication.config.com.recomdata.admin.paginate.max, 0)
+		pageMap.sort = 'accesstime'
+		pageMap.order = 'desc'
 
-        try {
-            if (filter.startdate == null || params.startdate != null)
-                filter.startdate = df1.parse(params.startdate)
-        } catch (e) {
-            calendar.setTime(new Date())
-            calendar.add(Calendar.WEEK_OF_MONTH, -1)
-            filter.startdate = calendar.getTime()
-        }
+		List<AccessLog> result = AccessLog.createCriteria().list(
+				max: pageMap.max,
+				offset: pageMap.offset,
+				sort: pageMap.sort,
+				order: pageMap.order) {
+			between 'accesstime', filter.startdate, filter.enddate
+		}
 
-        try {
-            if (filter.enddate == null || params.enddate != null) {
-                calendar.setTime(df1.parse(params.enddate))
-                calendar.set(Calendar.HOUR_OF_DAY, 23)
-                calendar.set(Calendar.MINUTE, 59)
-                filter.enddate = calendar.getTime()
-            }
-        } catch (e) {
-            filter.enddate = new Date()
-        }
+		SimpleDateFormat df1 = new SimpleDateFormat('dd/MM/yyyy')
+		[accessLogInstanceList: result, startdate: df1.format(filter.startdate),
+		 enddate: df1.format(filter.enddate), totalcount: result.totalCount]
+	}
 
-        def pageMap = searchService.createPagingParamMap(params, grailsApplication.config.com.recomdata.admin.paginate.max, 0)
-        pageMap['sort'] = 'accesstime'
-        pageMap['order'] = 'desc'
+	def export() {
 
-        def result = AccessLog.createCriteria().list(
-                max: pageMap['max'],
-                offset: pageMap['offset'],
-                sort: pageMap['sort'],
-                order: pageMap['order']) {
-            between "accesstime", filter.startdate, filter.enddate
-        }
+		def filter = configureFilter()
 
-        render(view: 'list', model: [accessLogInstanceList: result, startdate: df1.format(filter.startdate), enddate: df1.format(filter.enddate), totalcount: result.totalCount])
-    }
+		def pageMap = searchService.createPagingParamMap(params, grailsApplication.config.com.recomdata.search.paginate.max, 0)
+		pageMap.sort = 'accesstime'
+		pageMap.order = 'desc'
 
-    def export = {
+		List<AccessLog> results = AccessLog.createCriteria().list(
+				sort: pageMap.sort,
+				order: pageMap.order) {
+			between 'accesstime', filter.startdate, filter.enddate
+		}
 
-        def filter = session.accesslogFilter
-        if (filter == null) {
-            filter = new AccessLogFilter()
-            session.accesslogFilter = filter
-        }
+		def values = []
+		for (AccessLog accessLog in results) {
+			values << [accessLog.accesstime, accessLog.username, accessLog.event, accessLog.eventmessage]
+		}
 
-        SimpleDateFormat df1 = new SimpleDateFormat("dd/MM/yyyy");
-        GregorianCalendar calendar = new GregorianCalendar()
+		response.setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8')
+		response.setHeader('Content-Disposition', 'attachment; filename="pre_clinical.xls"')
+		response.setHeader('Cache-Control', 'must-revalidate, post-check=0, pre-check=0')
+		response.setHeader('Pragma', 'public')
+		response.setHeader('Expires', '0')
 
-        try {
-            if (filter.startdate == null || params.startdate != null)
-                filter.startdate = df1.parse(params.startdate)
-        } catch (e) {
-            calendar.setTime(new Date())
-            calendar.add(Calendar.WEEK_OF_MONTH, -1)
-            filter.startdate = calendar.getTime()
-        }
+		response.outputStream << new ExcelGenerator().generateExcel([new ExcelSheet('sheet1', headers, values)])
+	}
 
-        try {
-            if (filter.enddate == null || params.enddate != null) {
-                calendar.setTime(df1.parse(params.enddate))
-                calendar.set(Calendar.HOUR_OF_DAY, 23)
-                calendar.set(Calendar.MINUTE, 59)
-                filter.enddate = calendar.getTime()
-            }
-        } catch (e) {
-            filter.enddate = new Date()
-        }
+	def show(AccessLog accessLog) {
+		if (!accessLog) {
+			flash.message = "AccessLog not found with id ${params.id}"
+			redirect action: 'list'
+		}
+		else {
+			[accessLogInstance: accessLog]
+		}
+	}
 
-        def pageMap = searchService.createPagingParamMap(params, grailsApplication.config.com.recomdata.search.paginate.max, 0)
-        pageMap['sort'] = 'accesstime'
-        pageMap['order'] = 'desc'
+	def delete(AccessLog accessLog) {
+		if (accessLog) {
+			accessLog.delete()
+			flash.message = "AccessLog $params.id deleted"
+		}
+		else {
+			flash.message = "AccessLog not found with id $params.id"
+		}
+		redirect action: 'list'
+	}
 
-        def results = AccessLog.createCriteria().list(
-                sort: pageMap['sort'],
-                order: pageMap['order']) {
-            between "accesstime", filter.startdate, filter.enddate
-        }
-        def headers = ["Access Time", "User", "Event", "Event Message"]
-        def values = []
+	def edit(AccessLog accessLog) {
+		if (!accessLog) {
+			flash.message = "AccessLog not found with id $params.id"
+			redirect action: 'list'
+		}
+		else {
+			[accessLogInstance: accessLog]
+		}
+	}
 
-        results.each {
-            values.add([it.accesstime, it.username, it.event, it.eventmessage])
-        }
+	def update(AccessLog accessLog) {
+		if (accessLog) {
+			accessLog.properties = params
+			if (!accessLog.hasErrors() && accessLog.save()) {
+				flash.message = "AccessLog $params.id updated"
+				redirect action: 'show', id: accessLog.id
+			}
+			else {
+				render view: 'edit', model: [accessLogInstance: accessLog]
+			}
+		}
+		else {
+			flash.message = "AccessLog not found with id $params.id"
+			redirect action: 'edit', id: params.id
+		}
+	}
 
-        def sheet = new ExcelSheet("sheet1", headers, values);
-        def gen = new ExcelGenerator()
+	def create() {
+		[accessLogInstance: new AccessLog(params)]
+	}
 
-        response.setHeader("Content-Type", "application/vnd.ms-excel; charset=utf-8")
-        response.setHeader("Content-Disposition", "attachment; filename=\"pre_clinical.xls\"")
-        response.setHeader("Cache-Control", "must-revalidate, post-check=0, pre-check=0")
-        response.setHeader("Pragma", "public");
-        response.setHeader("Expires", "0");
+	def save() {
+		AccessLog accessLog = new AccessLog(params)
+		if (!accessLog.hasErrors() && accessLog.save()) {
+			flash.message = "AccessLog $accessLog.id created"
+			redirect action: 'show', id: accessLog.id
+		}
+		else {
+			render view: 'create', model: [accessLogInstance: accessLog]
+		}
+	}
 
-        response.outputStream << gen.generateExcel([sheet]);
-    }
+	private configureFilter() {
+		def filter = session.accesslogFilter
+		if (filter == null) {
+			filter = new AccessLogFilter()
+			session.accesslogFilter = filter
+		}
 
-    def show = {
-        def accessLogInstance = AccessLog.get(params.id)
+		SimpleDateFormat df1 = new SimpleDateFormat('dd/MM/yyyy')
+		GregorianCalendar calendar = new GregorianCalendar()
 
-        if (!accessLogInstance) {
-            flash.message = "AccessLog not found with id ${params.id}"
-            redirect(action: "list")
-        } else {
-            return [accessLogInstance: accessLogInstance]
-        }
-    }
+		try {
+			if (filter.startdate == null || params.startdate != null) {
+				filter.startdate = df1.parse(params.startdate)
+			}
+		}
+		catch (ignored) {
+			calendar.time = new Date()
+			calendar.add Calendar.WEEK_OF_MONTH, -1
+			filter.startdate = calendar.time
+		}
 
-    def delete = {
-        def accessLogInstance = AccessLog.get(params.id)
-        if (accessLogInstance) {
-            accessLogInstance.delete()
-            flash.message = "AccessLog ${params.id} deleted"
-            redirect(action: "list")
-        } else {
-            flash.message = "AccessLog not found with id ${params.id}"
-            redirect(action: "list")
-        }
-    }
+		try {
+			if (filter.enddate == null || params.enddate != null) {
+				calendar.time = df1.parse(params.enddate)
+				calendar.set Calendar.HOUR_OF_DAY, 23
+				calendar.set Calendar.MINUTE, 59
+				filter.enddate = calendar.time
+			}
+		}
+		catch (ignored) {
+			filter.enddate = new Date()
+		}
 
-    def edit = {
-        def accessLogInstance = AccessLog.get(params.id)
-
-        if (!accessLogInstance) {
-            flash.message = "AccessLog not found with id ${params.id}"
-            redirect(action: "list")
-        } else {
-            return [accessLogInstance: accessLogInstance]
-        }
-    }
-
-    def update = {
-        def accessLogInstance = AccessLog.get(params.id)
-        if (accessLogInstance) {
-            accessLogInstance.properties = params
-            if (!accessLogInstance.hasErrors() && accessLogInstance.save()) {
-                flash.message = "AccessLog ${params.id} updated"
-                redirect(action: "show", id: accessLogInstance.id)
-            } else {
-                render(view: 'edit', model: [accessLogInstance: accessLogInstance])
-            }
-        } else {
-            flash.message = "AccessLog not found with id ${params.id}"
-            redirect(action: "edit", id: params.id)
-        }
-    }
-
-    def create = {
-        def accessLogInstance = new AccessLog()
-        accessLogInstance.properties = params
-        return ['accessLogInstance': accessLogInstance]
-    }
-
-    def save = {
-        def accessLogInstance = new AccessLog(params)
-        if (!accessLogInstance.hasErrors() && accessLogInstance.save()) {
-            flash.message = "AccessLog ${accessLogInstance.id} created"
-            redirect(action: "show", id: accessLogInstance.id)
-        } else {
-            render(view: 'create', model: [accessLogInstance: accessLogInstance])
-        }
-    }
+		filter
+	}
 }

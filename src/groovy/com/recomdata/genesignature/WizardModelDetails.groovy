@@ -8,46 +8,44 @@ import org.transmart.biomart.ConceptCode
 
 /**
  * @author jspencer
- * @version
  */
-public class WizardModelDetails extends ModelDetails {
-    // wizard tyes
-    static def WIZ_TYPE_CREATE = 0
-    static def WIZ_TYPE_EDIT = 1
-    static def WIZ_TYPE_CLONE = 2
+class WizardModelDetails extends ModelDetails {
 
-    // default is create
-    def wizardType = WIZ_TYPE_CREATE
+	// wizard tyes
+	static final int WIZ_TYPE_CREATE = 0
+	static final int WIZ_TYPE_EDIT = 1
+	static final int WIZ_TYPE_CLONE = 2
 
-    // pick lists
-    def sources
-    def owners
-    def species
-    def mouseSources
-    def tissueTypes
-    def expTypes
-    def analyticTypes
-    def normMethods
-    def analysisMethods
-    def schemas
-    def pValCutoffs
-    def foldChgMetrics
-    def platforms
-    def compounds
+	// default is create
+	int wizardType = WIZ_TYPE_CREATE
 
-    // domain class
-    def geneSigInst
+	// pick lists
+	def sources
+	def owners
+	def species
+	def mouseSources
+	def tissueTypes
+	def expTypes
+	def analyticTypes
+	def normMethods
+	def analysisMethods
+	def schemas
+	def pValCutoffs
+	def foldChgMetrics
+	def platforms
+	def compounds
 
-    // id of domain being edited
-    def editId
-    def cloneId
+	// domain class
+	def geneSigInst
 
-    /**
-     * add an empty other ConceptCode item
-     */
-    public static void addOtherItem(List<ConceptCode> items, String optionId) {
-        if (optionId == null) optionId = "other"
-        items.add(new ConceptCode(bioConceptCode: optionId, codeName: "other"))
-    }
+	// id of domain being edited
+	def editId
+	def cloneId
 
+	/**
+	 * add an empty other ConceptCode item
+	 */
+	static void addOtherItem(List<ConceptCode> items, String optionId) {
+		items << new ConceptCode(bioConceptCode: optionId ?: 'other', codeName: 'other')
+	}
 }
