@@ -6,6 +6,7 @@ import com.recomdata.genepattern.JobStatus
 import com.recomdata.genepattern.WorkflowStatus
 import grails.converters.JSON
 import grails.plugin.springsecurity.SpringSecurityService
+import groovy.sql.Sql
 import org.codehaus.groovy.grails.plugins.web.taglib.ApplicationTagLib
 import org.genepattern.webservice.JobResult
 import org.genepattern.webservice.WebServiceException
@@ -1052,9 +1053,13 @@ class AnalysisController {
 
 		def pathways = []
 
-		groovy.sql.Sql sql = new groovy.sql.Sql(dataSource)
-		String sqlt = "SELECT * FROM (select * from de_pathway where upper(name) like upper(?)"
-		sqlt += " ORDER BY LENGTH(name)) WHERE ROWNUM<=40"
+		Sql sql = new Sql(dataSource)
+		String sqlt = '''
+				SELECT * FROM (
+					select * from DEAPP.de_pathway
+					where upper(name) like upper(?) ORDER BY LENGTH(name)
+				)
+				WHERE ROWNUM<=40'''
 
 		sql.eachRow(sqlt, [searchText + '%'], { row ->
 			pathways.add([name: row.name, type: row.type, source: row.source, uid: row.pathway_uid])
@@ -1078,7 +1083,7 @@ class AnalysisController {
 	protected String getGenePatternFileDirName() {
 		String fileDirName = grailsApplication.config.com.recomdata.analysis.genepattern.file.dir
 		String webRootName = servletContext.getRealPath("/")
-		if (webRootName.endsWith(File.separator) == false) {
+		if (!webRootName.endsWith(File.separator)) {
 			webRootName += File.separator
 		}
 		return webRootName + fileDirName
