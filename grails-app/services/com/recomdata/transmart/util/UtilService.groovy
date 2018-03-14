@@ -1,32 +1,32 @@
 package com.recomdata.transmart.util
 
+import groovy.transform.CompileStatic
+
+@CompileStatic
 class UtilService {
 
-    boolean transactional = false
+	static transactional = false
 
-    def toListString(List<Object> objList) {
-        StringBuilder objToString = new StringBuilder()
-        objList.each { obj ->
-            if (obj && (obj?.toString())?.trim() != '') {
-                if (obj instanceof String) {
-                    objToString.append("'").append(obj.toString()).append("'")
-                } else {
-                    objToString.append(obj.toString())
-                }
-                objToString.append(",")
-            }
-        }
+	String toListString(List objList) {
+		StringBuilder objToString = new StringBuilder()
+		for (obj in objList) {
+			if (obj && obj?.toString()?.trim()) {
+				if (obj instanceof String) {
+					objToString << "'" << obj << "'"
+				}
+				else {
+					objToString << obj
+				}
+				if (objToString) {
+					objToString << ','
+				}
+			}
+		}
 
-        if (objToString.length() > 1) objToString.delete(objToString.length() - 1, objToString.length())
+		objToString
+	}
 
-        return objToString.toString()
-    }
-
-    def getActualPatientId(String sourceSystemCode) {
-        def splitArr = sourceSystemCode.split(':')
-
-        def actualPatientId = splitArr[splitArr.length - 1]
-
-        return actualPatientId
-    }
+	String getActualPatientId(String sourceSystemCode) {
+		sourceSystemCode.split(':')[-1]
+	}
 }
