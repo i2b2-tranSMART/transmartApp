@@ -5,7 +5,7 @@
 <div class="form-section">
 	<div class="col-xs-12">
 		<label for="usertype">How would you best define yourself?<sup>*</sup></label>
-		<g:select name='usertype' class='form-control' from="${usertypeOptions}"/>
+		<g:select name='usertype' class='form-control' from="${usertypeOptions}" value="${user.usertype}"/>
 	</div>
 	<div class="col-xs-12">
 		<br />

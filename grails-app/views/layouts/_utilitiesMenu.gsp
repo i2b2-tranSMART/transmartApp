@@ -90,6 +90,7 @@ span.utilMenuSeparator {
         <li><a onclick="jQuery('#utilitiesMenu').hide();" href="mailto:${grailsApplication.config.com.recomdata.contactUs}">Contact Us</a></li>
         <li><a href="#" onclick="jQuery('#utilitiesMenu').hide();alert('${grailsApplication.config.com.recomdata.appTitle}', 'Build Version: ${buildNumber} - ${buildId}')">About</a></li>
         <li class="utilMenuSeparator"><span class="utilMenuSeparator">&nbsp;</span></li>
+        <g:userProfile />
         <li><a href="${createLink(controller: 'changeMyPassword', action: 'show')}">Change My Password</a></li>
         <li><a href="${createLink(controller: 'login', action: 'forceAuth')}">Log Out</a></li>
     </ul>

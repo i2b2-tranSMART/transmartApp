@@ -25,12 +25,16 @@
 		<label for="lastname">Last Name<sup>*</sup></label>
 		<g:textField class='form-control' name='lastname' required='required' value="${user.lastname}" />
 	</div>
-	<br />
+	<div class="col-xs-12">
+		<br />
+	</div>
 	<div class="col-xs-12">
 		<label for="street">Street<sup>*</sup></label>
 		<g:textField class='form-control' name='street' required='required' value="${user.street}" />
 	</div>
-	<br />
+	<div class="col-xs-12">
+		<br />
+	</div>
 	<div class="col-xs-6">
 		<label for="city">City<sup>*</sup></label>
 		<g:textField class='form-control' name='city' required='required' value="${user.city}" />
@@ -69,5 +73,8 @@
 	</div>
 	<div class="col-xs-12">
 		<sup>*</sup> mandatory fields
+	</div>
+	<div class="col-xs-12">
+		<br />
 	</div>
 </div>
