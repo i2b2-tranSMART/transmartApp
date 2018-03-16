@@ -1,231 +1,202 @@
 package org.transmart
 
+import groovy.transform.CompileStatic
 import org.transmart.searchapp.SearchKeyword
 
-
 /**
- *
- * $Id: GlobalFilter.groovy 9178 2011-08-24 13:50:06Z mmcduffie $
- * @author $Author: mmcduffie $
- * @version $Revision: 9178 $
+ * @author mmcduffie
  */
-public class GlobalFilter {
+@CompileStatic
+class GlobalFilter {
 
-    def CATEGORY_GENE = "GENE"
-    def CATEGORY_PATHWAY = "PATHWAY"
-    def CATEGORY_COMPOUND = "COMPOUND"
-    def CATEGORY_DISEASE = "DISEASE"
-    def CATEGORY_TRIAL = "TRIAL"
-    def CATEGORY_TEXT = "TEXT"
-    def CATEGORY_STUDY = "STUDY"
-    def CATEGORY_GENE_SIG = "GENESIG"
-    def CATEGORY_GENE_LIST = "GENELIST"
+	private static final String CATEGORY_GENE = 'GENE'
+	private static final String CATEGORY_PATHWAY = 'PATHWAY'
+	private static final String CATEGORY_COMPOUND = 'COMPOUND'
+	private static final String CATEGORY_DISEASE = 'DISEASE'
+	private static final String CATEGORY_TRIAL = 'TRIAL'
+	private static final String CATEGORY_TEXT = 'TEXT'
+	private static final String CATEGORY_STUDY = 'STUDY'
+	private static final String CATEGORY_GENE_SIG = 'GENESIG'
+	private static final String CATEGORY_GENE_LIST = 'GENELIST'
 
+	private Map<String, KeywordSet> categoryFilterMap = [:]
 
-    def categoryFilterMap = new LinkedHashMap()
-    def selectedpathlist = []
-    def processed = false;
+	boolean isEmpty() {
+		for (KeywordSet value in categoryFilterMap.values()) {
+			if (value) {
+				return false
+			}
+		}
 
-    def isEmpty() {
-        for (value in categoryFilterMap.values()) {
-            if (!value.isEmpty()) {
-                return false;
-            }
-        }
-        return true;
-    }
+		true
+	}
 
-    def isTextOnly() {
-        def hasText = false;
-        for (key in categoryFilterMap.keySet()) {
-            if (!categoryFilterMap.get(key).isEmpty()) {
-                if (key.equals(CATEGORY_TEXT)) {
-                    hasText = true;
-                } else {
-                    return false;
-                }
-            }
-        }
-        return hasText;
-    }
+	boolean isTextOnly() {
+		boolean hasText = false
+		for (String key in categoryFilterMap.keySet()) {
+			if (categoryFilterMap[key]) {
+				if (key == CATEGORY_TEXT) {
+					hasText = true
+				}
+				else {
+					return false
+				}
+			}
+		}
 
-    def containsFilter(filter) {
-        KeywordSet set = categoryFilterMap.get(filter.dataCategory)
-        return set.contains(filter)
-    }
+		hasText
+	}
 
-    def getBioMarkerFilters() {
-        def all = new KeywordSet()
-        all.addAll(getGeneFilters());
-        all.addAll(getPathwayFilters());
-        all.addAll(getGeneSignatureFilters());
-        all.addAll(getGeneListFilters());
-        return all;
-    }
+	boolean containsFilter(SearchKeyword filter) {
+		categoryFilterMap[filter.dataCategory].contains filter
+	}
 
-    def hasAnyListFilters() {
-        return !getPathwayFilters().isEmpty() ||
-                !getGeneSignatureFilters().isEmpty() ||
-                !getGeneListFilters().isEmpty();
+	KeywordSet getBioMarkerFilters() {
+		KeywordSet all = new KeywordSet()
+		all.addAll getGeneFilters()
+		all.addAll getPathwayFilters()
+		all.addAll getGeneSignatureFilters()
+		all.addAll getGeneListFilters()
+		all
+	}
 
-    }
+	boolean hasAnyListFilters() {
+		getPathwayFilters() || getGeneSignatureFilters() || getGeneListFilters()
+	}
 
-    def getGenePathwayFilters() {
-        def all = new KeywordSet()
-        all.addAll(getGeneFilters());
-        all.addAll(getPathwayFilters());
-        return all;
-    }
+	KeywordSet getGenePathwayFilters() {
+		KeywordSet all = new KeywordSet()
+		all.addAll getGeneFilters()
+		all.addAll getPathwayFilters()
+		all
+	}
 
-    def getAllListFilters() {
-        def all = new KeywordSet()
-        //all.addAll(getGeneFilters());
-        all.addAll(getPathwayFilters());
-        all.addAll(getGeneSignatureFilters());
-        all.addAll(getGeneListFilters());
-        return all;
-    }
+	KeywordSet getAllListFilters() {
+		KeywordSet all = new KeywordSet()
+		all.addAll getPathwayFilters()
+		all.addAll getGeneSignatureFilters()
+		all.addAll getGeneListFilters()
+		all
+	}
 
-    def getGeneFilters() {
-        return findFiltersByCategory(CATEGORY_GENE)
-    }
+	KeywordSet getGeneFilters() {
+		findFiltersByCategory CATEGORY_GENE
+	}
 
-    def getGeneSignatureFilters() {
-        return findFiltersByCategory(CATEGORY_GENE_SIG)
-    }
+	KeywordSet getGeneSignatureFilters() {
+		findFiltersByCategory CATEGORY_GENE_SIG
+	}
 
-    def getGeneListFilters() {
-        return findFiltersByCategory(CATEGORY_GENE_LIST)
-    }
+	KeywordSet getGeneListFilters() {
+		findFiltersByCategory CATEGORY_GENE_LIST
+	}
 
-    def getGeneSigListFilters() {
-        def all = new KeywordSet()
-        all.addAll(getGeneSignatureFilters());
-        all.addAll(getGeneListFilters());
-        return all;
-    }
+	KeywordSet getGeneSigListFilters() {
+		KeywordSet all = new KeywordSet()
+		all.addAll getGeneSignatureFilters()
+		all.addAll getGeneListFilters()
+		all
+	}
 
-    def getPathwayFilters() {
-        return findFiltersByCategory(CATEGORY_PATHWAY)
-    }
+	KeywordSet getPathwayFilters() {
+		findFiltersByCategory CATEGORY_PATHWAY
+	}
 
-    def getDiseaseFilters() {
-        return findFiltersByCategory(CATEGORY_DISEASE)
-    }
+	KeywordSet getDiseaseFilters() {
+		findFiltersByCategory CATEGORY_DISEASE
+	}
 
-    def getTrialFilters() {
-        return findFiltersByCategory(CATEGORY_TRIAL)
-    }
+	KeywordSet getTrialFilters() {
+		findFiltersByCategory CATEGORY_TRIAL
+	}
 
-    def getStudyFilters() {
-        return findFiltersByCategory(CATEGORY_STUDY)
-    }
+	KeywordSet getStudyFilters() {
+		findFiltersByCategory CATEGORY_STUDY
+	}
 
-    def getCompoundFilters() {
-        return findFiltersByCategory(CATEGORY_COMPOUND)
-    }
+	KeywordSet getCompoundFilters() {
+		findFiltersByCategory CATEGORY_COMPOUND
+	}
 
-    def getTextFilters() {
-        return findFiltersByCategory(CATEGORY_TEXT)
-    }
+	KeywordSet getTextFilters() {
+		findFiltersByCategory CATEGORY_TEXT
+	}
 
-    def getAllFilters() {
-        KeywordSet filters = getGeneFilters()
-        filters.addAll(getPathwayFilters())
-        filters.addAll(getCompoundFilters())
-        filters.addAll(getDiseaseFilters())
-        filters.addAll(getTrialFilters())
-        filters.addAll(getTextFilters())
-        filters.addAll(getStudyFilters())
-        filters.addAll(getGeneSignatureFilters())
-        filters.addAll(getGeneListFilters())
-        return filters
-    }
+	KeywordSet getAllFilters() {
+		KeywordSet filters = getGeneFilters()
+		filters.addAll getPathwayFilters()
+		filters.addAll getCompoundFilters()
+		filters.addAll getDiseaseFilters()
+		filters.addAll getTrialFilters()
+		filters.addAll getTextFilters()
+		filters.addAll getStudyFilters()
+		filters.addAll getGeneSignatureFilters()
+		filters.addAll getGeneListFilters()
+		filters
+	}
 
-    /**
-     * returns a list of keywords for given category or an empty list if not present
-     */
-    def findFiltersByCategory(String category) {
-        def filters = categoryFilterMap.get(category);
-        if (filters == null) {
-            filters = new KeywordSet();
-            categoryFilterMap.put(category, filters)
-        }
-        return filters.clone();
-    }
+	/**
+	 * returns a list of keywords for given category or an empty list if not present
+	 */
+	KeywordSet findFiltersByCategory(String category) {
+		KeywordSet filters = categoryFilterMap[category]
+		if (filters == null) {
+			filters = new KeywordSet()
+			categoryFilterMap[category] = filters
+		}
+		(KeywordSet) filters.clone()
+	}
 
-    // Returns list of keywords for keywordset. Useful for building "in" clauses or search terms.
-    def formatKeywordList(KeywordSet set, String separator, String textQualifier, int maxLength) {
-        String list = ""
-        for (filter in set) {
-            String s = ""
-            if (list.length() > 0 && separator != null && separator.length() > 0) {
-                s = separator
-            }
-            if (textQualifier != null && textQualifier.length() > 0) {
-                s += textQualifier
-            }
-            s += filter.keyword
-            if (textQualifier != null && textQualifier.length() > 0) {
-                s += textQualifier
-            }
-            if (maxLength != null && list.length() + s.length() > maxLength) {
-                break
-            }
-            list += s
-        }
-        return list.toString()
-    }
+	// Returns list of keywords for keywordset. Useful for building 'in' clauses or search terms.
+	String formatKeywordList(KeywordSet set, String separator, String textQualifier, int maxLength) {
+		String list = ''
+		for (filter in set) {
+			String s = ''
+			if (list && separator) {
+				s = separator
+			}
+			if (textQualifier) {
+				s += textQualifier
+			}
+			s += filter.keyword
+			if (textQualifier) {
+				s += textQualifier
+			}
+			if (maxLength && list.length() + s.length() > maxLength) {
+				break
+			}
+			list += s
+		}
+		list
+	}
 
-    // Returns list of bioDataIds for specified category. Useful for building "in" clauses.
-    def formatIdList(KeywordSet set, String separator) {
-        def list = new StringBuilder()
-        for (filter in set) {
-            if (list.size() > 0 && separator != null && separator.length() > 0) {
-                list.append(separator)
-            }
-            list.append(filter.bioDataId)
-        }
-        return list.toString()
-    }
+	// Returns list of bioDataIds for specified category. Useful for building 'in' clauses.
+	String formatIdList(KeywordSet set, String separator) {
+		StringBuilder list = new StringBuilder()
+		for (filter in set) {
+			if (list && separator) {
+				list << separator
+			}
+			list << filter.bioDataId
+		}
+		list
+	}
 
+	void addKeywordFilter(SearchKeyword keyword) {
+		KeywordSet klist = categoryFilterMap[keyword.dataCategory]
+		if (klist == null) {
+			// make sure no dup
+			klist = new KeywordSet()
+			categoryFilterMap[keyword.dataCategory] = klist
+		}
+		klist << keyword
+	}
 
-    def addKeywordFilter(SearchKeyword keyword) {
-        def klist = categoryFilterMap.get(keyword.dataCategory)
-        if (klist == null) {
-            // make sure no dup
-            klist = new KeywordSet()
-            categoryFilterMap.put(keyword.dataCategory, klist)
-        }
-        klist.add(keyword)
+	void removeKeywordFilter(SearchKeyword keyword) {
+		categoryFilterMap[keyword.dataCategory]?.removeKeyword keyword
+	}
 
-    }
-
-    def removeKeywordFilter(SearchKeyword keyword) {
-        KeywordSet set = categoryFilterMap.get(keyword.dataCategory)
-        if (set != null) {
-            set.removeKeyword(keyword)
-        }
-    }
-
-    def dumpFilters() {
-        for (category in categoryFilterMap.keySet()) {
-            print(category + ": ")
-            def keywordset = categoryFilterMap.get(category)
-            for (keyword in keywordset) {
-                print(keyword.uniqueId + " ")
-            }
-            println()
-        }
-    }
-
-    /**
-     * indicates if filter contains a pathway
-     */
-    def hasPathway() {
-        return getPathwayFilters().size() > 0;
-    }
-
+	boolean hasPathway() {
+		getPathwayFilters()
+	}
 }
-
-
