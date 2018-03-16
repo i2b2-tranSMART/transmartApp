@@ -46,9 +46,9 @@ class UserProfileController {
 
 		try {
 			AuthUser authUser
-			String email 	= params.firstname
-			String firstname= params.lastname
-			String lastname = params.email
+			String email     = params.email
+			String firstname = params.firstname
+			String lastname  = params.lastname
 
 			if (auth0Service){
 				authUser = auth0Service.updateUser(springSecurityService.getPrincipal().username, email, firstname, lastname, params)
@@ -58,7 +58,6 @@ class UserProfileController {
 				}
 				else {
 					flash.message = "Profile successfully updated."
-
 				}
 			}
 			else{
@@ -73,6 +72,9 @@ class UserProfileController {
 		redirect(action: 'index')
 	}
 
+	/**
+	 * Basic user profile view if auth0Service not available
+	 */
 	def basic() {
 		AuthUser user = AuthUser.findByUsername(springSecurityService.getPrincipal().username)
 		def level = userProfileService.getAuthUserLevel()

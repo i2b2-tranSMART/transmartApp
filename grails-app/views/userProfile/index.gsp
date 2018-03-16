@@ -93,7 +93,7 @@
 				
 				<input class="profileTab" id="tab4" type="radio" name="tabs">
 				<label class="tabLabel" for="tab4">IRCT Token</label>
-				
+
 				<section id="content1">
 					<g:form action="save">
 						<br />
@@ -124,11 +124,11 @@
 					<g:render template="/user/access_level"/>
 				</section>
 			    <section id="content4">
-					<g:if test="${level.level < org.transmart.plugin.auth0.UserLevel.TWO.level}">
-				       Token access it not available for your level of access.
+					<g:if test="${level > org.transmart.plugin.auth0.UserLevel.ONE}">
+						<br /><textarea rows="10" style="width:100%">${credentials.idToken}</textarea>
 					</g:if>
 					<g:else>
-			    		<br /><textarea rows="10" style="width:100%">${credentials.idToken}</textarea>
+						Token access it not available for your level of access.
 					</g:else>
 				</section>
 			</div>
