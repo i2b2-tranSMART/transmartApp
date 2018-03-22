@@ -1,42 +1,45 @@
+import groovy.sql.Sql
+import groovy.util.logging.Slf4j
+import org.codehaus.groovy.grails.commons.GrailsApplication
+
+import javax.sql.DataSource
+
+@Slf4j('logger')
 class SampleService {
 
-    def dataSource
-    def i2b2HelperService
-    def grailsApplication
-    def solrService
+	DataSource dataSource
+	I2b2HelperService i2b2HelperService
+	GrailsApplication grailsApplication
+	SolrService solrService
 
-    boolean transactional = true
+	static transactional = false
 
-    //Populate the QT_PATIENT_SAMPLE_COLLECTION table based on a result_instance_id.
-    public void generateSampleCollection(String result_instance_id) {
-        groovy.sql.Sql sql = new groovy.sql.Sql(dataSource)
-        sql.execute("INSERT INTO QT_PATIENT_SAMPLE_COLLECTION (SAMPLE_ID, PATIENT_ID, RESULT_INSTANCE_ID) SELECT DISTINCT DSSM.SAMPLE_ID, DSSM.patient_id, ? FROM QT_PATIENT_SET_COLLECTION QT INNER JOIN DE_SUBJECT_SAMPLE_MAPPING DSSM ON DSSM.PATIENT_ID = QT.PATIENT_NUM WHERE RESULT_INSTANCE_ID = ?", [result_instance_id.toInteger(), result_instance_id.toInteger()])
-    }
+	//Populate the QT_PATIENT_SAMPLE_COLLECTION table based on a result_instance_id.
+	void generateSampleCollection(String resultInstanceId) {
+		String sql = '''
+				INSERT INTO I2B2DEMODATA.QT_PATIENT_SAMPLE_COLLECTION (SAMPLE_ID, PATIENT_ID, RESULT_INSTANCE_ID)
+				SELECT DISTINCT DSSM.SAMPLE_ID, DSSM.patient_id, ?
+				FROM I2B2DEMODATA.QT_PATIENT_SET_COLLECTION QT
+				INNER JOIN DEAPP.DE_SUBJECT_SAMPLE_MAPPING DSSM ON DSSM.PATIENT_ID = QT.PATIENT_NUM
+				WHERE RESULT_INSTANCE_ID = ?'''
+		new Sql(dataSource)l.execute(sql, [resultInstanceId.toInteger(), resultInstanceId.toInteger()])
+	}
 
-    public loadSampleStatisticsObject(String result_instance_id) {
-        //This is the value object we store the count values in.
-        def sampleSummary = [:]
+	Map loadSampleStatisticsObject(String resultInstanceId) {
+		Map sampleSummary = [:]
 
-        groovy.sql.Sql sql = new groovy.sql.Sql(dataSource)
+		StringWriter writer = new StringWriter()
 
-        StringWriter writer1 = new StringWriter()
-        PrintWriter pw1 = new PrintWriter(writer1)
+		i2b2HelperService.renderQueryDefinition resultInstanceId, 'Query Definition', new PrintWriter(writer)
+		sampleSummary.queryDefinition = writer.toString()
 
-        i2b2HelperService.renderQueryDefinition(result_instance_id, "Query Definition", pw1)
+		grailsApplication.config.edu.harvard.transmart.sampleBreakdownMap.each { key, value ->
 
-        sampleSummary["queryDefinition"] = writer1.toString()
+			sampleSummary[value] = solrService.getFacetCountForField(key, resultInstanceId, 'sample')
 
-        grailsApplication.config.edu.harvard.transmart.sampleBreakdownMap.each {
-            currentCountVariable ->
+			logger.debug 'Finished count for field {} - {}: {}', value, key, sampleSummary[currentCountVariable.value]
+		}
 
-                sampleSummary[currentCountVariable.value] = solrService.getFacetCountForField(currentCountVariable.key, result_instance_id, 'sample')
-
-                log.debug("Finished count for field ${currentCountVariable.value} - ${currentCountVariable.key}")
-                log.debug(sampleSummary[currentCountVariable.value])
-
-        }
-
-        return sampleSummary
-    }
-
+		sampleSummary
+	}
 }

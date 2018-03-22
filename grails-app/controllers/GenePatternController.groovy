@@ -5,6 +5,7 @@ import com.recomdata.export.SurvivalAnalysisFiles
 import com.recomdata.genepattern.JobStatus
 import com.recomdata.genepattern.WorkflowStatus
 import grails.converters.JSON
+import org.hibernate.SessionFactory
 import org.json.JSONObject
 import org.quartz.JobDataMap
 import org.quartz.JobDetail
@@ -13,6 +14,8 @@ import org.transmart.CohortInformation
 import org.transmart.ExperimentData
 import org.transmart.HeatmapValidator
 import org.transmartproject.db.log.AccessLogService
+
+import javax.sql.DataSource
 
 class GenePatternController {
 
@@ -23,7 +26,9 @@ class GenePatternController {
 	def i2b2HelperService
 	def jobResultsService
 	def asyncJobService
-	def dataSource
+	DataSource dataSource
+	SessionFactory sessionFactory
+	def sampleInfoService
 
 	static String GENE_PATTERN_WHITE_SPACE_DEFAULT = "0"
 	static String GENE_PATTERN_WHITE_SPACE_EMPTY = ""
@@ -311,8 +316,7 @@ class GenePatternController {
 		GenePatternFiles gpf = new GenePatternFiles()
 
 		//This is the object we use to build the GenePatternFiles.
-		ExperimentData experimentData = new ExperimentData()
-
+		ExperimentData experimentData = new ExperimentData(dataSource, sessionFactory, sampleInfoService)
 		experimentData.gpf = gpf
 		experimentData.dataType = datatype
 		experimentData.analysisType = analysis
@@ -322,7 +326,6 @@ class GenePatternController {
 		experimentData.rawdata = rawdata
 		experimentData.pathwayName = pathway_name
 
-		//
 		if (asyncJobService.updateStatus(jobName, statusList[1])) {
 			return
 		}

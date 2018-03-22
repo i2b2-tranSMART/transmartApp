@@ -1027,7 +1027,7 @@ class I2b2HelperService {
                     t.trial
                 FROM
                     I2B2DEMODATA.patient_dimension p
-                INNER JOIN patient_trial t ON p.patient_num = t.patient_num
+                INNER JOIN I2B2DEMODATA.patient_trial t ON p.patient_num = t.patient_num
                 WHERE
                     p.PATIENT_NUM IN (
                         SELECT
