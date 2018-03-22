@@ -26,30 +26,4 @@ class UserProfileService {
 		}
 		
 	}
-
-	// Test data
-	public getUserDescription(AuthUser user) {
-		
-		def description = [:]
-		try{
-
-			if (user?.description) {
-				description = JSON.parse(user.description)
-			}
-	
-			description << [
-				username: user.username,
-				email: user.email?:user.username?:"",
-				level: getAuthUserLevel(),
-				type: user.getType(),
-				id: user.id,
-			]
-		}
-		catch(Exception ex){
-			log.error("Exception occured", ex)
-		}
-		return description
-	}
-
-
 }

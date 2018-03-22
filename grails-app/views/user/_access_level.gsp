@@ -22,7 +22,7 @@
 		<auth:ifLevelAdmin>
 			<p>Your current access level is <b>Admin</b>.</p>
 			<p>This means that you are able to run <i>summary statistics</i> and <i>advanced statistics</i> queries, you can also see <i>patient level data</i> and <i>download or print</i> the information presented on the resulting pages.</p>
-			<p>In addition you can manage application settings and users.</p>
+			<p>In addition you can manage application settings, remove/add users and change their access levels.</p></p>
 		</auth:ifLevelAdmin>
 	</div>
 </div>

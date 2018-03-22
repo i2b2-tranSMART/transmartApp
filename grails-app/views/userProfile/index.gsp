@@ -125,7 +125,7 @@
 				</section>
 			    <section id="content4">
 					<g:if test="${level > org.transmart.plugin.auth0.UserLevel.ONE}">
-						<br /><textarea rows="10" style="width:100%">${credentials.idToken}</textarea>
+						<br /><textarea rows="10" style="width:100%">${token}</textarea>
 					</g:if>
 					<g:else>
 						Token access it not available for your level of access.
