@@ -7,7 +7,7 @@ import i2b2.SnpDatasetListByProbe
 import i2b2.SnpInfo
 import i2b2.SnpProbeSortedDef
 import i2b2.StringLineReader
-import org.spockframework.util.Assert
+import org.springframework.util.Assert
 
 import javax.sql.DataSource
 import java.sql.Clob
