@@ -41,8 +41,10 @@ grails.project.dependency.resolution = {
 
 	dependencies {
 		compile 'axis:axis:1.4' // for GeneGo web services
+		compile 'com.auth0:java-jwt:3.2.0'
 		compile 'com.google.guava:guava:18.0'
 		compile 'commons-net:commons-net:3.3' // used for ftp transfers
+		compile 'com.fasterxml.jackson.core:jackson-core:2.8.5'
 		compile 'net.sf.ehcache:ehcache:2.9.0'
 		compile 'net.sf.opencsv:opencsv:2.3'
 		compile 'org.apache.commons:commons-math:2.2' //>2MB lib briefly used in ChartController
@@ -58,7 +60,7 @@ grails.project.dependency.resolution = {
 		}
 		compile 'org.rosuda:Rserve:1.7.3'
 		compile('org.springframework.security.extensions:spring-security-saml2-core:1.0.0.RELEASE') {
-			excludes 'spring-security-config', 'spring-security-core', 'spring-security-web', 'xercesImpl'
+			excludes 'bcprov-jdk15', 'spring-security-config', 'spring-security-core', 'spring-security-web', 'xercesImpl'
 		}
 		compile 'org.transmartproject:transmart-core-api:16.2'
 
