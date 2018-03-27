@@ -34,3 +34,7 @@ For details on how to install the tranSMART Foundationʼs versions, refer to
   [4]: http://tomcat.apache.org/
   [5]: https://github.com/thehyve/transmart-data
   [6]: https://wiki.transmartfoundation.org/
+
+[![Snapshot Build Status](http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/jenkins/view/transmartApp/job/transmartApp-snapshots/badge/icon)](http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/jenkins/view/transmartApp/job/transmartApp-snapshots/)
+
+[![Release Build Status](http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/jenkins/view/transmartApp/job/transmartApp-releases/badge/icon)](http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/jenkins/view/transmartApp/job/transmartApp-releases/)
