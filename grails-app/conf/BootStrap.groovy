@@ -1,10 +1,13 @@
 import grails.plugin.springsecurity.SecurityFilterPosition
 import grails.plugin.springsecurity.SpringSecurityUtils
+import groovy.sql.Sql
 import org.codehaus.groovy.grails.exceptions.GrailsConfigurationException
 import org.codehaus.groovy.grails.plugins.GrailsPluginUtils
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.slf4j.LoggerFactory
 import org.transmartproject.security.SecurityService
+
+import java.util.logging.Level
 
 class BootStrap {
 
@@ -18,6 +21,8 @@ class BootStrap {
     def init = { servletContext ->
 
         configureJwt()
+
+        configureGroovySqlLogging()
 
         securityContextPersistenceFilter.forceEagerSessionCreation = true
 
@@ -145,5 +150,11 @@ class BootStrap {
 
 	private void configureJwt() {
 		UsernamePasswordAuthenticationToken.metaClass.getJwtToken = { -> securityService.jwtToken() }
+	}
+
+	private void configureGroovySqlLogging() {
+		if (grails.logging.jul.usebridge) {
+			Sql.LOG.level = Level.FINE
+		}
 	}
 }
