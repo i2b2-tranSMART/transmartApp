@@ -153,7 +153,7 @@ class BootStrap {
 	}
 
 	private void configureGroovySqlLogging() {
-		if (grails.logging.jul.usebridge) {
+		if (grailsApplication.config.grails.logging.jul.usebridge) {
 			Sql.LOG.level = Level.FINE
 		}
 	}
