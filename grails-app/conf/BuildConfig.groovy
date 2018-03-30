@@ -41,10 +41,8 @@ grails.project.dependency.resolution = {
 
 	dependencies {
 		compile 'axis:axis:1.4' // for GeneGo web services
-		compile 'com.auth0:java-jwt:3.2.0'
 		compile 'com.google.guava:guava:18.0'
 		compile 'commons-net:commons-net:3.3' // used for ftp transfers
-		compile 'com.fasterxml.jackson.core:jackson-core:2.8.5'
 		compile 'net.sf.ehcache:ehcache:2.9.0'
 		compile 'net.sf.opencsv:opencsv:2.3'
 		compile 'org.apache.commons:commons-math:2.2' //>2MB lib briefly used in ChartController
@@ -93,6 +91,8 @@ grails.project.dependency.resolution = {
 		runtime ':prototype:1.0'
 		runtime ':resources:1.2.1'
 
+		//test ":code-coverage:1.2.6" // Doesn't work with forked tests yet
+
 		String tmVersion = '18.1-SNAPSHOT'
 		if (!dm) {
 			compile ':biomart-domain:'            + tmVersion
@@ -110,10 +110,9 @@ grails.project.dependency.resolution = {
 			compile ':transmart-metacore-plugin:' + tmVersion
 			compile ':transmart-mydas:'           + tmVersion
 			compile ':transmart-rest-api:'        + tmVersion
+			compile ':transmart-shared:'          + tmVersion
 			compile ':transmart-xnat-importer:'   + tmVersion
 			compile ':xnat-viewer:'               + tmVersion
-
-			//test ":code-coverage:1.2.6" // Doesn't work with forked tests yet
 			test ':transmart-core-db-tests:'      + tmVersion
 		}
 		else {

@@ -5,7 +5,7 @@ import org.codehaus.groovy.grails.exceptions.GrailsConfigurationException
 import org.codehaus.groovy.grails.plugins.GrailsPluginUtils
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.slf4j.LoggerFactory
-import org.transmartproject.security.SecurityService
+import org.transmart.plugin.shared.SecurityService
 
 import java.util.logging.Level
 
