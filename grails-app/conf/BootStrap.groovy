@@ -1,20 +1,29 @@
 import grails.plugin.springsecurity.SecurityFilterPosition
 import grails.plugin.springsecurity.SpringSecurityUtils
+import groovy.sql.Sql
 import org.codehaus.groovy.grails.exceptions.GrailsConfigurationException
 import org.codehaus.groovy.grails.plugins.GrailsPluginUtils
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.slf4j.LoggerFactory
+import org.transmart.plugin.shared.SecurityService
+
+import java.util.logging.Level
 
 class BootStrap {
 
     final static logger = LoggerFactory.getLogger(this)
 
     def securityContextPersistenceFilter
-
     def grailsApplication
-
     def OAuth2SyncService
+    SecurityService securityService
 
     def init = { servletContext ->
+
+        configureJwt()
+
+        configureGroovySqlLogging()
+
         securityContextPersistenceFilter.forceEagerSessionCreation = true
 
         SpringSecurityUtils.clientRegisterFilter('concurrentSessionFilter', SecurityFilterPosition.CONCURRENT_SESSION_FILTER)
@@ -139,7 +148,13 @@ class BootStrap {
             c.com.recomdata.heartbeatLaps = 60
     }
 
+	private void configureJwt() {
+		UsernamePasswordAuthenticationToken.metaClass.getJwtToken = { -> securityService.jwtToken() }
+	}
 
-    def destroy = {
-    }
+	private void configureGroovySqlLogging() {
+		if (grailsApplication.config.grails.logging.jul.usebridge) {
+			Sql.LOG.level = Level.FINE
+		}
+	}
 }

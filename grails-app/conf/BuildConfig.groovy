@@ -13,6 +13,8 @@ catch (ignored) {}
 
 grails.project.dependency.resolver = 'maven'
 grails.project.fork = [test: forkSettingsOther, run: forkSettingsRun, war: false, console: forkSettingsOther]
+grails.project.source.level = 1.7
+grails.project.target.level = 1.7
 grails.project.war.file = "target/${appName}.war"
 grails.project.work.dir = 'target'
 grails.servlet.version = '3.0'
@@ -28,6 +30,10 @@ grails.project.dependency.resolution = {
 			mavenLocal()
 			grailsCentral()
 			mavenCentral()
+			mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/libs-snapshots'
+			mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/libs-releases'
+			mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/plugins-releases'
+			mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/plugins-snapshots'
 			mavenRepo 'https://repo.transmartfoundation.org/content/repositories/public/'
 		}
 	}
@@ -54,9 +60,9 @@ grails.project.dependency.resolution = {
 		}
 		compile 'org.rosuda:Rserve:1.7.3'
 		compile('org.springframework.security.extensions:spring-security-saml2-core:1.0.0.RELEASE') {
-			excludes 'spring-security-config', 'spring-security-core', 'spring-security-web', 'xercesImpl'
+			excludes 'bcprov-jdk15', 'spring-security-config', 'spring-security-core', 'spring-security-web', 'xercesImpl'
 		}
-		compile 'org.transmartproject:transmart-core-api:16.2'
+		compile 'org.transmartproject:transmart-core-api:18.1-SNAPSHOT'
 
 		// you can remove whichever you're not using
 		runtime 'org.postgresql:postgresql:9.3-1100-jdbc4'
@@ -69,12 +75,13 @@ grails.project.dependency.resolution = {
 	}
 
 	plugins {
+		build ':release:3.1.2'
 		build ':tomcat:7.0.54'
 
 		compile ':cache-ehcache:1.0.5'
 		compile ':codenarc:0.21'
 		compile ':hibernate:3.6.10.19'
-		compile ':quartz:1.0-RC2'
+		compile ':quartz:1.0.2'
 		compile ':rest-client-builder:2.1.1'
 		compile ':spring-security-core:2.0.0'
 		compile ':spring-security-kerberos:1.0.0'
@@ -86,27 +93,29 @@ grails.project.dependency.resolution = {
 		runtime ':prototype:1.0'
 		runtime ':resources:1.2.1'
 
-		if (!dm) {
-			compile ':biomart-domain:18.1-SNAPSHOT'
-			compile ':blend4j-plugin:18.1-SNAPSHOT'
-			compile ':dalliance-plugin:18.1-SNAPSHOT'
-			compile ':folder-management:18.1-SNAPSHOT'
-			compile ':rdc-rmodules:18.1-SNAPSHOT'
-			compile ':search-domain:18.1-SNAPSHOT'
-			compile ':spring-security-auth0:0.1-SNAPSHOT'
-			compile ':transmart-core:18.1-SNAPSHOT'
-			compile ':transmart-fractalis:0.1-SNAPSHOT'
-			compile ':transmart-gwas:18.1-SNAPSHOT'
-			compile ':transmart-java:18.1-SNAPSHOT'
-			compile ':transmart-legacy-db:18.1-SNAPSHOT'
-			compile ':transmart-metacore-plugin:18.1-SNAPSHOT'
-			compile ':transmart-mydas:18.1-SNAPSHOT'
-			compile ':transmart-rest-api:18.1-SNAPSHOT'
-			compile ':transmart-xnat-importer:18.1-SNAPSHOT'
-			compile ':xnat-viewer:18.1-SNAPSHOT'
+		//test ":code-coverage:1.2.6" // Doesn't work with forked tests yet
 
-			//test ":code-coverage:1.2.6" // Doesn't work with forked tests yet
-			test ':transmart-core-db-tests:18.1-SNAPSHOT'
+		String tmVersion = '18.1-SNAPSHOT'
+		if (!dm) {
+			compile ':biomart-domain:'            + tmVersion
+			compile ':blend4j-plugin:'            + tmVersion
+			compile ':dalliance-plugin:'          + tmVersion
+			compile ':folder-management:'         + tmVersion
+			compile ':rdc-rmodules:'              + tmVersion
+			compile ':search-domain:'             + tmVersion
+			compile ':spring-security-auth0:0.1-SNAPSHOT'
+			compile ':transmart-core:'            + tmVersion
+			compile ':transmart-fractalis:0.1-SNAPSHOT'
+			compile ':transmart-gwas:'            + tmVersion
+			compile ':transmart-java:'            + tmVersion
+			compile ':transmart-legacy-db:'       + tmVersion
+			compile ':transmart-metacore-plugin:' + tmVersion
+			compile ':transmart-mydas:'           + tmVersion
+			compile ':transmart-rest-api:'        + tmVersion
+			compile ':transmart-shared:'          + tmVersion
+			compile ':transmart-xnat-importer:'   + tmVersion
+			compile ':xnat-viewer:'               + tmVersion
+			test ':transmart-core-db-tests:'      + tmVersion
 		}
 		else {
 			dm.internalDependencies delegate
