@@ -9,59 +9,8 @@
 	    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700"/>
 	    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
 		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-		
-		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="${resource(dir:'css', file: 'userProfile.css')}">
 
-	    <style>
-	    	*, *:before, *:after {
-			  margin: 0;
-			  padding: 0;
-			  box-sizing: border-box;
-			}
-			
-			p {
-			  margin: 0 0 20px;
-			  line-height: 1.5;
-			}
-			
-			section {
-			  display: none;
-			  padding: 20px 0 0;
-			  border-top: 1px solid #ddd;
-			}
-			
-			.profileTab {
-			  display: none;
-			}
-			
-			.tabLabel {
-			  display: inline-block;
-			  margin: 0 0 -1px;
-			  padding: 10px 20px;
-			  font-weight: 600;
-			  text-align: center;
-			  color: #808080;
-			  border: 1px solid transparent;
-			}
-			
-			.tabLabel:hover {
-			  color: #888;
-			  cursor: pointer;
-			}
-			
-			input:checked + label {
-			  color: #555;
-			  border: 1px solid #ddd;
-			  border-bottom: 1px solid #fff;
-			}
-			
-			#tab1:checked ~ #content1,
-			#tab2:checked ~ #content2,
-			#tab3:checked ~ #content3,
-			#tab4:checked ~ #content4 {
-			  display: block;
-			}
-		</style>
 	</head>
 	
 	
@@ -72,7 +21,7 @@
 		</div>
 	
 		<div class="body" style="padding-left: 15%">
-		    <h1 style="color: #006dba; font-weight: normal; font-size: 16px; margin: .8em 0 .3em 0;">User Profile</h1>
+		    <h1 class="menuHeader">User Profile</h1>
 		    <g:if test="${flash.message}">
 		        <div id="flashMessage" class="message">${flash.message}</div>
 		    </g:if>
@@ -141,5 +90,6 @@
             });
 		</script>
 		<r:layoutResources/>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 	</body>
 </html>

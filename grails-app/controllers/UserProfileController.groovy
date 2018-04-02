@@ -1,27 +1,37 @@
+import grails.plugin.springsecurity.SpringSecurityService
+import org.springframework.beans.factory.annotation.Autowired
+import org.transmart.plugin.auth0.Auth0Config
+import org.transmart.plugin.auth0.Auth0Service
+import org.transmart.plugin.auth0.AuthService
+import org.transmart.plugin.auth0.UserLevel
+import org.transmart.plugin.auth0.UserService
 import org.transmart.searchapp.AuthUser
 import org.transmartproject.db.log.AccessLogService
+import groovy.util.logging.Slf4j
 
+@Slf4j('logger')
 class UserProfileController {
 
-	def springSecurityService
-	def userProfileService
-	def auth0Service
-	def userService
-	def auth0Config
-	AccessLogService accessLogService
+	@Autowired private SpringSecurityService springSecurityService
+	@Autowired private UserProfileService userProfileService
+	@Autowired private Auth0Service auth0Service
+	@Autowired private UserService userService
+	@Autowired private Auth0Config auth0Config
+	@Autowired private AccessLogService accessLogService
+	@Autowired private AuthService authService
 
 	// non-recoverable error
 	String severeMessage = "Unable to update user information. Contact administrator."
 
 	def index() {
 		try{
-			def userDetails
-			def token
+			Map userDetails
+			String token
 
 			token = auth0Service.jwtToken()
 			userDetails = userService.currentUserInfo()
 
-            model:[
+            [
 				user: userDetails,
 				token: token?: "Unable to retrieve token.",
 				instanceType: auth0Config.instanceType,
@@ -31,23 +41,20 @@ class UserProfileController {
 
 		}
 		catch (Exception e) {
-			log.error("Caught error in UserProfile plugin.", e);
+			logger.error 'Caught error "{}" in UserProfile plugin.', e.message, e
 			redirect(action: 'basic')
 		}
 	}
 
-	def save() {
+	def save(String email, String firstname, String lastname) {
 
 		try {
 			AuthUser authUser
-			String email     = params.email
-			String firstname = params.firstname
-			String lastname  = params.lastname
 
 			if (auth0Service){
 				authUser = auth0Service.updateUser(email, firstname, lastname, params)
 				if (authUser.hasErrors()){
-					log.error("UserProfile.save() errors: " + userService.errorStrings(authUser))
+					logger.error  'UserProfile.save() errors: {}', userService.errorStrings(authUser)
 					flash.error = "Error occurred while updating user profile. Please try again later or contact administrator if error persists."
 				}
 				else {
@@ -55,12 +62,12 @@ class UserProfileController {
 				}
 			}
 			else{
-				log.error("Missing property Auth0Service. Check configuration settings.")
+				logger.error 'Missing property Auth0Service. Check configuration settings.'
 				flash.error = severeMessage
 			}
 		}
 		catch (Exception ex){
-			log.error(ex.message, ex)
+			logger.error 'Error occurred while saving user info: {}', ex.message, ex
 			flash.error = severeMessage
 		}
 		redirect(action: 'index')
@@ -71,7 +78,7 @@ class UserProfileController {
 	 */
 	def basic() {
 		AuthUser user = AuthUser.findByUsername(springSecurityService.getPrincipal().username)
-		def level = userProfileService.getAuthUserLevel()
+		UserLevel level = authService ? authService.currentUserLevel() : null
 
 		if (request.post){
 			bindData user, params, [include: [
@@ -85,7 +92,7 @@ class UserProfileController {
 				user.errors.allErrors.each {
 					errors << it + " "
 				}
-				log.error("UserProfile.basic() save errors: " + errors)
+				logger.error 'UserProfile.basic() save errors: {}', errors
 				flash.error = "Error occurred while updating user profile. Please try again later or contact administrator if error persists."
 			}
 			else{
@@ -93,7 +100,7 @@ class UserProfileController {
 				flash.message = "Profile successfully updated."
 			}
 		}
-		model:[user: user, level: level]
+		[user: user, level: level]
 	}
 
 }
