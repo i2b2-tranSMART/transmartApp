@@ -8,8 +8,8 @@ import grails.converters.JSON
 import org.hibernate.SessionFactory
 import org.json.JSONObject
 import org.quartz.JobDataMap
-import org.quartz.JobDetail
-import org.quartz.SimpleTrigger
+import org.quartz.impl.JobDetailImpl
+import org.quartz.impl.triggers.SimpleTriggerImpl
 import org.transmart.CohortInformation
 import org.transmart.ExperimentData
 import org.transmart.HeatmapValidator
@@ -225,16 +225,14 @@ class GenePatternController {
 		jdm.put("userName", userName)
 
 		def group = "heatmaps"
-		def jobDetail = new JobDetail(jobName, group, genePatternService.getClass())
+		def jobDetail = new JobDetailImpl(jobName, group, genePatternService.getClass())
 		jobDetail.setJobDataMap(jdm)
 
 		if (asyncJobService.updateStatus(jobName, statusList[5])) {
 			return
 		}
-		def trigger = new SimpleTrigger("triggerNow", group)
+		def trigger = new SimpleTriggerImpl("triggerNow", group)
 		quartzScheduler.scheduleJob(jobDetail, trigger)
-		////println "WIP: Gene Pattern replacement"
-		// log.debug('WIP: Gene Pattern replacement')
 
 		JSONObject jsonResult = new JSONObject()
 		jsonResult.put("jobName", jobName)
@@ -358,7 +356,7 @@ class GenePatternController {
 		jdm.put("error", error)
 
 		def group = "heatmaps"
-		def jobDetail = new JobDetail(jobName, group, genePatternService.getClass())
+		def jobDetail = new JobDetailImpl(jobName, group, genePatternService.getClass())
 		jobDetail.setJobDataMap(jdm)
 
 		//
@@ -366,10 +364,8 @@ class GenePatternController {
 			return
 		}
 
-		def trigger = new SimpleTrigger("triggerNow", group)
+		def trigger = new SimpleTriggerImpl("triggerNow", group)
 		quartzScheduler.scheduleJob(jobDetail, trigger)
-		//   println "WIP: Gene Pattern replacement"
-		// log.debug('WIP: Gene Pattern replacement')
 
 		//We feed some text we got back from the job call back to the browser.
 		JSONObject jsonResult = new JSONObject()
@@ -465,14 +461,12 @@ class GenePatternController {
 		jdm.put("userName", userName)
 
 		def group = "heatmaps"
-		def jobDetail = new JobDetail(jobName, group, genePatternService.getClass())
+		def jobDetail = new JobDetailImpl(jobName, group, genePatternService.getClass())
 		jobDetail.setJobDataMap(jdm)
 
 		asyncJobService.updateStatus(jobName, statusList[3])
-		def trigger = new SimpleTrigger("triggerNow", group)
+		def trigger = new SimpleTriggerImpl("triggerNow", group)
 		quartzScheduler.scheduleJob(jobDetail, trigger)
-		//println "WIP: Gene Pattern replacement"
-		//log.debug('WIP: Gene Pattern replacement')
 		JSONObject jsonResult = new JSONObject()
 		jsonResult.put("jobName", jobName)
 		response.setContentType("text/json")
@@ -853,14 +847,12 @@ class GenePatternController {
 		jdm.put("userName", userName)
 
 		def group = "heatmaps"
-		def jobDetail = new JobDetail(jobName, group, genePatternService.getClass())
+		def jobDetail = new JobDetailImpl(jobName, group, genePatternService.getClass())
 		jobDetail.setJobDataMap(jdm)
 
 		asyncJobService.updateStatus(jobName, statusList[3])
-		def trigger = new SimpleTrigger("triggerNow", group)
+		def trigger = new SimpleTriggerImpl("triggerNow", group)
 		quartzScheduler.scheduleJob(jobDetail, trigger)
-		//println "WIP: Gene Pattern replacement"
-		//log.debug('WIP: Gene Pattern replacement')
 
 		JSONObject jsonResult = new JSONObject()
 		jsonResult.put("jobName", jobName)
@@ -942,7 +934,6 @@ class GenePatternController {
 
 		def statusHtml = g.render(template: "jobStatus", model: [wfstatus: wfstatus]).toString()
 		result.put("statusHTML", statusHtml)
-		println(statusHtml)
 
 		if (wfstatus.isCompleted()) {
 			result.put("wfstatus", "completed")
@@ -960,5 +951,4 @@ class GenePatternController {
 		wfstatus.setCancelled()
 		render(wfstatus.jobStatusList as JSON)
 	}
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }

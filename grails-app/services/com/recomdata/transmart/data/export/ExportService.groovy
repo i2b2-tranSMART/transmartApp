@@ -7,12 +7,8 @@ import grails.converters.JSON
 import org.apache.commons.lang.StringUtils
 import org.json.JSONObject
 import org.quartz.JobDataMap
-import org.quartz.JobDetail
-import org.quartz.SimpleTrigger
-import org.transmart.authorization.CurrentUserBeanProxyFactory
-import org.transmart.searchapp.AccessLog
-
-import javax.annotation.Resource
+import org.quartz.impl.JobDetailImpl
+import org.quartz.impl.triggers.SimpleTriggerImpl
 
 class ExportService {
 
@@ -200,13 +196,13 @@ class ExportService {
 
         jdm.put("userInContext", currentUserBean.targetSource.target)
 
-        def jobDetail = new JobDetail(params.jobName, params.analysis, GenericJobExecutor.class)
+        def jobDetail = new JobDetailImpl(params.jobName, params.analysis, GenericJobExecutor.class)
         jobDetail.setJobDataMap(jdm)
 
         if (asyncJobService.updateStatus(params.jobName, statusList[2])) {
             return
         }
-        def trigger = new SimpleTrigger("triggerNow" + Math.random(), params.analysis)
+        def trigger = new SimpleTriggerImpl("triggerNow" + Math.random(), params.analysis)
         quartzScheduler.scheduleJob(jobDetail, trigger)
     }
 
