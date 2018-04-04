@@ -1,4 +1,4 @@
-<h3 class="page-header">Access Level</h3>
+<h4 class="page-header">Access Level</h4>
 <div class="row">
 	<div class="col-lg-12">
 		<auth:ifLevelOne>
@@ -19,5 +19,10 @@
 			<p>Your current access level is <b>Controlled Data Access (Level 2)</b>.</p>
 			<p>This means that you are able to run <i>summary statistics</i> and <i>advanced statistics</i> queries, you can also see <i>patient level data</i> and <i>download or print</i> the information presented on the resulting pages.</p>
 		</auth:ifLevelTwo>
+		<auth:ifLevelAdmin>
+			<p>Your current access level is <b>Admin</b>.</p>
+			<p>This means that you are able to run <i>summary statistics</i> and <i>advanced statistics</i> queries, you can also see <i>patient level data</i> and <i>download or print</i> the information presented on the resulting pages.</p>
+			<p>In addition you can manage application settings, remove/add users and change their access levels.</p></p>
+		</auth:ifLevelAdmin>
 	</div>
 </div>

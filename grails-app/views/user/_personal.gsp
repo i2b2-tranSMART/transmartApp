@@ -1,9 +1,9 @@
 <div class="form-section">
-	<g:if test="${!user.email.contains('@') || params.controller == 'user'}">
+	<g:if test="${!user.email || !user.email.contains('@') || params.controller == 'user'}">
 	%{--E-mail is not really an e-mail, so we need to ask for it.--}%
 	<div class="col-xs-12">
 		<label for="email">E-mail<sup>*</sup></label>
-		<g:field class='form-control' name='email' required='required' type='email' value="${user.email.contains('@') ? user.email : ''}" />
+		<g:field class='form-control' name='email' required='required' type='email' value="${user.email}" />
 	</div>
 	</g:if>
 	<g:else>
@@ -25,12 +25,16 @@
 		<label for="lastname">Last Name<sup>*</sup></label>
 		<g:textField class='form-control' name='lastname' required='required' value="${user.lastname}" />
 	</div>
-	<br />
+	<div class="col-xs-12">
+		<br />
+	</div>
 	<div class="col-xs-12">
 		<label for="street">Street<sup>*</sup></label>
 		<g:textField class='form-control' name='street' required='required' value="${user.street}" />
 	</div>
-	<br />
+	<div class="col-xs-12">
+		<br />
+	</div>
 	<div class="col-xs-6">
 		<label for="city">City<sup>*</sup></label>
 		<g:textField class='form-control' name='city' required='required' value="${user.city}" />
@@ -69,5 +73,8 @@
 	</div>
 	<div class="col-xs-12">
 		<sup>*</sup> mandatory fields
+	</div>
+	<div class="col-xs-12">
+		<br />
 	</div>
 </div>
