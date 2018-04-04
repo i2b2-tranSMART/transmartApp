@@ -1,25 +1,11 @@
-<!DOCTYPE html>
 <html lang="en">
 	<head>
-	    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-	    <r:require module="main_mod"/>
-	    <title>User profile</title>
-	    <r:layoutResources/>
-	    
-	    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700"/>
-	    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+		<title>User profile</title>
+		<meta name="layout" content="basic"/>
 		<link rel="stylesheet" type="text/css" href="${resource(dir:'css', file: 'userProfile.css')}">
-
 	</head>
 	
-	
-	
 	<body>
-		<div id="header-div">
-		    <g:render template="/layouts/commonheader" model="['app': '']"/>
-		</div>
-	
 		<div class="body" style="padding-left: 15%">
 		    <h1 class="menuHeader">User Profile</h1>
 		    <g:if test="${flash.message}">
@@ -69,9 +55,9 @@
 					</g:form>
 
 				</section>
-				<section id="content3">
-					<g:render template="/user/access_level"/>
-				</section>
+					<section id="content3">
+						<g:render template="/user/access_level"/>
+					</section>
 			    <section id="content4">
 					<g:if test="${level > org.transmart.plugin.auth0.UserLevel.ONE}">
 						<br /><textarea rows="10" style="width:100%">${token}</textarea>
@@ -82,14 +68,5 @@
 				</section>
 			</div>
 		</div>
-		<script>
-            $(document).ready(function(){
-                setTimeout(function() {
-                    $('#flashMessage').fadeOut('fast');
-                }, 5000);
-            });
-		</script>
-		<r:layoutResources/>
-		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 	</body>
 </html>

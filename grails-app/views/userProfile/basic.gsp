@@ -1,23 +1,11 @@
 <html lang="en">
 	<head>
-	    <r:require module="main_mod"/>
-	    <title>User profile</title>
-	    <r:layoutResources/>
-	    
-	    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700"/>
-	    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-        <link rel="stylesheet" type="text/css" href="${resource(dir:'css', file: 'userProfile.css')}">
-
+		<title>User profile</title>
+		<meta name="layout" content="basic"/>
+		<link rel="stylesheet" type="text/css" href="${resource(dir:'css', file: 'userProfile.css')}">
 	</head>
-	
-	
-	
+
 	<body>
-		<div id="header-div">
-		    <g:render template="/layouts/commonheader" model="[app: '']"/>
-		</div>
-	
 		<div class="body" style="padding-left: 15%">
 		    <h1 class="menuHeader">User Profile</h1>
 		    <g:if test="${flash.message}">
@@ -37,11 +25,11 @@
 					<g:form action="basic">
 						<br />
 						<div class="form-section">
-							<g:if test="${!user.email.contains('@') || params.controller == 'user'}">
+							<g:if test="${user.email == null || !user.email.contains('@')}">
 							%{--E-mail is not really an e-mail, so we need to ask for it.--}%
 								<div class="col-xs-12">
 									<label for="email">E-mail<sup>*</sup></label>
-									<g:field class='form-control' name='email' required='required' type='email' value="${user.email.contains('@') ? user.email : ''}" />
+									<g:field class='form-control' name='email' required='required' type='email' value="${user.email}" />
 								</div>
 							</g:if>
 							<g:else>
@@ -89,7 +77,5 @@
 				</section>
 			</div>
 		</div>
-		<r:layoutResources/>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 	</body>
 </html>

@@ -1,5 +1,6 @@
-import grails.plugin.springsecurity.SpringSecurityService
 import org.springframework.beans.factory.annotation.Autowired
+import org.transmart.plugin.shared.SecurityService
+import org.transmart.plugin.shared.UtilService
 import org.transmart.plugin.auth0.Auth0Config
 import org.transmart.plugin.auth0.Auth0Service
 import org.transmart.plugin.auth0.AuthService
@@ -12,13 +13,14 @@ import groovy.util.logging.Slf4j
 @Slf4j('logger')
 class UserProfileController {
 
-	@Autowired private SpringSecurityService springSecurityService
-	@Autowired private UserProfileService userProfileService
-	@Autowired private Auth0Service auth0Service
-	@Autowired private UserService userService
-	@Autowired private Auth0Config auth0Config
-	@Autowired private AccessLogService accessLogService
-	@Autowired private AuthService authService
+	Auth0Service auth0Service
+	UserService userService
+	Auth0Config auth0Config
+	AccessLogService accessLogService
+	AuthService authService
+
+	SecurityService securityService
+	@Autowired private UtilService utilService
 
 	// non-recoverable error
 	String severeMessage = "Unable to update user information. Contact administrator."
@@ -54,7 +56,7 @@ class UserProfileController {
 			if (auth0Service){
 				authUser = auth0Service.updateUser(email, firstname, lastname, params)
 				if (authUser.hasErrors()){
-					logger.error  'UserProfile.save() errors: {}', userService.errorStrings(authUser)
+					logger.error  'UserProfile.save() errors: {}', utilService.errorStrings(authUser)
 					flash.error = "Error occurred while updating user profile. Please try again later or contact administrator if error persists."
 				}
 				else {
@@ -77,7 +79,7 @@ class UserProfileController {
 	 * Basic user profile view if auth0Service not available
 	 */
 	def basic() {
-		AuthUser user = AuthUser.findByUsername(springSecurityService.getPrincipal().username)
+		AuthUser user = AuthUser.findByUsername(securityService.currentUsername())
 		UserLevel level = authService ? authService.currentUserLevel() : null
 
 		if (request.post){
@@ -88,11 +90,7 @@ class UserProfileController {
 			user.name = user.userRealName
 			user.save(flush:true)
 			if (user.hasErrors()) {
-				def errors = ""
-				user.errors.allErrors.each {
-					errors << it + " "
-				}
-				logger.error 'UserProfile.basic() save errors: {}', errors
+				logger.error 'UserProfile.basic() save errors: {}', utilService.errorStrings(user)
 				flash.error = "Error occurred while updating user profile. Please try again later or contact administrator if error persists."
 			}
 			else{
