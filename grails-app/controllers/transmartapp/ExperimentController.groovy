@@ -6,7 +6,6 @@ import org.transmart.searchapp.*
 
 class ExperimentController {
 
-    def SpringSecurityService;
     def gwasWebService;
 
     /**
@@ -39,7 +38,6 @@ class ExperimentController {
     def browseExperimentsSingleSelect = {
 
         def experiments
-        def user=AuthUser.findByUsername(springSecurityService.getPrincipal().username)
         def secObjs= getExperimentSecureStudyList()
 
         if (params.type) {
@@ -50,7 +48,7 @@ class ExperimentController {
             experiments = getSortedList(experiments)
         }
 
-        experiments=experiments.findAll{!secObjs.containsKey(it.accession) || !gwasWebService.getGWASAccess(it.accession, user).equals("Locked") }
+        experiments=experiments.findAll{!secObjs.containsKey(it.accession) || !gwasWebService.getGWASAccess(it.accession).equals("Locked") }
         render(template: 'browseSingle', model: [experiments: experiments])
     }
 
@@ -60,8 +58,8 @@ class ExperimentController {
      *
      */
 
-    def getExperimentSecureStudyList(){  
-		
+    def getExperimentSecureStudyList(){
+
         StringBuilder s = new StringBuilder();
         s.append("SELECT so.bioDataUniqueId, so.bioDataId FROM SecureObject so Where so.dataType='Experiment'")
         def t=[:];
@@ -76,7 +74,7 @@ class ExperimentController {
         }
         return t;
     }
-	
+
     /**
      * This will render a UI where the user can pick an experiment from a list of all the experiments in the system. Selection of multiple studies is allowed.
      */

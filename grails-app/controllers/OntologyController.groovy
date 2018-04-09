@@ -4,7 +4,6 @@ import fm.FmFolder
 import fm.FmFolderAssociation
 import grails.converters.JSON
 import org.transmart.biomart.Experiment
-import org.transmart.searchapp.AuthUser
 import org.transmartproject.core.dataquery.highdim.HighDimensionResource
 import org.transmartproject.core.dataquery.highdim.Platform
 import org.transmartproject.core.dataquery.highdim.assayconstraints.AssayConstraint
@@ -60,8 +59,7 @@ class OntologyController {
 
     def getInitialSecurity =
             {
-                def user = AuthUser.findByUsername(springSecurityService.getPrincipal().username)
-                def result = i2b2HelperService.getAccess(i2b2HelperService.getRootPathsWithTokens(), user);
+                def result = i2b2HelperService.getAccess(i2b2HelperService.getRootPathsWithTokens());
                 render result as JSON
             }
     def sectest =
@@ -75,10 +73,8 @@ class OntologyController {
                         log.debug("in LOOP")
                         paths.add(i2b2HelperService.keyToPath(key))
                     }
-                    def user = AuthUser.findByUsername(springSecurityService.getPrincipal().username)
 
-
-                    access = i2b2HelperService.getConceptPathAccessCascadeForUser(paths, user)
+                    access = i2b2HelperService.getConceptPathAccessCascadeForUser(paths)
                 }
                 log.trace(access as JSON)
             }

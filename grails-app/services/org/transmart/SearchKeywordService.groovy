@@ -1,10 +1,11 @@
 package org.transmart
 
-import grails.plugin.springsecurity.SpringSecurityService
 import groovy.util.logging.Slf4j
+import org.springframework.beans.factory.annotation.Autowired
 import org.transmart.biomart.BioAssayPlatform
 import org.transmart.biomart.BioDataExternalCode
 import org.transmart.biomart.ConceptCode
+import org.transmart.plugin.shared.SecurityService
 import org.transmart.searchapp.GeneSignature
 import org.transmart.searchapp.SearchKeyword
 import org.transmart.searchapp.SearchKeywordTerm
@@ -17,7 +18,7 @@ class SearchKeywordService {
 
 	static transactional = false
 
-	SpringSecurityService springSecurityService
+	@Autowired private SecurityService securityService
 
 	//Hard-coded list of items that we consider filter categories... configure in Config/database?
 	private static final List<Map> filtercats = [
@@ -142,12 +143,11 @@ class SearchKeywordService {
 				}
 			}
 
-			def user = springSecurityService.principal
-			if (!user.isAdmin()) {
+			if (!securityService.principal().isAdmin()) {
 				logger.debug 'User is not an admin so filter out gene lists or signatures that are not public'
 				or {
 					isNull 'ownerAuthUserId'
-					eq 'ownerAuthUserId', user.id
+					eq 'ownerAuthUserId', securityService.currentUserId()
 				}
 			}
 			maxResults max

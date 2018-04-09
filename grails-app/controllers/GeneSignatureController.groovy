@@ -2,11 +2,13 @@ import com.recomdata.genesignature.FileSchemaException
 import com.recomdata.genesignature.WizardModelDetails
 import com.recomdata.util.DomainObjectExcelHelper
 import grails.plugin.springsecurity.SpringSecurityService
+import org.springframework.beans.factory.annotation.Autowired
 import org.transmart.audit.AuditLogService
 import org.transmart.biomart.BioAssayPlatform
 import org.transmart.biomart.CellLine
 import org.transmart.biomart.Compound
 import org.transmart.biomart.ConceptCode
+import org.transmart.plugin.shared.SecurityService
 import org.transmart.searchapp.AuthUser
 import org.transmart.searchapp.GeneSignature
 import org.transmart.searchapp.GeneSignatureFileSchema
@@ -31,6 +33,7 @@ class GeneSignatureController {
 	I2b2HelperService i2b2HelperService
 	SpringSecurityService springSecurityService
 	User currentUserBean
+	private @Autowired SecurityService securityService
 
 	// concept code categories
 	private static final String SOURCE_CATEGORY = 'GENE_SIG_SOURCE'
@@ -72,11 +75,12 @@ class GeneSignatureController {
 	def list() {
 		session.removeAttribute WIZ_DETAILS_ATTRIBUTE
 
-		def principal = springSecurityService.principal
+		boolean admin = securityService.principal().isAdmin()
+		long userId = securityService.currentUserId()
 
 		// summary view
-		List<GeneSignature> signatures = geneSignatureService.listPermissionedGeneSignatures(principal.id, principal.isAdmin())
-		def ctMap = geneSignatureService.getPermissionedCountMap(principal.id, principal.isAdmin())
+		List<GeneSignature> signatures = geneSignatureService.listPermissionedGeneSignatures(userId, admin)
+		def ctMap = geneSignatureService.getPermissionedCountMap(userId, admin)
 
 		// break into owned and public
 		List<GeneSignature> myItems = []
@@ -86,7 +90,7 @@ class GeneSignatureController {
 
 		for (GeneSignature geneSignature in signatures) {
 			if (geneSignature.uniqueId?.startsWith("GENESIG")) {
-				if (principal.id == geneSignature.createdByAuthUserId) {
+				if (userId == geneSignature.createdByAuthUserId) {
 					myItems << geneSignature
 				}
 				else {
@@ -94,7 +98,7 @@ class GeneSignatureController {
 				}
 			}
 			else {
-				if (principal.id == geneSignature.createdByAuthUserId) {
+				if (userId == geneSignature.createdByAuthUserId) {
 					myListItems << geneSignature
 				}
 				else {
@@ -103,7 +107,7 @@ class GeneSignatureController {
 			}
 		}
 
-		[user: principal, adminFlag: principal.isAdmin(), myItems: myItems, pubItems: pubItems,
+		[user: securityService.principal(), adminFlag: admin, myItems: myItems, pubItems: pubItems,
 		 myListItems: myListItems, pubListItems: pubListItems, ctMap: ctMap]
 	}
 
@@ -112,7 +116,7 @@ class GeneSignatureController {
 	 */
 	def createWizard() {
 		// initialize session model data
-		def principal = springSecurityService.principal
+		def principal = securityService.principal()
 
 		GeneSignature geneSignature = new GeneSignature(createdByAuthUser: principal, publicFlag: false, deletedFlag: false)
 

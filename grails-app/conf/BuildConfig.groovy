@@ -103,9 +103,10 @@ grails.project.dependency.resolution = {
 			compile ':folder-management:'         + tmVersion
 			compile ':rdc-rmodules:'              + tmVersion
 			compile ':search-domain:'             + tmVersion
-			compile ':spring-security-auth0:0.1-SNAPSHOT'
+			compile ':spring-security-auth0:'     + tmVersion
 			compile ':transmart-core:'            + tmVersion
-			compile ':transmart-fractalis:0.1-SNAPSHOT'
+			compile ':transmart-custom:'          + tmVersion
+			compile ':transmart-fractalis:'       + tmVersion
 			compile ':transmart-gwas:'            + tmVersion
 			compile ':transmart-java:'            + tmVersion
 			compile ':transmart-legacy-db:'       + tmVersion

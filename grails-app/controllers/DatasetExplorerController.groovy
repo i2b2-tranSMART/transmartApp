@@ -1,11 +1,12 @@
 import com.recomdata.transmart.domain.searchapp.Subset
 import grails.converters.JSON
-import org.transmart.searchapp.AuthUser
+import org.transmart.plugin.shared.SecurityService
 
 class DatasetExplorerController {
     def springSecurityService
     def i2b2HelperService
     def ontologyService
+    SecurityService securityService
 
     def defaultAction = "index"
 
@@ -45,13 +46,10 @@ class DatasetExplorerController {
         def i2b2Username = grailsApplication.config.com.recomdata.i2b2.subject.username
         def i2b2Password = grailsApplication.config.com.recomdata.i2b2.subject.password
 
-        def user = AuthUser.findByUsername(springSecurityService.getPrincipal().username)
-        def admin = i2b2HelperService.isAdmin(user);
-        def tokens = i2b2HelperService.getSecureTokensCommaSeparated(user)
-        def initialaccess = new JSON(i2b2HelperService.getAccess(i2b2HelperService.getRootPathsWithTokens(), user)).toString();
-        log.trace("admin =" + admin)
+        def tokens = i2b2HelperService.getSecureTokensCommaSeparated()
+        def initialaccess = new JSON(i2b2HelperService.getAccess(i2b2HelperService.getRootPathsWithTokens())).toString();
         render(view: "datasetExplorer", model: [pathToExpand      : pathToExpand,
-                                                admin             : admin,
+                                                admin             : securityService.principal().isAdmin(),
                                                 tokens            : tokens,
                                                 initialaccess     : initialaccess,
                                                 i2b2Domain        : i2b2Domain,

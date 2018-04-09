@@ -1,6 +1,8 @@
 package com.recomdata.transmart.data.export
 
 import grails.converters.JSON
+import org.transmart.plugin.shared.SecurityService
+import org.transmart.plugin.shared.UtilService
 import org.transmartproject.core.exceptions.AccessDeniedException
 import org.transmartproject.core.exceptions.InvalidArgumentsException
 import org.transmartproject.core.users.User
@@ -15,8 +17,8 @@ class DataExportController {
     def springSecurityService
     User currentUserBean
     def dataExportService
-
-    private static final String ROLE_ADMIN = 'ROLE_ADMIN'
+    SecurityService securityService
+    UtilService utilService
 
     def index = {}
 
@@ -66,7 +68,7 @@ class DataExportController {
      * Current methodology is username-jobtype-ID from sequence generator
      */
     def createnewjob() {
-        def result = exportService.createExportDataAsyncJob(params, springSecurityService.getPrincipal().username)
+        def result = exportService.createExportDataAsyncJob(params)
 
         response.setContentType("text/json")
         response.outputStream << result.toString()
@@ -78,7 +80,7 @@ class DataExportController {
     def runDataExport() {
         checkRightsToExport(parseResultInstanceIds())
 
-        def jsonResult = exportService.exportData(params, currentUserBean.username)
+        def jsonResult = exportService.exportData(params)
 
         response.setContentType("text/json")
         response.outputStream << jsonResult.toString()
@@ -105,7 +107,7 @@ class DataExportController {
         assert !params.containsKey('result_instance_id3')
         List<Long> result = []
         for (subsetNumber in 1..2) {
-            if (params.containsKey('result_instance_id'+subsetNumber)) 
+            if (params.containsKey('result_instance_id'+subsetNumber))
                 result[subsetNumber-1] = params.long('result_instance_id'+subsetNumber)
         }
         result
@@ -125,14 +127,13 @@ class DataExportController {
     }
 
     private checkJobAccess(String jobName) {
-        if (isAdmin()) {
+        if (securityService.principal().isAdmin()) {
             return
         }
 
-        String loggedInUsername = springSecurityService.principal.username
         String jobUsername = extractUserFromJobName(jobName)
 
-        if (jobUsername != loggedInUsername) {
+        if (jobUsername != securityService.currentUsername()) {
             log.warn("Denying access to job $jobName because the " +
                     "corresponding username ($jobUsername) does not match " +
                     "that of the current user")

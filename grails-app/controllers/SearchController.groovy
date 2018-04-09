@@ -1,10 +1,11 @@
 import grails.converters.JSON
-import grails.plugin.springsecurity.SpringSecurityService
+import org.springframework.beans.factory.annotation.Autowired
 import org.transmart.GlobalFilter
 import org.transmart.SearchFilter
 import org.transmart.SearchKeywordService
 import org.transmart.SearchResult
 import org.transmart.biomart.BioDataExternalCode
+import org.transmart.plugin.shared.SecurityService
 import org.transmart.searchapp.CustomFilter
 import org.transmart.searchapp.SearchKeyword
 import org.transmart.searchapp.SearchKeywordTerm
@@ -17,7 +18,7 @@ class SearchController {
 	AccessLogService accessLogService
 	SearchService searchService
 	SearchKeywordService searchKeywordService
-	SpringSecurityService springSecurityService
+	@Autowired private SecurityService securityService
 
 	def index() {
 		session.setAttribute('searchFilter', new SearchFilter())
@@ -82,12 +83,10 @@ class SearchController {
 				queryStr += " AND t.searchKeyword.dataCategory IN (:category) "
 				queryParams["category"] = category.toString().split(SEARCH_DELIMITER)
 			}
-			// this is generic way to access AuthUser
-			def user = springSecurityService.getPrincipal()
 			// permission to view search keyword (Admin gets all)
-			if (!user.isAdmin()) {
+			if (!securityService.principal().isAdmin()) {
 				queryStr += " AND (t.ownerAuthUserId = :uid OR t.ownerAuthUserId IS NULL)"
-				queryParams["uid"] = user.id
+				queryParams["uid"] = securityService.currentUserId()
 			}
 			// order by rank/term, if no term specified. otherwise, order by rank/length/term so short terms are matched first.
 			if (values.length() == 0) {
@@ -164,15 +163,12 @@ class SearchController {
 		//	user=authenticateService.principal();   // Using Identity Vault and WWIDPrinicpal
 		//}
 
-		def user = springSecurityService.getPrincipal()
-		def uid = user.id
-
 		//	def queryStr = "SELECT distinct k FROM org.transmart.searchapp.SearchKeyword k left join k.externalCodes c WHERE k.dataCategory IN ('GENE', 'PATHWAY') AND (UPPER(k.keyword) LIKE '"+values+"%' OR (c.codeType='SYNONYM' AND UPPER(c.code) LIKE '"+values+"%')) ORDER BY LENGTH(k.keyword), k.keyword"
 		StringBuffer qBuf = new StringBuffer()
 		qBuf.append("SELECT distinct t.searchKeyword, t.keywordTerm, t.rank, t.termLength ")
 		qBuf.append("FROM org.transmart.searchapp.SearchKeywordTerm t ")
 		qBuf.append("WHERE t.searchKeyword.dataCategory IN ('GENE', 'PATHWAY', 'GENESIG','GENELIST') AND t.keywordTerm LIKE'" + values + "%' ")
-		qBuf.append(" AND (t.ownerAuthUserId =" + uid + " OR t.ownerAuthUserId IS NULL) ORDER BY t.rank ASC, t.termLength ASC, t.keywordTerm")
+		qBuf.append(" AND (t.ownerAuthUserId =" + securityService.currentUserId() + " OR t.ownerAuthUserId IS NULL) ORDER BY t.rank ASC, t.termLength ASC, t.keywordTerm")
 		def keywordResults = SearchKeywordTerm.executeQuery(qBuf.toString(), [max: 20])
 
 		def keywords = new LinkedHashSet()
@@ -242,7 +238,7 @@ class SearchController {
 		def sResult = new SearchResult()
 		//	log.info "doSearch:"+params
 		//log.info "isTextOnly = " + filter.globalFilter.isTextOnly()
-		SearchService.doResultCount(sResult, filter)
+		searchService.doResultCount(sResult, filter)
 		filter.summaryWithLinks = createSummaryWithLinks(filter)
 		filter.createPictorTerms()
 		boolean defaultSet = false
@@ -311,8 +307,7 @@ class SearchController {
 		def customFilter = CustomFilter.get(params.id)
 
 		if (customFilter != null) {
-			def user = springSecurityService.getPrincipal()
-			if (customFilter.privateFlag != 'Y' || customFilter.searchUserId == user.id) {
+			if (customFilter.privateFlag != 'Y' || customFilter.searchUserId == securityService.currentUserId()) {
 				def uniqueIds = []
 				for (item in customFilter.items) {
 					def id = item.uniqueId

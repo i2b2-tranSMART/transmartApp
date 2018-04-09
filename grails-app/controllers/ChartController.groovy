@@ -3,6 +3,8 @@ import grails.converters.JSON
 import grails.plugin.springsecurity.SpringSecurityService
 import org.jfree.chart.servlet.ChartDeleter
 import org.jfree.chart.servlet.ServletUtilities
+import org.springframework.beans.factory.annotation.Autowired
+import org.transmart.plugin.shared.SecurityService
 import org.transmart.searchapp.AuthUser
 import org.transmartproject.core.users.User
 import org.transmartproject.db.log.AccessLogService
@@ -18,7 +20,7 @@ class ChartController {
 	User currentUserBean
 	HighDimensionQueryService highDimensionQueryService
 	I2b2HelperService i2b2HelperService
-	SpringSecurityService springSecurityService
+	@Autowired private SecurityService securityService
 
 	def index = {}
 
@@ -75,16 +77,12 @@ class ChartController {
 	 */
 	def childConceptPatientCounts = {
 
-		def paramMap = params;
-
-		def user = AuthUser.findByUsername(springSecurityService.getPrincipal().username)
 		log.trace("Called childConceptPatientCounts action in ChartController")
-		log.trace("User is:" + user.username);
-		log.trace(user.toString());
+		log.trace("User is:" + securityService.currentUsername())
 		def concept_key = params.concept_key;
 		log.trace("Requested counts for parent_concept_path=" + concept_key);
 		def counts = i2b2HelperService.getChildrenWithPatientCountsForConcept(concept_key)
-		def access = i2b2HelperService.getChildrenWithAccessForUserNew(concept_key, user)
+		def access = i2b2HelperService.getChildrenWithAccessForUserNew(concept_key)
 		log.trace("access:" + (access as JSON));
 		log.trace("counts = " + (counts as JSON))
 

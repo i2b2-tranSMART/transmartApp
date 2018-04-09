@@ -1,8 +1,8 @@
 import command.SecureObjectAccessCommand
 import grails.plugin.springsecurity.SpringSecurityService
+import org.transmart.plugin.shared.security.Roles
 import org.transmart.searchapp.AuthUser
 import org.transmart.searchapp.Principal
-import org.transmart.searchapp.Role
 import org.transmart.searchapp.SecureAccessLevel
 import org.transmart.searchapp.SecureObject
 import org.transmart.searchapp.SecureObjectAccess
@@ -267,7 +267,6 @@ class SecureObjectAccessController {
 	}
 
 	def addSecObjectsToPrincipal = { SecureObjectAccessCommand fl ->
-		def user = springSecurityService.getPrincipal()
 		def msg = new StringBuilder(" Grant new access permission: ")
 
 		def principalInstance = Principal.get(params.currentprincipalid)
@@ -294,7 +293,6 @@ class SecureObjectAccessController {
 
 	def removeSecObjectsFromPrincipal = { SecureObjectAccessCommand fl ->
 
-		def user = springSecurityService.getPrincipal()
 		def msg = new StringBuilder(" Revoke access permission: ")
 
 		def principalInstance = Principal.get(params.currentprincipalid)
@@ -352,7 +350,7 @@ class SecureObjectAccessController {
 	def isAllowOwn(id) {
 		def authUser = AuthUser.get(id)
 		for (role in authUser.authorities) {
-			if (Role.SPECTATOR_ROLE.equalsIgnoreCase(role.authority)) {
+			if (Roles.SPECTATOR.authority.equalsIgnoreCase(role.authority)) {
 				return false
 			}
 		}

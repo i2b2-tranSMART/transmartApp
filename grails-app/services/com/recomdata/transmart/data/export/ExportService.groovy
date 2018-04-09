@@ -9,6 +9,7 @@ import org.json.JSONObject
 import org.quartz.JobDataMap
 import org.quartz.impl.JobDetailImpl
 import org.quartz.impl.triggers.SimpleTriggerImpl
+import org.transmart.plugin.shared.SecurityService
 
 class ExportService {
 
@@ -21,9 +22,9 @@ class ExportService {
     def quartzScheduler
     def currentUserBean
     def highDimensionResourceService
+    SecurityService securityService
 
-
-    def createExportDataAsyncJob(params, userName) {
+    def createExportDataAsyncJob(params) {
         def analysis = params.analysis
         def jobStatus = "Started"
 
@@ -32,7 +33,7 @@ class ExportService {
         newJob.jobStatus = jobStatus
         newJob.save()
 
-        def jobName = userName + "-" + analysis + "-" + newJob.id
+        def jobName = securityService.currentUsername() + "-" + analysis + "-" + newJob.id
         newJob.jobName = jobName
         newJob.altViewerURL = 'Test'
         newJob.save()
@@ -147,7 +148,7 @@ class ExportService {
         subsetSelectedPlatformsByFiles
     }
 
-    def private createExportDataJob(userName, params, statusList) {
+    def private createExportDataJob(params, statusList) {
         //Put together a hashmap with an entry for each file type we need to output.
         def fileTypeMap = [:]
 
@@ -172,7 +173,7 @@ class ExportService {
 
         def jdm = new JobDataMap()
         jdm.put("analysis", params.analysis)
-        jdm.put("userName", userName)
+        jdm.put("userName", securityService.currentUsername())
         jdm.put("jobName", params.jobName)
         jdm.put("result_instance_ids", resultInstanceIdHashMap)
         jdm.selection = params.selection
@@ -206,7 +207,7 @@ class ExportService {
         quartzScheduler.scheduleJob(jobDetail, trigger)
     }
 
-    def exportData(params, userName) {
+    def exportData(params) {
         def statusList = ["Started", "Validating Cohort Information",
                           "Triggering Data-Export Job", "Gathering Data", "Running Conversions", "Running Analysis", "Rendering Output"]
 
@@ -224,7 +225,7 @@ class ExportService {
             log.warn("${params.jobName} has been cancelled")
             return
         }
-        createExportDataJob(userName, params, statusList)
+        createExportDataJob(params, statusList)
     }
 
     def downloadFile(params) {

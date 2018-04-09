@@ -11,6 +11,7 @@ import org.hibernate.criterion.CriteriaSpecification
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UsernameNotFoundException
+import org.transmart.plugin.shared.security.AuthUserDetails
 
 import javax.annotation.Resource
 

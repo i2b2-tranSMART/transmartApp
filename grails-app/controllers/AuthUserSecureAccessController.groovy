@@ -1,6 +1,6 @@
+import org.transmart.plugin.shared.security.Roles
 import org.transmart.searchapp.AuthUser
 import org.transmart.searchapp.AuthUserSecureAccess
-import org.transmart.searchapp.Role
 import org.transmart.searchapp.SecureAccessLevel;
 
 
@@ -128,7 +128,7 @@ class AuthUserSecureAccessController {
     def isAllowOwn(id) {
         def authUser = AuthUser.get(id);
         for (role in authUser.authorities) {
-            if (Role.SPECTATOR_ROLE.equalsIgnoreCase(role.authority)) {
+            if (Roles.SPECTATOR.authority.equalsIgnoreCase(role.authority)) {
                 return false;
             }
         }

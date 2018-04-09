@@ -6,7 +6,6 @@ import groovy.xml.StreamingMarkupBuilder
 import org.json.JSONArray
 import org.json.JSONObject
 import org.transmart.biomart.Experiment
-import org.transmart.searchapp.AuthUser
 import org.transmart.searchapp.SearchKeyword
 import org.transmart.searchapp.SearchTaxonomy
 import org.transmartproject.db.log.AccessLogService
@@ -312,7 +311,6 @@ class RWGController {
 	def getFacetResults() {
 
 		session['folderSearchList'] = [[], []]; //Clear the folder search list
-		def user = AuthUser.findByUsername(springSecurityService.getPrincipal().username)
 
 		/*
 		 * Record this as the latest search and store it in the session
@@ -410,7 +408,7 @@ class RWGController {
 			//retrieve folders id to expand as opened nodes
 			def nodesToExpand = session['rwgOpenedNodes']
 			render(template: '/fmFolder/folders', plugin: 'folderManagement',
-					model: [folderContentsAccessLevelMap: fmFolderService.getFolderContentsWithAccessLevelInfo(user, null), nodesToExpand: nodesToExpand])
+					model: [folderContentsAccessLevelMap: fmFolderService.getFolderContentsWithAccessLevelInfo(null), nodesToExpand: nodesToExpand])
 			return
 		}
 
@@ -459,7 +457,7 @@ class RWGController {
 				def nodesToExpand = session['rwgOpenedNodes']
 				def nodesToClose = session['rwgClosedNodes']
 
-				def folderContentsAccessLevelMap = fmFolderService.getFolderContentsWithAccessLevelInfo(user, null)
+				def folderContentsAccessLevelMap = fmFolderService.getFolderContentsWithAccessLevelInfo(null)
 				render(template: '/fmFolder/folders', plugin: 'folderManagement', model: [folderContentsAccessLevelMap: folderContentsAccessLevelMap, folderSearchString: folderSearchString, uniqueLeavesString: uniqueLeavesString, auto: true, resultNumber: numbersJSON, nodesToExpand: nodesToExpand, nodesToClose: nodesToClose])
 			}
 			else {
@@ -529,8 +527,8 @@ class RWGController {
 	 */
 	// Sets the search filter for the new search.
 	def newSearch = {
-		session['solrSearchFilter'] = []
-		render(status: 200)
+		session.solrSearchFilter = []
+		render ''
 	}
 
 	// Return search categories for the drop down
@@ -591,11 +589,11 @@ class RWGController {
 	}
 
 	// Load the trial analysis for the given trial
-	def getTrialAnalysis = {
+	def getTrialAnalysis(String trialNumber) {
 		accessLogService.report 'Loading trial analysis', params.trialNumber
 
-		def analysisList = trialQueryService.querySOLRTrialAnalysis(params, session.solrSearchFilter)
-		render(template: '/RWG/analysis', model: [aList: analysisList])
+		render template: '/RWG/analysis', model: [
+				aList: trialQueryService.querySOLRTrialAnalysis(trialNumber, sessionSolrSearchFilter())]
 	}
 
 	def getFileDetails = {
@@ -763,5 +761,9 @@ class RWGController {
 		session['dseOpenedNodes'] = openedNodes
 		session['dseClosedNodes'] = closedNodes
 		render(text: "OK")
+	}
+
+	private List<String> sessionSolrSearchFilter() {
+		session.solrSearchFilter
 	}
 }

@@ -2,9 +2,11 @@ package com.recomdata.transmart.externaltool
 
 import com.recomdata.export.IgvFiles
 import org.codehaus.groovy.grails.plugins.web.taglib.ApplicationTagLib
+import org.transmart.plugin.shared.SecurityService
 
 class IgvController {
 
+    SecurityService securityService
     def springSecurityService;
     def igvDataService
 
@@ -64,7 +66,7 @@ class IgvController {
         String fileDirName = grailsApplication.config.com.recomdata.analysis.data.file.dir;
         if (fileDirName == null)
             throw new Exception("property com.recomdata.analysis.data.file.dir is not set ")
-        String newIGVLink = new ApplicationTagLib().createLink(controller: fileDirName, , absolute: true)
+        String newIGVLink = new ApplicationTagLib().createLink(controller: fileDirName, absolute: true)
 
         IgvFiles igvFiles = new IgvFiles(getIgvFileDirName(), newIGVLink)
 
@@ -117,10 +119,8 @@ class IgvController {
         //	def f = new File (webRootDir + "/data/" + "test.vcf")
         //	igvFiles.addFile(f);
 
-        String userName = springSecurityService.getPrincipal().username;
-
         // create session file URL
-        def sessionfileURL = igvDataService.createSessionURL(igvFiles, userName, locus)
+        def sessionfileURL = igvDataService.createSessionURL(igvFiles, securityService.currentUsername(), locus)
 
         render(view: "launch", model: [sessionFile: sessionfileURL])
 

@@ -3,7 +3,7 @@
 <br/>
 <div class="row">
 	<div class="col-lg-12">
-		<auth:ifLevelOne>
+		<transmart:ifLevelOne>
 		<p>Your current access level is <b>Level 1</b> access.</p>
 		<g:if test="${!level2Request}">
 		<p>Investigators have two levels of access. Level 1 users can generate summary statistics of patients’ de-identified patient reported outcomes and from knowledge extracted from clinical notes to develop new hypotheses about PMS. Level 2 users may see and download de-identified patient-level data, including curated genetic data, which is not viewable in Level 1. They can also view the de-identified sentences where the NLP engine extracted knowledge from the clinical notes. Level 2 users can opt to cross check the knowledge extracted by the NLP against the sentences from which they were extracted as part of a knowledge validation workflow.</p>
@@ -26,14 +26,14 @@
 			You will be notified via e-mail, by the administrator, once you have been granted access, or if additional information is required.</p>
 		</g:if>
 		</g:else>
-		</auth:ifLevelOne>
-		<auth:ifLevelTwo>
+		</transmart:ifLevelOne>
+		<transmart:ifLevelTwo>
 		<p>Your current access level is <b>Level 2</b> access.</p>
 		<p>This means that you are able to run <i>summary statistics</i> and <i>advanced statistics</i> queries, you can also see <i>patient level data</i> and <i>download or print</i> the information presented on the resulting pages.</p>
-	</auth:ifLevelTwo>
-	<auth:ifLevelAdmin>
+	</transmart:ifLevelTwo>
+	<transmart:ifLevelAdmin>
 	<p>Your current access level is <b>Administrator</b> access.</p>
 	<p>This means that you can remove users, change their access levels and complete all the tasks that Level1 and Level2 users can.</p>
-	</auth:ifLevelAdmin>
+	</transmart:ifLevelAdmin>
 	</div>
 </div>

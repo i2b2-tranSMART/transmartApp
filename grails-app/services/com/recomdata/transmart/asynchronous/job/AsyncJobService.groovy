@@ -7,6 +7,7 @@ import org.apache.commons.lang.StringUtils
 import org.json.JSONArray
 import org.json.JSONObject
 import org.springframework.transaction.annotation.Propagation
+import org.transmart.plugin.shared.SecurityService
 import org.transmartproject.core.users.User
 
 class AsyncJobService {
@@ -14,9 +15,9 @@ class AsyncJobService {
     boolean transactional = true
 
     def quartzScheduler
-    def springSecurityService
     def jobResultsService
     def dataExportService
+    SecurityService securityService
 
     /**
      * Method that will get the list of jobs to show in the jobs tab
@@ -25,7 +26,7 @@ class AsyncJobService {
         JSONObject result = new JSONObject()
         JSONArray rows = new JSONArray()
 
-        def userName = springSecurityService.getPrincipal().username
+        def userName = securityService.currentUsername()
         def jobResults = null
         def c = AsyncJob.createCriteria()
         if (StringUtils.isNotEmpty(jobType)) {
@@ -121,7 +122,7 @@ class AsyncJobService {
      * Current methodology is username-jobtype-ID from sequence generator
      */
     def createnewjob(params) {
-        def userName = springSecurityService.getPrincipal().username
+        def userName = securityService.currentUsername()
         def jobStatus = "Started"
 
         def newJob = new AsyncJob(lastRunOn: new Date())

@@ -20,8 +20,11 @@ import i2b2.SnpInfo
 import i2b2.SnpProbeSortedDef
 import i2b2.StringLineReader
 import org.apache.commons.lang.StringUtils
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.core.GrantedAuthority
 import org.transmart.CohortInformation
-import org.transmart.searchapp.AuthUser
+import org.transmart.plugin.shared.SecurityService
+import org.transmart.plugin.shared.security.Roles
 import org.transmart.searchapp.AuthUserSecureAccess
 import org.transmart.searchapp.SecureAccessLevel
 import org.transmart.searchapp.SecureObjectPath
@@ -65,6 +68,7 @@ class I2b2HelperService {
     def conceptService
     def conceptsResourceService
     def sampleInfoService
+    @Autowired private SecurityService securityService
 
     /**
      * Gets a distribution of information from the patient dimention table for value columns
@@ -4968,7 +4972,7 @@ class I2b2HelperService {
     /**
      * Gets the distinct patient counts for the children of a parent concept key
      */
-    def getChildrenWithAccessForUser(String concept_key, AuthUser user) {
+    def getChildrenWithAccessForUser(String concept_key) {
         List<String> children = getChildPathsFromParentKey(concept_key)
         def access = [:]
         def path = keyToPath(concept_key)
@@ -4980,12 +4984,9 @@ class I2b2HelperService {
 
         //2)if we are at the root level then check the security
         def level = getLevelFromKey(concept_key)
-        def admin = false
-        for (role in user.authorities) {
-            if (isAdminRole(role)) {
-                admin = true
-                log.trace("ADMINISTRATOR, SKIPPING PERMISSION CHECKING")
-            }
+        boolean admin = securityService.principal().isAdminOrDseAdmin()
+        if (admin) {
+            log.trace("ADMINISTRATOR, SKIPPING PERMISSION CHECKING")
         }
         if (level == -1 && !admin) //only check on first level of nodes and im not an admin
         {
@@ -5005,7 +5006,7 @@ class I2b2HelperService {
             StringBuilder s = new StringBuilder()
             s.append("SELECT DISTINCT ausa.accessLevel, sop.conceptPath FROM AuthUserSecureAccess ausa JOIN ausa.accessLevel JOIN ausa.authUser au JOIN ausa.secureObject.conceptPaths sop ")
             s.append(" WHERE sop.conceptPath LIKE '").append(path).append("%'")
-            s.append(" AND au.id = ").append(user.id)
+            s.append(" AND au.id = ").append(securityService.currentUserId())
 
             //return access levels for the children of this path that have them
             def results = AuthUserSecureAccess.executeQuery(s.toString())
@@ -5088,7 +5089,7 @@ class I2b2HelperService {
     /**
      * Gets the access level for a list of concept keys
      */
-    def getConceptPathAccessForUser(List<String> paths, AuthUser user) {
+    def getConceptPathAccessForUser(List<String> paths) {
         def access = [:]
 
         //1)put all the children into the access list with default unlocked
@@ -5097,12 +5098,9 @@ class I2b2HelperService {
         }
 
         //2)if we are not an admin
-        def admin = false
-        for (role in user.authorities) {
-            if (isAdminRole(role)) {
-                admin = true
-                log.trace("ADMINISTRATOR, SKIPPING PERMISSION CHECKING")
-            }
+        boolean admin = securityService.principal().isAdminOrDseAdmin()
+        if (admin) {
+            log.trace("ADMINISTRATOR, SKIPPING PERMISSION CHECKING")
         }
 
         if (!admin) //level of nodes and im not an admin
@@ -5123,7 +5121,7 @@ class I2b2HelperService {
             StringBuilder s = new StringBuilder()
             s.append("SELECT DISTINCT ausa.accessLevel, sop.conceptPath FROM AuthUserSecureAccess ausa JOIN ausa.accessLevel JOIN ausa.authUser au JOIN ausa.secureObject.conceptPaths sop ")
             s.append(" WHERE sop.conceptPath IN (:ids) ")
-            s.append(" AND au.id = ").append(user.id)
+            s.append(" AND au.id = ").append(securityService.currentUserId())
 
             //return access levels for the children of this path that have them
             def results = AuthUserSecureAccess.executeQuery(s.toString(), ['ids': paths])
@@ -5162,7 +5160,7 @@ class I2b2HelperService {
     /**
      * Gets the access level for a list of concept keys
      */
-    def getConceptPathAccessCascadeForUser(List<String> paths, AuthUser user) {
+    def getConceptPathAccessCascadeForUser(List<String> paths) {
         def access = [:]
 
         //1)put all the children into the access list with default unlocked
@@ -5171,12 +5169,9 @@ class I2b2HelperService {
         }
 
         //2)if we are not an admin
-        def admin = false
-        for (role in user.authorities) {
-            if (isAdminRole(role)) {
-                admin = true
-                log.trace("ADMINISTRATOR, SKIPPING PERMISSION CHECKING")
-            }
+        boolean admin = securityService.principal().isAdminOrDseAdmin()
+        if (admin) {
+            log.trace("ADMINISTRATOR, SKIPPING PERMISSION CHECKING")
         }
 
         if (!admin) //level of nodes and im not an admin
@@ -5194,7 +5189,7 @@ class I2b2HelperService {
             //4) get the access levels this user has and unlock the locked resources available to him
             StringBuilder s = new StringBuilder()
             s.append("SELECT DISTINCT ausa.accessLevel, sop.conceptPath FROM AuthUserSecureAccess ausa JOIN ausa.accessLevel JOIN ausa.secureObject.conceptPaths sop ")
-            s.append(" WHERE  au.authUser is NULL or au.authUser.id = ").append(user.id).append(" ORDER BY sop.conceptPath")
+            s.append(" WHERE  au.authUser is NULL or au.authUser.id = ").append(securityService.currentUserId()).append(" ORDER BY sop.conceptPath")
 
             //return access levels for the children of this path that have them
             def results = AuthUserSecureAccess.executeQuery(s.toString())
@@ -5337,50 +5332,20 @@ class I2b2HelperService {
     /**
      *  check whether the current use is permitted to view Across Trials data
      */
-    def currentUserHasAcrossTrialsAccess(){
-        def user = AuthUser.findByUsername(springSecurityService.getPrincipal().username)
-        return isXTrialsRole(user)
+    boolean currentUserHasAcrossTrialsAccess(){
+        isXTrials()
     }
 
     /**
      *  check whether the current use is permitted to view Across Trials data
      */
-    def isXTrials(user) {
-        def access = false
-        for (role in user.authorities) {
-            if (isXTrialsRole(role)) {
-                access = true
+    boolean isXTrials() {
+        for (GrantedAuthority role in securityService.principal().authorities) {
+            if (role.authority == Roles.ACROSS_TRIALS.authority) {
+                return true
             }
         }
-        return access
-
-    }
-
-    /**
-     *  check whether or not a role is admin
-     */
-    def isXTrialsRole(role) {
-        return role.authority.equals("ROLE_ACROSS_TRIALS")
-    }
-
-    /**
-     *  check whether or not a role is admin
-     */
-    def isAdminRole(role) {
-        return role.authority.equals("ROLE_ADMIN") || role.authority.equals("ROLE_DATASET_EXPLORER_ADMIN")
-    }
-
-    /**
-     *  check whether or not a user is admin
-     */
-    def isAdmin(user) {
-        def admin = false
-        for (role in user.authorities) {
-            if (isAdminRole(role)) {
-                admin = true
-            }
-        }
-        return admin
+        false
     }
 
     /**
@@ -5422,7 +5387,7 @@ class I2b2HelperService {
         tokens
     }
 
-    Map<String, String> getSecureTokensWithAccessForUser(AuthUser user) {
+    Map<String, String> getSecureTokensWithAccessForUser() {
         def rows = AuthUserSecureAccess.executeQuery("""
             SELECT DISTINCT
                 so.bioDataUniqueId,
@@ -5430,8 +5395,8 @@ class I2b2HelperService {
             FROM AuthUserSecureAccess ausa
             JOIN ausa.accessLevel
             JOIN ausa.secureObject so
-            WHERE ausa.authUser IS NULL OR ausa.authUser = :user
-        """, [user: user])
+            WHERE ausa.authUser IS NULL OR ausa.authUser.id = :userId
+        """, [userId: securityService.currentUserId()])
 
         rows.collectEntries { row ->
             def bioDataUniqueIdToken = row[0]
@@ -5443,7 +5408,7 @@ class I2b2HelperService {
     /**
      * Gets the children with access for a concept
      */
-    def getChildrenWithAccessForUserNew(String concept_key, AuthUser user) {
+    def getChildrenWithAccessForUserNew(String concept_key) {
         log.debug "----------------- getChildrenWithAccessForUserNew"
 
         def xTrialsTopNode = "\\\\" + ACROSS_TRIALS_TABLE_CODE + "\\" + ACROSS_TRIALS_TOP_TERM_NAME + "\\"
@@ -5452,7 +5417,7 @@ class I2b2HelperService {
         def results = [:]
 
         log.trace "input concept_key = " + concept_key
-        log.trace "user = " + user
+        log.trace "user = " + securityService.currentUsername()
 
         if (xTrialsCaseFlag) {
             log.trace("XTrials for getChildrenWithAccessForUserNew")
@@ -5465,7 +5430,7 @@ class I2b2HelperService {
             }
         } else {
         def children = getChildPathsWithTokensFromParentKey(concept_key)
-            results =  getAccess(children, user)
+            results =  getAccess(children)
     }
         return results
     }
@@ -5473,40 +5438,35 @@ class I2b2HelperService {
     /**
      * Checks an arbitrary list of paths with tokens against users access list map (merge)
      */
-    def getAccess(pathswithtokens, user) {
+    def getAccess(pathswithtokens) {
         def children = pathswithtokens
         def access = [:] //new map to merge the other two
 
-        //def level=getLevelFromKey(concept_key)
-        def admin = false
-        for (role in user.authorities) {
-            if (isAdminRole(role)) {
-                admin = true
-                log.trace("ADMINISTRATOR, SKIPPING PERMISSION CHECKING")
-                //1)If we are an admin then grant admin to all the paths
-                for (key in children.keySet()) {
-                    access.put(key, 'Admin')
-                    log.trace("putting " + key + " with admin access")
-                }
-                return access //just set everything to admin and return it all
-            }
-        }
-        if (!admin) //if not admin merge the data from the two maps
-        {
-            def tokens = getSecureTokensWithAccessForUser(user)
+        boolean admin = securityService.principal().isAdminOrDseAdmin()
+        if (admin) {
+            log.trace("ADMINISTRATOR, SKIPPING PERMISSION CHECKING")
+            //1)If we are an admin then grant admin to all the paths
             for (key in children.keySet()) {
-                def childtoken = children[key]
-                log.trace("Key:" + key + " Token:" + childtoken.toString())
-                if (childtoken == null) {
-                    access.put(key, "VIEW") //give read access if no security token
-                } else if (tokens.containsKey(childtoken)) //null tokens are assumed to be unlocked
-                {
-                    access.put(key, tokens[childtoken]) //found access for this token so put in access level
-                } else if (isXTrialsTopLevel(key) && isXTrials(user)) {
-                    access.put(key, "VIEW")
-                } else {
-                    access.put(key, "Locked") //didn't find authorization for this token
-                }
+                access.put(key, 'Admin')
+                log.trace("putting " + key + " with admin access")
+            }
+            return access //just set everything to admin and return it all
+        }
+
+        //if not admin merge the data from the two maps
+        def tokens = getSecureTokensWithAccessForUser()
+        for (key in children.keySet()) {
+            def childtoken = children[key]
+            log.trace("Key:" + key + " Token:" + childtoken.toString())
+            if (childtoken == null) {
+                access.put(key, "VIEW") //give read access if no security token
+            } else if (tokens.containsKey(childtoken)) //null tokens are assumed to be unlocked
+            {
+                access.put(key, tokens[childtoken]) //found access for this token so put in access level
+            } else if (isXTrialsTopLevel(key) && isXTrials()) {
+                access.put(key, "VIEW")
+            } else {
+                access.put(key, "Locked") //didn't find authorization for this token
             }
         }
         log.debug("In getAccess: " + access.toString())
@@ -5643,8 +5603,8 @@ class I2b2HelperService {
         }
     }
 
-    def getSecureTokensCommaSeparated(user) {
-        def tokenmap = getSecureTokensWithAccessForUser(user)
+    def getSecureTokensCommaSeparated() {
+        def tokenmap = getSecureTokensWithAccessForUser()
         StringBuilder sb = new StringBuilder()
         for (v in tokenmap.keySet()) { //have some kind of access to each of these tokens
             sb.append("'")

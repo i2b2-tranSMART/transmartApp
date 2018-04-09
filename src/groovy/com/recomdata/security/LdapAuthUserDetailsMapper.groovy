@@ -12,6 +12,8 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.ldap.userdetails.UserDetailsContextMapper
 import org.springframework.util.Assert
+import org.transmart.plugin.shared.security.AuthUserDetails
+import org.transmart.plugin.shared.security.Roles
 import org.transmart.searchapp.AuthUser
 import org.transmart.searchapp.Role
 import org.transmartproject.db.log.AccessLogService
@@ -134,7 +136,7 @@ class LdapAuthUserDetailsMapper implements UserDetailsContextMapper {
 		}
 
 		if (created) {
-			List<String> authorities = defaultAuthorities ?: [Role.SPECTATOR_ROLE]
+			List<String> authorities = defaultAuthorities ?: [Roles.SPECTATOR.authority]
 			Role.findAllByAuthorityInList(authorities).each { user.addToAuthorities(it) }
 			accessLogService.report 'LDAP', 'User Created', "User '$user.username' for $user.userRealName created"
 		}

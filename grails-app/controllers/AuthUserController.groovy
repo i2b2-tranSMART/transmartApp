@@ -2,6 +2,7 @@ import grails.plugin.springsecurity.SpringSecurityService
 import org.apache.commons.lang.RandomStringUtils
 import org.codehaus.groovy.grails.exceptions.InvalidPropertyException
 import org.springframework.transaction.TransactionStatus
+import org.transmart.plugin.shared.SecurityService
 import org.transmart.searchapp.AuthUser
 import org.transmart.searchapp.AuthUserSecureAccess
 import org.transmart.searchapp.GeneSignature
@@ -17,6 +18,7 @@ class AuthUserController {
 
 	AccessLogService accessLogService
 	DataSource dataSource
+	SecurityService securityService
 	SpringSecurityService springSecurityService
 
 	def list = {
@@ -53,9 +55,7 @@ class AuthUserController {
 	def delete = {
 		def person = AuthUser.get(params.id)
 		if (person) {
-			def userName = person.username
-			def authPrincipal = springSecurityService.getPrincipal()
-			if (!(authPrincipal instanceof String) && authPrincipal.username == userName) {
+			if (person.username == securityService.currentUsername()) {
 				flash.message = "You can not delete yourself, please login as another admin and try again"
 			}
 			else {

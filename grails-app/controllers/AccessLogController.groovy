@@ -1,6 +1,9 @@
 import com.recomdata.util.ExcelGenerator
 import com.recomdata.util.ExcelSheet
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.transmart.AccessLogFilter
+import org.transmart.plugin.shared.UtilService
 import org.transmart.searchapp.AccessLog
 
 import java.text.SimpleDateFormat
@@ -12,13 +15,17 @@ class AccessLogController {
 	static allowedMethods = [delete: 'POST', save: 'POST', update: 'POST']
 	static defaultAction = 'list'
 
-	SearchService searchService
+	@Autowired private SearchService searchService
+	@Autowired private UtilService utilService
+
+	@Value('${com.recomdata.admin.paginate.max:0}')
+	private int paginateMax
 
 	def list() {
 
-		def filter = configureFilter()
+		AccessLogFilter filter = configureFilter()
 
-		def pageMap = searchService.createPagingParamMap(params, grailsApplication.config.com.recomdata.admin.paginate.max, 0)
+		Map<String, ?> pageMap = searchService.createPagingParamMap(params, paginateMax, 0)
 		pageMap.sort = 'accesstime'
 		pageMap.order = 'desc'
 
@@ -37,9 +44,9 @@ class AccessLogController {
 
 	def export() {
 
-		def filter = configureFilter()
+		AccessLogFilter filter = configureFilter()
 
-		def pageMap = searchService.createPagingParamMap(params, grailsApplication.config.com.recomdata.search.paginate.max, 0)
+		Map<String, ?> pageMap = searchService.createPagingParamMap(params, paginateMax, 0)
 		pageMap.sort = 'accesstime'
 		pageMap.order = 'desc'
 
@@ -49,18 +56,13 @@ class AccessLogController {
 			between 'accesstime', filter.startdate, filter.enddate
 		}
 
-		def values = []
+		List<List> values = []
 		for (AccessLog accessLog in results) {
 			values << [accessLog.accesstime, accessLog.username, accessLog.event, accessLog.eventmessage]
 		}
 
-		response.setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8')
-		response.setHeader('Content-Disposition', 'attachment; filename="pre_clinical.xls"')
-		response.setHeader('Cache-Control', 'must-revalidate, post-check=0, pre-check=0')
-		response.setHeader('Pragma', 'public')
-		response.setHeader('Expires', '0')
-
-		response.outputStream << new ExcelGenerator().generateExcel([new ExcelSheet('sheet1', headers, values)])
+		utilService.sendDownload response, 'application/vnd.ms-excel; charset=utf-8', 'pre_clinical.xls',
+				new ExcelGenerator().generateExcel([new ExcelSheet('sheet1', headers, values)])
 	}
 
 	def show(AccessLog accessLog) {
@@ -126,8 +128,8 @@ class AccessLogController {
 		}
 	}
 
-	private configureFilter() {
-		def filter = session.accesslogFilter
+	private AccessLogFilter configureFilter() {
+		AccessLogFilter filter = session.accesslogFilter
 		if (filter == null) {
 			filter = new AccessLogFilter()
 			session.accesslogFilter = filter

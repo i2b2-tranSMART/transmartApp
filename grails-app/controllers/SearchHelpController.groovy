@@ -1,3 +1,5 @@
+import org.springframework.beans.factory.annotation.Autowired
+import org.transmart.plugin.shared.SecurityService
 import org.transmart.searchapp.GeneSignature
 import org.transmart.searchapp.SearchKeyword
 
@@ -12,30 +14,9 @@ public class SearchHelpController {
     // service injections
     def springSecurityService
     def geneSignatureService
+    @Autowired private SecurityService securityService
 
-    def list = {
-
-    }
-
-//	def listAllPathways = {
-//
-//		def map = [:]
-//		def results = SearchKeyword.findAllByDataCategory("PATHWAY",[sort:"keyword", cache:'read-only'])
-//			SearchKeyword.executeQuery("SELECT s FROM SearchKeyword s WHERE s.dataCategory='PATHWAY' ORDER BY s.keyword")
-//		for (keyword in results) {
-//			if (map.containsKey(keyword.dataSource)) {
-//				map[keyword.dataSource].add(keyword)
-//			} else {
-//				def list = []
-//				list.add(keyword)
-//				map[keyword.dataSource] = list
-//			}
-//		}
-//		List sources = []
-//		sources.addAll(map.keySet());
-//
-//		render(view:'pathwayhelp', model:[pathways:map, sources:sources])
-//	}
+    def list = {}
 
     def loadPathways = {
 
@@ -97,12 +78,9 @@ public class SearchHelpController {
      */
     def listAllGeneSignatures = {
 
-        // logged in user
-        def user = springSecurityService.getPrincipal()
-        def bAdmin = user.isAdmin()
-
         // signatures user has search access
-        def signatures = geneSignatureService.listPermissionedGeneSignatures(user.id, bAdmin)
+        def signatures = geneSignatureService.listPermissionedGeneSignatures(
+		        securityService.currentUserId(), securityService.principal().isAdmin())
 
         def mapKeywordsGS = new HashMap()
         def mapKeywordsGL = new HashMap()

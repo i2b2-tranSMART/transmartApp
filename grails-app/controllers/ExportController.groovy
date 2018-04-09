@@ -5,7 +5,6 @@
  *
  */
 import grails.converters.JSON
-import org.transmart.searchapp.AuthUser
 
 import javax.servlet.ServletOutputStream
 
@@ -20,17 +19,16 @@ class ExportController {
         log.debug("Check export security")
         String rid1 = request.getParameter("result_instance_id1");
         String rid2 = request.getParameter("result_instance_id2");
-        def user = AuthUser.findByUsername(springSecurityService.getPrincipal().username)
-        def canExport = CanExport(user, rid1, rid2);
+        def canExport = CanExport(rid1, rid2);
         log.debug("CANEXPORT:" + canExport);
         def result = [canExport: canExport]
         log.trace(result as JSON)
         render result as JSON
     }
 
-    private boolean CanExport(AuthUser user, String rid1, String rid2) {
+    private boolean CanExport(String rid1, String rid2) {
         def trials = i2b2HelperService.getDistinctTrialsInPatientSets(rid1, rid2);
-        def sectokens = i2b2HelperService.getSecureTokensWithAccessForUser(user)
+        def sectokens = i2b2HelperService.getSecureTokensWithAccessForUser()
         for (String it : trials) {
             if (!sectokens.containsKey(it)) {
                 log.debug("not found key in export check:" + it)
