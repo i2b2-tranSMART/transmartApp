@@ -1,6 +1,10 @@
 import grails.plugin.springsecurity.SpringSecurityService
+import groovy.util.logging.Slf4j
 import org.apache.commons.lang.RandomStringUtils
 import org.codehaus.groovy.grails.exceptions.InvalidPropertyException
+import org.springframework.beans.factory.InitializingBean
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.transaction.TransactionStatus
 import org.transmart.plugin.shared.SecurityService
 import org.transmart.searchapp.AuthUser
@@ -9,95 +13,97 @@ import org.transmart.searchapp.GeneSignature
 import org.transmart.searchapp.Role
 import org.transmartproject.db.log.AccessLogService
 
-import javax.sql.DataSource
+import java.util.regex.Pattern
 
-class AuthUserController {
+@Slf4j('logger')
+class AuthUserController implements InitializingBean {
+
+	private static final List<String> BINDABLE_NAMES = ['enabled', 'username', 'userRealName', 'email', 'description',
+	                                                    'emailShow', 'authorities', 'changePassword'].asImmutable()
 
 	static allowedMethods = [delete: 'POST', save: 'POST', update: 'POST']
 	static defaultAction = 'list'
 
-	AccessLogService accessLogService
-	DataSource dataSource
-	SecurityService securityService
-	SpringSecurityService springSecurityService
+	@Autowired private AccessLogService accessLogService
+	@Autowired private SecurityService securityService
+	@Autowired private SpringSecurityService springSecurityService
 
-	def list = {
+	@Value('${transmartproject.authUser.create.passwordRequired:false}')
+	private boolean passwordRequired
+
+	@Value('${com.recomdata.passwordstrength.description:}')
+	private String passwordStrengthDescription
+
+	private Pattern passwordStrengthPattern
+
+	def list() {
 		if (!params.max) {
-			//Changed this to use the jQuery dataTable, which includes client side paging/searching
-			//Need to return all user accounts here
-			//params.max = grailsApplication.config.com.recomdata.admin.paginate.max
 			params.max = 999999
 		}
 		[personList: AuthUser.list(params)]
 	}
 
-	def show = {
-		def person = AuthUser.get(params.id)
-		if (!person) {
+	def show(AuthUser authUser) {
+		if (authUser) {
+			[person: authUser, roleNames: authUser.authorities*.authority.sort()]
+		}
+		else {
 			flash.message = "AuthUser not found with id $params.id"
-			redirect action: "list"
-			return
+			redirect action: 'list'
 		}
-		List roleNames = []
-		for (role in person.authorities) {
-			roleNames << role.authority
-		}
-		roleNames.sort { n1, n2 ->
-			n1 <=> n2
-		}
-		[person: person, roleNames: roleNames]
 	}
 
-	/**
-	 * Person delete action. Before removing an existing person,
-	 * he should be removed from those authorities which he is involved.
-	 */
-	def delete = {
-		def person = AuthUser.get(params.id)
-		if (person) {
-			if (person.username == securityService.currentUsername()) {
-				flash.message = "You can not delete yourself, please login as another admin and try again"
+	def delete(AuthUser authUser) {
+		if (authUser) {
+			if (authUser.username == securityService.currentUsername()) {
+				flash.message = 'You can not delete yourself, please login as another admin and try again'
 			}
 			else {
-				log.info("Deleting ${person.username} from the roles")
-				Role.findAll().each { it.removeFromPeople(person) }
-				log.info("Deleting ${person.username} from secure access list")
-				AuthUserSecureAccess.findAllByAuthUser(person).each { it.delete() }
-				log.info("Deleting the gene signatures created by ${person.username}")
+				logger.info 'Deleting {} from the roles', authUser.username
+				for (Role role in Role.list()) {
+					role.removeFromPeople authUser
+				}
+				logger.info 'Deleting {} from secure access list', authUser.username
+				for (AuthUserSecureAccess ausa in AuthUserSecureAccess.findAllByAuthUser(authUser)) {
+					ausa.delete()
+				}
+				logger.info 'Deleting the gene signatures created by {}', authUser.username
 				try {
-					GeneSignature.findAllByCreatedByAuthUser(person).each { it.delete() }
+					for (GeneSignature gs in GeneSignature.findAllByCreatedByAuthUser(authUser)) {
+						gs.delete()
+					}
 				}
-				catch (InvalidPropertyException ipe) {
-					log.warn("AuthUser properties in the GeneSignature domain need to be enabled")
+				catch (InvalidPropertyException ignored) {
+					logger.warn 'AuthUser properties in the GeneSignature domain need to be enabled'
 				}
-				log.info("Finally, deleting ${person.username}")
-				person.delete()
-				def msg = "$person.userRealName has been deleted."
+				logger.info 'Finally, deleting {}', authUser.username
+				authUser.delete()
+				String msg = authUser.userRealName + ' has been deleted.'
 				flash.message = msg
-				accessLogService.report "User Deleted", msg
+				accessLogService.report 'User Deleted', msg
 			}
 		}
 		else {
 			flash.message = "User not found with id $params.id"
 		}
-		redirect action: "list"
+		redirect action: 'list'
 	}
 
-	def edit = {
-		def person = AuthUser.get(params.id)
-		if (!person) {
-			flash.message = "AuthUser not found with id $params.id"
-			redirect action: "list"
-			return
+	def edit(AuthUser authUser) {
+		if (authUser) {
+			buildPersonModel authUser
 		}
-		return buildPersonModel(person)
+		else {
+			flash.message = "AuthUser not found with id $params.id"
+			redirect action: 'list'
+		}
 	}
 
 	def update() {
 		saveOrUpdate()
 	}
 
-	def create = {
+	def create() {
 		[person: new AuthUser(params), authorityList: Role.list()]
 	}
 
@@ -108,112 +114,103 @@ class AuthUserController {
 	private saveOrUpdate() {
 
 		boolean create = params.id == null
-		AuthUser person = create ? new AuthUser() : AuthUser.load(params.id as Long)
+		AuthUser authUser = create ? new AuthUser() : AuthUser.get(params.id)
 
-		bindData person, params, [include: [
-				'enabled', 'username', 'userRealName', 'email',
-				'description', 'emailShow', 'authorities', 'changePassword'
-		]]
+		bindData authUser, params, [include: BINDABLE_NAMES]
 
 		// We have to make that check at the user creation since the RModules check over this.
 		// It could mess up with the security at archive retrieval.
 		// This is bad, but we have no choice at this point.
-		if (!(person.username ==~ /^[0-9A-Za-z-]+$/)) {
+		if (!(authUser.username ==~ /^[0-9A-Za-z-]+$/)) {
 			flash.message = 'Username can only contain alphanumerical charaters and hyphens (Sorry)'
-			return render(view: create ? 'create' : 'edit', model: buildPersonModel(person))
+			render view: create ? 'create' : 'edit', model: buildPersonModel(authUser)
+			return
 		}
 
-		if (params.passwd && !params.passwd.isEmpty()) {
-
-			def passwordStrength = grailsApplication.config.com.recomdata.passwordstrength ?: null
-			def strengthPattern = passwordStrength?.pattern ?: null
-			def strengthDescription = passwordStrength?.description ?: null
-
-
-			if (strengthPattern != null && !strengthPattern.matcher(params.passwd).matches()) {
-				flash.message = 'Password does not match complexity criteria. ' + (strengthDescription ?: "")
-				return render(view: create ? 'create' : 'edit', model: buildPersonModel(person))
+		String passwd = params.passwd
+		if (passwd) {
+			if (passwordStrengthPattern && !passwordStrengthPattern.matcher(passwd).matches()) {
+				flash.message = 'Password does not match complexity criteria. ' + passwordStrengthDescription
+				render view: create ? 'create' : 'edit', model: buildPersonModel(authUser)
+				return
 			}
 
-			person.passwd = springSecurityService.encodePassword(params.passwd)
+			authUser.passwd = springSecurityService.encodePassword(passwd)
 		}
 		else if (create) {
-			if (grailsApplication.config.transmartproject.authUser.create.passwordRequired != false) {
-				flash.message = 'Password must be provided';
-				return render(view: create ? 'create' : 'edit', model: buildPersonModel(person))
+			if (passwordRequired) {
+				flash.message = 'Password must be provided'
+				render view: create ? 'create' : 'edit', model: buildPersonModel(authUser)
+				return
 			}
-			else {
-				person.passwd = springSecurityService.encodePassword(params.passwd ?: "FilledByAuthUserController_" + RandomStringUtils.random(12, true, true));
-			}
+
+			passwd = passwd ?: 'FilledByAuthUserController_' + RandomStringUtils.random(12, true, true)
+			authUser.passwd = springSecurityService.encodePassword(passwd)
 		}
 
-		person.name = person.userRealName
+		authUser.name = authUser.userRealName
 
 		/* the auditing should probably be done in the beforeUpdate() callback,
 		 * but that might cause problems in users created without a spring
 		 * security login (does this happen?) */
-		def msg
+		String msg
 		if (create) {
-			msg = "User: ${person.username} for ${person.userRealName} created"
+			msg = "User: ${authUser.username} for ${authUser.userRealName} created"
 		}
 		else {
-			msg = "${person.username} has been updated. Changed fields include: "
-			msg += person.dirtyPropertyNames.collect { field ->
-				def newValue = person."$field"
-				def oldValue = person.getPersistentValue(field)
+			msg = "${authUser.username} has been updated. Changed fields include: "
+			msg += authUser.dirtyPropertyNames.collect { String field ->
+				def newValue = authUser[field]
+				def oldValue = authUser.getPersistentValue(field)
 				if (newValue != oldValue) {
 					"$field ($oldValue -> $newValue)"
 				}
-			}.findAll().join ', '
+			}.findAll().join(', ')
 		}
 
-		AuthUser.withTransaction { TransactionStatus tx ->
-			manageRoles(person)
-			if (person.validate() && person.save(flush: true)) {
+		AuthUser.withTransaction { TransactionStatus tx -> // TODO move to tx service
+			manageRoles authUser
+			if (authUser.save()) {
 				accessLogService.report "User ${create ? 'Created' : 'Updated'}", msg.toString()
-				redirect action: "show", id: person.id
+				redirect action: 'show', id: authUser.id
 			}
 			else {
 				tx.setRollbackOnly()
 				flash.message = 'An error occured, cannot save user'
-				render view: create ? 'create' : 'edit', model: [authorityList: Role.list(), person: person]
+				render view: create ? 'create' : 'edit', model: [authorityList: Role.list(), person: authUser]
 			}
 		}
 	}
 
-	/* the owning side of the many-to-many are the roles */
+	// the owning side of the many-to-many are the roles
 
-	private void manageRoles(AuthUser person) {
-		def oldRoles = person.authorities.collect {
-			Role.findByAuthority(it.authority)
-		} ?: Collections.emptySet()
-		def newRoles = params.findAll { String key, String value ->
-			key.contains('ROLE') && value == 'on'
-		}.collect {
-			Role.findByAuthority(it.key)
-		} as Set
+	private void manageRoles(AuthUser authUser) {
+		Collection<Role> oldRoles = authUser.authorities
+		Set<Role> newRoles = params.keySet().findAll { String key ->
+			key.contains('ROLE') && params[key] == 'on'
+		}.collect { String key -> Role.findByAuthority(key) }
 
-		(newRoles - oldRoles).each {
-			it.addToPeople(person)
+		for (Role it in (newRoles - oldRoles)) {
+			it.addToPeople authUser
 		}
-		(oldRoles - newRoles).each {
-			it.removeFromPeople(person)
+
+		for (Role it in (oldRoles - newRoles)) {
+			it.removeFromPeople authUser
 		}
 	}
 
-	private Map buildPersonModel(person) {
-		List roles = Role.list()
-		roles.sort { r1, r2 ->
-			r1.authority <=> r2.authority
-		}
-		Set userRoleNames = []
-		for (role in person.authorities) {
-			userRoleNames << role.authority
-		}
-		LinkedHashMap<Role, Boolean> roleMap = [:]
+	private Map buildPersonModel(AuthUser authUser) {
+		Set<String> userRoleNames = authUser.authorities*.authority
+		Map<Role, Boolean> roleMap = [:]
+		List<Role> roles = Role.list().sort { Role role -> role.authority }
 		for (role in roles) {
 			roleMap[(role)] = userRoleNames.contains(role.authority)
 		}
-		return [person: person, roleMap: roleMap, authorityList: Role.list()]
+		[person: authUser, roleMap: roleMap, authorityList: roles]
+	}
+
+	void afterPropertiesSet() {
+		// can't use @Value because Pattern isn't a supported conversion type
+		passwordStrengthPattern = grailsApplication.config.com.recomdata.passwordstrength.pattern ?: null
 	}
 }

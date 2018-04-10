@@ -9,17 +9,17 @@ import org.transmart.searchapp.SearchKeyword
 @CompileStatic
 class GlobalFilter {
 
-	private static final String CATEGORY_GENE = 'GENE'
-	private static final String CATEGORY_PATHWAY = 'PATHWAY'
-	private static final String CATEGORY_COMPOUND = 'COMPOUND'
-	private static final String CATEGORY_DISEASE = 'DISEASE'
-	private static final String CATEGORY_TRIAL = 'TRIAL'
-	private static final String CATEGORY_TEXT = 'TEXT'
-	private static final String CATEGORY_STUDY = 'STUDY'
-	private static final String CATEGORY_GENE_SIG = 'GENESIG'
-	private static final String CATEGORY_GENE_LIST = 'GENELIST'
+	public static final String CATEGORY_GENE = 'GENE'
+	public static final String CATEGORY_PATHWAY = 'PATHWAY'
+	public static final String CATEGORY_COMPOUND = 'COMPOUND'
+	public static final String CATEGORY_DISEASE = 'DISEASE'
+	public static final String CATEGORY_TRIAL = 'TRIAL'
+	public static final String CATEGORY_TEXT = 'TEXT'
+	public static final String CATEGORY_STUDY = 'STUDY'
+	public static final String CATEGORY_GENE_SIG = 'GENESIG'
+	public static final String CATEGORY_GENE_LIST = 'GENELIST'
 
-	private Map<String, KeywordSet> categoryFilterMap = [:]
+	Map<String, KeywordSet> categoryFilterMap = [:]
 
 	boolean isEmpty() {
 		for (KeywordSet value in categoryFilterMap.values()) {
@@ -27,7 +27,6 @@ class GlobalFilter {
 				return false
 			}
 		}
-
 		true
 	}
 
@@ -43,7 +42,6 @@ class GlobalFilter {
 				}
 			}
 		}
-
 		hasText
 	}
 
@@ -52,31 +50,19 @@ class GlobalFilter {
 	}
 
 	KeywordSet getBioMarkerFilters() {
-		KeywordSet all = new KeywordSet()
-		all.addAll getGeneFilters()
-		all.addAll getPathwayFilters()
-		all.addAll getGeneSignatureFilters()
-		all.addAll getGeneListFilters()
-		all
+		geneFilters + pathwayFilters + geneSignatureFilters + geneListFilters
 	}
 
 	boolean hasAnyListFilters() {
-		getPathwayFilters() || getGeneSignatureFilters() || getGeneListFilters()
+		pathwayFilters || geneSignatureFilters || geneListFilters
 	}
 
 	KeywordSet getGenePathwayFilters() {
-		KeywordSet all = new KeywordSet()
-		all.addAll getGeneFilters()
-		all.addAll getPathwayFilters()
-		all
+		geneFilters + pathwayFilters
 	}
 
 	KeywordSet getAllListFilters() {
-		KeywordSet all = new KeywordSet()
-		all.addAll getPathwayFilters()
-		all.addAll getGeneSignatureFilters()
-		all.addAll getGeneListFilters()
-		all
+		pathwayFilters + geneSignatureFilters + geneListFilters
 	}
 
 	KeywordSet getGeneFilters() {
@@ -92,10 +78,7 @@ class GlobalFilter {
 	}
 
 	KeywordSet getGeneSigListFilters() {
-		KeywordSet all = new KeywordSet()
-		all.addAll getGeneSignatureFilters()
-		all.addAll getGeneListFilters()
-		all
+		geneSignatureFilters + geneListFilters
 	}
 
 	KeywordSet getPathwayFilters() {
@@ -123,20 +106,12 @@ class GlobalFilter {
 	}
 
 	KeywordSet getAllFilters() {
-		KeywordSet filters = getGeneFilters()
-		filters.addAll getPathwayFilters()
-		filters.addAll getCompoundFilters()
-		filters.addAll getDiseaseFilters()
-		filters.addAll getTrialFilters()
-		filters.addAll getTextFilters()
-		filters.addAll getStudyFilters()
-		filters.addAll getGeneSignatureFilters()
-		filters.addAll getGeneListFilters()
-		filters
+		geneFilters + pathwayFilters + compoundFilters + diseaseFilters + trialFilters +
+				textFilters + studyFilters + geneSignatureFilters + geneListFilters
 	}
 
 	/**
-	 * returns a list of keywords for given category or an empty list if not present
+	 * keywords for given category or an empty instance if not present
 	 */
 	KeywordSet findFiltersByCategory(String category) {
 		KeywordSet filters = categoryFilterMap[category]
@@ -173,13 +148,13 @@ class GlobalFilter {
 	// Returns list of bioDataIds for specified category. Useful for building 'in' clauses.
 	String formatIdList(KeywordSet set, String separator) {
 		StringBuilder list = new StringBuilder()
-		for (filter in set) {
-			if (list && separator) {
+		for (SearchKeyword filter in set) {
+			if (separator && list) {
 				list << separator
 			}
 			list << filter.bioDataId
 		}
-		list
+		list.toString()
 	}
 
 	void addKeywordFilter(SearchKeyword keyword) {
@@ -197,6 +172,6 @@ class GlobalFilter {
 	}
 
 	boolean hasPathway() {
-		getPathwayFilters()
+		pathwayFilters
 	}
 }

@@ -1,16 +1,15 @@
 package org.transmart
 
+import com.recomdata.tea.TEABaseResult
+import groovy.transform.CompileStatic
+
 /**
- * @author $Author: mmcduffie $
- * $Id: ExpAnalysisResultSet.groovy 9178 2011-08-24 13:50:06Z mmcduffie $
- * @version $Reversion$
- *
+ * @author mmcduffie
  */
-public class ExpAnalysisResultSet {
-
-    def expAnalysisResults = []
-    Long analysisCount
-    Long expCount
-    boolean groupByExp = false
-
+@CompileStatic
+class ExpAnalysisResultSet {
+	List<TEABaseResult> expAnalysisResults = []
+	Long analysisCount
+	Long expCount
+	boolean groupByExp = false
 }

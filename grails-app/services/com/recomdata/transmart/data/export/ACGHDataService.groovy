@@ -9,110 +9,103 @@ import org.transmartproject.core.dataquery.highdim.HighDimensionResource
 import org.transmartproject.core.dataquery.highdim.acgh.AcghValues
 import org.transmartproject.core.dataquery.highdim.assayconstraints.AssayConstraint
 import org.transmartproject.core.dataquery.highdim.chromoregion.RegionRow
+import org.transmartproject.core.dataquery.highdim.projections.Projection
 
 import javax.annotation.PostConstruct
 
 class ACGHDataService {
 
-    HighDimensionResource highDimensionResourceService
-    HighDimensionDataTypeResource<RegionRow> acghResource
+	HighDimensionResource highDimensionResourceService
+	HighDimensionDataTypeResource<RegionRow> acghResource
 
-    @PostConstruct
-    void init() {
-        /* No way to automatically inject the acgh resource in Spring?
-         * Would be easy in CDI by having a producer of HighDimensionDataTypeResource
-         * beans creating it on the fly by looking at the injection point */
-        acghResource = highDimensionResourceService.getSubResourceForType 'acgh'
-    }
+	@PostConstruct
+	void init() {
+		/* No way to automatically inject the acgh resource in Spring?
+		 * Would be easy in CDI by having a producer of HighDimensionDataTypeResource
+		 * beans creating it on the fly by looking at the injection point */
+		acghResource = highDimensionResourceService.getSubResourceForType 'acgh'
+	}
 
-    def writeRegions(String study,
-                     File studyDir,
-                     String fileName,
-                     String jobName,
-                     resultInstanceId) {
-        def assayConstraints = [
-                acghResource.createAssayConstraint(
-                        AssayConstraint.TRIAL_NAME_CONSTRAINT,
-                        name: study),
-                acghResource.createAssayConstraint(
-                        AssayConstraint.PATIENT_SET_CONSTRAINT,
-                        result_instance_id: resultInstanceId as Long),
-        ]
-        def projection = acghResource.createProjection([:], 'acgh_values')
+	void writeRegions(String study, File studyDir, String fileName, String jobName, resultInstanceId) {
+		List<AssayConstraint> assayConstraints = [
+				acghResource.createAssayConstraint(
+						AssayConstraint.TRIAL_NAME_CONSTRAINT,
+						name: study),
+				acghResource.createAssayConstraint(
+						AssayConstraint.PATIENT_SET_CONSTRAINT,
+						result_instance_id: resultInstanceId as Long),
+		]
 
-        def result,
-            writerUtil;
+		Projection projection = acghResource.createProjection([:], 'acgh_values')
 
-        try {
-            /* dataType == 'aCGH' => file created in a subdir w/ that name */
-            writerUtil = new FileWriterUtil(studyDir, fileName, jobName, 'aCGH',
-                    null, "\t" as char)
-            result = acghResource.retrieveData assayConstraints, [], projection
-            doWithResult(result, writerUtil)
-        } finally {
-            writerUtil?.finishWriting()
-            result?.close()
-        }
-    }
+		TabularResult result
+		FileWriterUtil writerUtil
 
-    @CompileStatic
-    private doWithResult(TabularResult<AssayColumn, RegionRow> regionResult,
-                         FileWriterUtil writerUtil) {
+		try {
+			/* dataType == 'aCGH' => file created in a subdir w/ that name */
+			writerUtil = new FileWriterUtil(studyDir, fileName, jobName, 'aCGH',
+					null, '\t' as char)
+			result = acghResource.retrieveData(assayConstraints, [], projection)
+			doWithResult result, writerUtil
+		}
+		finally {
+			writerUtil?.finishWriting()
+			result?.close()
+		}
+	}
 
-        List<AssayColumn> assays = regionResult.indicesList
-        String[] header = createHeader(assays)
-        writerUtil.writeLine(header as String[])
+	@CompileStatic
+	private doWithResult(TabularResult<AssayColumn, RegionRow> regionResult, FileWriterUtil writerUtil) {
 
-        def templateArray = new String[header.size() + 1]
-        //+1 b/c 1st row has no header
-        Long i = 1; //for the first row
-        for (Iterator<RegionRow> iterator = regionResult.rows; iterator.hasNext();) {
-            RegionRow row = (RegionRow) iterator.next()
+		List<AssayColumn> assays = regionResult.indicesList
+		String[] header = createHeader(assays)
+		writerUtil.writeLine(header as String[])
 
-            String[] line = templateArray.clone()
+		String[] templateArray = new String[header.size() + 1]
+		//+1 b/c 1st row has no header
+		int i = 1 //for the first row
+		for (Iterator<RegionRow> iterator = regionResult.rows; iterator.hasNext();) {
+			RegionRow row = iterator.next()
 
-            line[0] = i++ as String
-            line[1] = row.chromosome as String
-            line[2] = row.start as String
-            line[3] = row.end as String
-            line[4] = row.numberOfProbes as String
-            line[5] = row.cytoband
+			String[] line = templateArray.clone()
 
-            int j = 6
-            PER_ASSAY_COLUMNS.each { k, Closure<AcghValues> value ->
-                assays.each { AssayColumn assay ->
-                    line[j++] = value(row.getAt(assay)) as String
-                }
-            }
+			line[0] = i++ as String
+			line[1] = row.chromosome as String
+			line[2] = row.start as String
+			line[3] = row.end as String
+			line[4] = row.numberOfProbes as String
+			line[5] = row.cytoband
 
-            writerUtil.writeLine(line)
-        }
-    }
+			int j = 6
+			PER_ASSAY_COLUMNS.each { k, Closure<AcghValues> value ->
+				for (AssayColumn assay in assays) {
+					line[j++] = value(row.getAt(assay)) as String
+				}
+			}
 
-    private static final Map PER_ASSAY_COLUMNS = [
-            chip    : { AcghValues v -> v.getChipCopyNumberValue() },
-            flag    : { AcghValues v -> v.getCopyNumberState().getIntValue() },
-            probloss: { AcghValues v -> v.getProbabilityOfLoss() },
-            probnorm: { AcghValues v -> v.getProbabilityOfNormal() },
-            probgain: { AcghValues v -> v.getProbabilityOfGain() },
-            probamp : { AcghValues v -> v.getProbabilityOfAmplification() },
-    ]
+			writerUtil.writeLine line
+		}
+	}
 
-    private String[] createHeader(List<AssayColumn> assays) {
-        List<String> r = [
-                'chromosome',
-                'start',
-                'end',
-                'num.probes',
-                'cytoband',
-        ];
+	private static final List<String> HEADER = ['chromosome', 'start', 'end', 'num.probes', 'cytoband'].asImmutable()
 
-        PER_ASSAY_COLUMNS.keySet().each { String head ->
-            assays.each { AssayColumn assay ->
-                r << "${head}.${assay.patientInTrialId}".toString()
-            }
-        }
+	private static final Map PER_ASSAY_COLUMNS = [
+			chip    : { AcghValues v -> v.getChipCopyNumberValue() },
+			flag    : { AcghValues v -> v.getCopyNumberState().getIntValue() },
+			probloss: { AcghValues v -> v.getProbabilityOfLoss() },
+			probnorm: { AcghValues v -> v.getProbabilityOfNormal() },
+			probgain: { AcghValues v -> v.getProbabilityOfGain() },
+			probamp : { AcghValues v -> v.getProbabilityOfAmplification() },
+	]
 
-        r.toArray(new String[r.size()])
-    }
+	private String[] createHeader(List<AssayColumn> assays) {
+		List<String> header = [] + HEADER
+		for (String head in PER_ASSAY_COLUMNS.keySet()) {
+			for (AssayColumn assay in assays) {
+				header << head + '.' + assay.patientInTrialId
+			}
+		}
+
+		header as String[]
+	}
 }

@@ -12,6 +12,7 @@ import org.genepattern.webservice.JobResult
 import org.genepattern.webservice.WebServiceException
 import org.json.JSONException
 import org.json.JSONObject
+import org.springframework.beans.factory.annotation.Value
 import org.transmart.CohortInformation
 import org.transmart.HeatmapValidator
 import org.transmartproject.db.log.AccessLogService
@@ -34,11 +35,23 @@ class AnalysisController {
 	SolrService solrService
 	SpringSecurityService springSecurityService
 
-	def index = {}
+	@Value('${com.recomdata.datasetExplorer.genePatternURL:}')
+	private String genePatternUrl
 
-	def heatmapvalidate = {
+	@Value('${com.recomdata.solr.baseURL:}')
+	private String solrUrl
+
+	@Value('${com.recomdata.solr.maxRows:0}')
+	private int solrMaxRows
+
+	@Value('${com.recomdata.analysis.genepattern.file.dir}')
+	private String genePatternFileDir
+
+	def index() {}
+
+	def heatmapvalidate() {
 		def platform = ""
-		log.debug("Received heatmap validation request")
+		log.debug('Received heatmap validation request')
 		String resultInstanceID1 = request.getParameter("result_instance_id1")
 		if (resultInstanceID1 != null && resultInstanceID1.length() == 0) {
 			resultInstanceID1 = null
@@ -103,7 +116,7 @@ class AnalysisController {
 		render result as JSON
 	}
 
-	def getCohortInformation = {
+	def getCohortInformation() {
 		String infoType = request.getParameter("INFO_TYPE")
 		String platform = request.getParameter("PLATFORM")
 		String rbmpanels = request.getParameter("RBMPANEL")
@@ -162,7 +175,7 @@ class AnalysisController {
 	/**
 	 * This code will accept a list of Sample IDs to generate a heatmap.
 	 */
-	def heatMapFromSample = {
+	def heatMapFromSample() {
 
 		String sampleIdList = request.getParameter("idList")
 		//[{"SampleID":"PatientID"},{}]
@@ -171,7 +184,7 @@ class AnalysisController {
 		render "Done!"
 	}
 
-	def showSNPViewer = {
+	def showSNPViewer() {
 		JSONObject result = new JSONObject()
 
 		def wfstatus = new WorkflowStatus()
@@ -269,8 +282,7 @@ class AnalysisController {
 
 			try {
 				result.put("jobNumber", jresult[1].getJobNumber())
-				viewerURL =
-						grailsApplication.config.com.recomdata.datasetExplorer.genePatternURL +
+				viewerURL = genePatternUrl +
 								"/gp/jobResults/" +
 								jresult[1].getJobNumber() +
 								"?openVisualizers=true"
@@ -292,7 +304,7 @@ class AnalysisController {
 		}
 	}
 
-	def showSNPViewerSample = {
+	def showSNPViewerSample() {
 		JSONObject result = new JSONObject()
 
 		//Set the workflow status that gets show in the status popup.
@@ -416,8 +428,7 @@ class AnalysisController {
 
 			try {
 				result.put("jobNumber", jresult[1].getJobNumber())
-				viewerURL =
-						grailsApplication.config.com.recomdata.datasetExplorer.genePatternURL +
+				viewerURL = genePatternUrl +
 								"/gp/jobResults/" +
 								jresult[1].getJobNumber() +
 								"?openVisualizers=true"
@@ -439,7 +450,7 @@ class AnalysisController {
 		}
 	}
 
-	def showIgv = {
+	def showIgv() {
 		JSONObject result = new JSONObject()
 
 		def wfstatus = new WorkflowStatus()
@@ -559,8 +570,7 @@ class AnalysisController {
 
 			try {
 				result.put("jobNumber", jresult[1].getJobNumber())
-				viewerURL =
-						grailsApplication.config.com.recomdata.datasetExplorer.genePatternURL +
+				viewerURL = genePatternUrl +
 								"/gp/jobResults/" +
 								jresult[1].getJobNumber() +
 								"?openVisualizers=true"
@@ -582,7 +592,7 @@ class AnalysisController {
 		}
 	}
 
-	def showIgvSample = {
+	def showIgvSample() {
 		JSONObject result = new JSONObject()
 
 		def wfstatus = new WorkflowStatus()
@@ -711,8 +721,7 @@ class AnalysisController {
 
 			try {
 				result.put("jobNumber", jresult[1].getJobNumber())
-				viewerURL =
-						grailsApplication.config.com.recomdata.datasetExplorer.genePatternURL +
+				viewerURL = genePatternUrl +
 								"/gp/jobResults/" +
 								jresult[1].getJobNumber() +
 								"?openVisualizers=true"
@@ -735,7 +744,7 @@ class AnalysisController {
 	}
 
 
-	def showPlink = {
+	def showPlink() {
 		JSONObject result = new JSONObject()
 
 		def wfstatus = new WorkflowStatus()
@@ -850,7 +859,7 @@ class AnalysisController {
 		}
 	}
 
-	def showHaploviewGeneSelector = {
+	def showHaploviewGeneSelector() {
 		//log.debug("called test happleview")
 		String resultInstanceID1 = request.getParameter("result_instance_id1")
 		//log.debug(resultInstanceID1)
@@ -875,20 +884,16 @@ class AnalysisController {
 	}
 
 //Use the search JSON to get the list of samples. Find the Genes associated with those samples.
-	def showHaploviewGeneSelectorSample = {
+	def showHaploviewGeneSelectorSample() {
 
 		//We need to first retrieve the list of Sample ID's for the dataset we have selected.
-		//Grab the URL of the solr server.
-		String solrURL = grailsApplication.config.com.recomdata.solr.baseURL
-		//Grab the string for the maximum number of result rows to return.
-		String solrMaxRows = grailsApplication.config.com.recomdata.solr.maxRows
 
 		//Get the list of Sample ID's based on the criteria in the JSON object.
 		//We need to get an ID list per subset. The JSON we received should be [1:[category:[]]]
 		def subsetList = request.JSON.SearchJSON
 
 		//Build the subset from the JSON Data.
-		def result = solrService.buildSubsetList(solrURL, solrMaxRows, subsetList)
+		def result = solrService.buildSubsetList(solrUrl, solrMaxRows, subsetList)
 
 		//We use this map to get a list of distinct genes.
 		def genes = analysisService.getGenesForHaploviewFromSampleId(result)
@@ -900,7 +905,7 @@ class AnalysisController {
 		render(template: 'haploviewGeneSelector', model: [genes: genes])
 	}
 
-	def showSNPViewerSelection = {
+	def showSNPViewerSelection() {
 		String resultInstanceID1 = request.getParameter("result_instance_id1")
 		String resultInstanceID2 = request.getParameter("result_instance_id2")
 
@@ -929,20 +934,16 @@ class AnalysisController {
 	}
 
 //Get the data for the display elements in the SNP selection window.
-	def showSNPViewerSelectionSample = {
+	def showSNPViewerSelectionSample() {
 
 		//We need to first retrieve the list of Sample ID's for the dataset we have selected.
-		//Grab the URL of the solr server.
-		String solrURL = grailsApplication.config.com.recomdata.solr.baseURL
-		//Grab the string for the maximum number of result rows to return.
-		String solrMaxRows = grailsApplication.config.com.recomdata.solr.maxRows
 
 		//Get the list of Sample ID's based on the criteria in the JSON object.
 		//We need to get an ID list per subset. The JSON we received should be [1:[category:[]]]
 		def subsetList = request.JSON.SearchJSON
 
 		//Build the subset from the JSON Data.
-		def result = solrService.buildSubsetList(solrURL, solrMaxRows, subsetList)
+		def result = solrService.buildSubsetList(solrUrl, solrMaxRows, subsetList)
 
 		//We need to show the users a count of how many datasets exist for each subset. As we gather the lists, stash the count in a hashmap.
 		def datasetCount = [:]
@@ -987,7 +988,7 @@ class AnalysisController {
 		[chroms: chroms, snpDatasets: datasetCount, warningMsg: warningMsg, chromDefault: 'ALL']
 	}
 
-	def showIgvSelection = {
+	def showIgvSelection() {
 		String resultInstanceID1 = request.getParameter("result_instance_id1")
 		String resultInstanceID2 = request.getParameter("result_instance_id2")
 
@@ -1016,7 +1017,7 @@ class AnalysisController {
 	}
 
 
-	def showPlinkSelection = {
+	def showPlinkSelection() {
 		String resultInstanceID1 = request.getParameter("result_instance_id1")
 		String resultInstanceID2 = request.getParameter("result_instance_id2")
 
@@ -1047,7 +1048,7 @@ class AnalysisController {
 /**
  * Used to obtain the pathway for biomarker comparison when using the heatmap in dataset explorer
  */
-	def ajaxGetPathwaySearchBoxData = {
+	def ajaxGetPathwaySearchBoxData() {
 		String searchText = request.getParameter("query")
 		log.info("Obtaining pathways for " + searchText)
 
@@ -1069,10 +1070,10 @@ class AnalysisController {
 		render params.callback + "(" + (result as JSON) + ")"
 	}
 
-	def gplogin = {
+	def gplogin() {
 		def gpEnabled = grailsApplication.config.com.recomdata.datasetExplorer.enableGenePattern
 		if ('true' == gpEnabled) {
-			return [userName: springSecurityService.getPrincipal().username]
+			[userName: springSecurityService.getPrincipal().username]
 		}
 		else {
 			render(view: 'nogp')
@@ -1081,11 +1082,10 @@ class AnalysisController {
 	}
 
 	protected String getGenePatternFileDirName() {
-		String fileDirName = grailsApplication.config.com.recomdata.analysis.genepattern.file.dir
 		String webRootName = servletContext.getRealPath("/")
 		if (!webRootName.endsWith(File.separator)) {
 			webRootName += File.separator
 		}
-		return webRootName + fileDirName
+		webRootName + genePatternFileDir
 	}
 }

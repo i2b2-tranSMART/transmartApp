@@ -1,18 +1,16 @@
 package org.transmart
 
+import groovy.transform.CompileStatic
+
 /**
- * @author $Author: mmcduffie $
- * $Id: HeatmapDataValue.groovy 9178 2011-08-24 13:50:06Z mmcduffie $
- * $Revision: 9178 $
+ * @author mmcduffie
  */
-public class HeatmapDataValue {
-
-    def bioMarkerId
-    def bioMarkerName
-    def assayAnalysisId
-    def foldChangeRatio
-    def rvalue
-    def rhoValue
-
-
+@CompileStatic
+class HeatmapDataValue {
+	def bioMarkerId
+	String bioMarkerName
+	def assayAnalysisId
+	def foldChangeRatio
+	def rvalue
+	def rhoValue
 }

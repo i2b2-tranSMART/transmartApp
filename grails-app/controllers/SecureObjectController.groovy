@@ -1,95 +1,98 @@
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.dao.DataIntegrityViolationException
 import org.transmart.searchapp.SecureObject;
 
 class SecureObjectController {
 
-    def index = { redirect(action: "list", params: params) }
+	static allowedMethods = [delete: 'POST', save: 'POST', update: 'POST']
+	static defaultAction = 'list'
 
-    // the delete, save and update actions only accept POST requests
-    static allowedMethods = [delete: 'POST', save: 'POST', update: 'POST']
+	@Value('${com.recomdata.admin.paginate.max:0}')
+	private int paginateMax
 
-    def list = {
-        params.max = Math.min(params.max ? params.max.toInteger() : grailsApplication.config.com.recomdata.admin.paginate.max, 100)
-        [secureObjectInstanceList: SecureObject.list(params), secureObjectInstanceTotal: SecureObject.count()]
-    }
+	def list() {
+		params.max = Math.min(params.int('max', paginateMax), 100)
+		[secureObjectInstanceList: SecureObject.list(params), secureObjectInstanceTotal: SecureObject.count()]
+	}
 
-    def show = {
-        def secureObjectInstance = SecureObject.get(params.id)
+	def show(SecureObject secureObject) {
+		if (secureObject) {
+			[secureObjectInstance: secureObject]
+		}
+		else {
+			flash.message = "SecureObject not found with id ${params.id}"
+			redirect action: 'list'
+		}
+	}
 
-        if (!secureObjectInstance) {
-            flash.message = "SecureObject not found with id ${params.id}"
-            redirect(action: "list")
-        } else {
-            return [secureObjectInstance: secureObjectInstance]
-        }
-    }
+	def delete(SecureObject secureObject) {
+		if (secureObject) {
+			try {
+				secureObject.delete()
+				flash.message = "SecureObject ${params.id} deleted"
+				redirect action: 'list'
+			}
+			catch (DataIntegrityViolationException e) {
+				flash.message = "SecureObject ${params.id} could not be deleted"
+				redirect action: 'show', id: params.id
+			}
+		}
+		else {
+			flash.message = "SecureObject not found with id ${params.id}"
+			redirect action: 'list'
+		}
+	}
 
-    def delete = {
-        def secureObjectInstance = SecureObject.get(params.id)
-        if (secureObjectInstance) {
-            try {
-                secureObjectInstance.delete()
-                flash.message = "SecureObject ${params.id} deleted"
-                redirect(action: "list")
-            }
-            catch (org.springframework.dao.DataIntegrityViolationException e) {
-                flash.message = "SecureObject ${params.id} could not be deleted"
-                redirect(action: "show", id: params.id)
-            }
-        } else {
-            flash.message = "SecureObject not found with id ${params.id}"
-            redirect(action: "list")
-        }
-    }
+	def edit(SecureObject secureObject) {
+		if (secureObject) {
+			[secureObjectInstance: secureObject]
+		}
+		else {
+			flash.message = "SecureObject not found with id ${params.id}"
+			redirect action: 'list'
+		}
+	}
 
-    def edit = {
-        def secureObjectInstance = SecureObject.get(params.id)
+	def update(SecureObject secureObject) {
+		if (secureObject) {
+			if (params.version) {
+				long version = params.long('version', 0)
+				if (secureObject.version > version) {
+					secureObject.errors.rejectValue 'version',
+							'secureObject.optimistic.locking.failure',
+							'Another user has updated this SecureObject while you were editing.'
+					render view: 'edit', model: [secureObjectInstance: secureObject]
+					return
+				}
+			}
 
-        if (!secureObjectInstance) {
-            flash.message = "SecureObject not found with id ${params.id}"
-            redirect(action: "list")
-        } else {
-            return [secureObjectInstance: secureObjectInstance]
-        }
-    }
+			secureObject.properties = params
+			if (!secureObject.hasErrors() && secureObject.save()) {
+				flash.message = "SecureObject ${params.id} updated"
+				redirect action: 'show', id: secureObject.id
+			}
+			else {
+				render view: 'edit', model: [secureObjectInstance: secureObject]
+			}
+		}
+		else {
+			flash.message = "SecureObject not found with id ${params.id}"
+			redirect action: 'edit', id: params.id
+		}
+	}
 
-    def update = {
-        def secureObjectInstance = SecureObject.get(params.id)
-        if (secureObjectInstance) {
-            if (params.version) {
-                def version = params.version.toLong()
-                if (secureObjectInstance.version > version) {
+	def create() {
+		[secureObjectInstance: new SecureObject(params)]
+	}
 
-                    secureObjectInstance.errors.rejectValue("version", "secureObject.optimistic.locking.failure", "Another user has updated this SecureObject while you were editing.")
-                    render(view: 'edit', model: [secureObjectInstance: secureObjectInstance])
-                    return
-                }
-            }
-            secureObjectInstance.properties = params
-            if (!secureObjectInstance.hasErrors() && secureObjectInstance.save()) {
-                flash.message = "SecureObject ${params.id} updated"
-                redirect(action: "show", id: secureObjectInstance.id)
-            } else {
-                render(view: 'edit', model: [secureObjectInstance: secureObjectInstance])
-            }
-        } else {
-            flash.message = "SecureObject not found with id ${params.id}"
-            redirect(action: "edit", id: params.id)
-        }
-    }
-
-    def create = {
-        def secureObjectInstance = new SecureObject()
-        secureObjectInstance.properties = params
-        return ['secureObjectInstance': secureObjectInstance]
-    }
-
-    def save = {
-        def secureObjectInstance = new SecureObject(params)
-        if (!secureObjectInstance.hasErrors() && secureObjectInstance.save()) {
-            flash.message = "SecureObject ${secureObjectInstance.id} created"
-            redirect(action: "show", id: secureObjectInstance.id)
-        } else {
-            render(view: 'create', model: [secureObjectInstance: secureObjectInstance])
-        }
-    }
+	def save() {
+		SecureObject secureObject = new SecureObject(params)
+		if (!secureObject.hasErrors() && secureObject.save()) {
+			flash.message = "SecureObject ${secureObject.id} created"
+			redirect action: 'show', id: secureObject.id
+		}
+		else {
+			render view: 'create', model: [secureObjectInstance: secureObject]
+		}
+	}
 }

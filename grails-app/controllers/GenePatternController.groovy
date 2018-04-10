@@ -10,9 +10,11 @@ import org.json.JSONObject
 import org.quartz.JobDataMap
 import org.quartz.impl.JobDetailImpl
 import org.quartz.impl.triggers.SimpleTriggerImpl
+import org.springframework.beans.factory.annotation.Value
 import org.transmart.CohortInformation
 import org.transmart.ExperimentData
 import org.transmart.HeatmapValidator
+import org.transmart.searchapp.SearchKeyword
 import org.transmartproject.db.log.AccessLogService
 
 import javax.sql.DataSource
@@ -30,8 +32,14 @@ class GenePatternController {
 	SessionFactory sessionFactory
 	def sampleInfoService
 
-	static String GENE_PATTERN_WHITE_SPACE_DEFAULT = "0"
-	static String GENE_PATTERN_WHITE_SPACE_EMPTY = ""
+	static final String GENE_PATTERN_WHITE_SPACE_DEFAULT = "0"
+	static final String GENE_PATTERN_WHITE_SPACE_EMPTY = ""
+
+	@Value('${com.recomdata.analysis.genepattern.file.dir:}')
+	private String genePatternFileDir
+
+	@Value('${com.recomdata.search.genepathway:}')
+	private String genepathway
 
 	/**
 	 * Method that is called asynchronously from the datasetExplorer Javascript
@@ -861,12 +869,11 @@ class GenePatternController {
 	}
 
 	protected String getGenePatternFileDirName() {
-		String fileDirName = grailsApplication.config.com.recomdata.analysis.genepattern.file.dir
 		String webRootName = servletContext.getRealPath("/")
 		if (webRootName.endsWith(File.separator) == false) {
 			webRootName += File.separator
 		}
-		return webRootName + fileDirName
+		return webRootName + genePatternFileDir
 	}
 
 	/**
@@ -899,7 +906,7 @@ class GenePatternController {
 				log.debug("Resetting pathway name to null")
 				pathway_name = null
 			}
-			boolean nativeSearch = grailsApplication.config.com.recomdata.search.genepathway == 'native'
+			boolean nativeSearch = genepathway == 'native'
 			log.debug("nativeSearch: ${nativeSearch}")
 			if (!nativeSearch && pathway_name != null) {
 				pathway_name = SearchKeyword.get(Long.valueOf(pathway_name)).uniqueId

@@ -1,71 +1,73 @@
-import com.recomdata.transmart.domain.searchapp.Subset
 import grails.converters.JSON
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.transmart.plugin.shared.SecurityService
+import transmartapp.OntologyService
 
 class DatasetExplorerController {
-    def springSecurityService
-    def i2b2HelperService
-    def ontologyService
-    SecurityService securityService
 
-    def defaultAction = "index"
+	@Value('${com.recomdata.i2b2.subject.domain:}')
+	private String i2b2Domain
 
-    def index = {
-        log.trace("in index");
+	@Value('${com.recomdata.i2b2.subject.projectid:}')
+	private String i2b2ProjectId
 
-        def pathToExpand
-        //If we have an accession passed, retrieve its path
-        if (params.accession) {
-            pathToExpand = ontologyService.getPathForAccession(params.accession)
-        }
+	@Value('${com.recomdata.i2b2.subject.username:}')
+	private String i2b2Username
 
-        //code for retrieving a saved comparison
-        pathToExpand = pathToExpand ?: params.path;
-        def rwgSearchFilter = session['rwgSearchFilter'];
-        if (rwgSearchFilter) {
-            rwgSearchFilter = rwgSearchFilter.join(",,,")
-        } else {
-            rwgSearchFilter = "";
-        }
+	@Value('${com.recomdata.i2b2.subject.password}')
+	private String i2b2Password
 
-        def rwgSearchOperators = session['rwgSearchOperators'];
-        if (rwgSearchOperators) {
-            rwgSearchOperators = rwgSearchOperators.join(";")
-        } else {
-            rwgSearchOperators = "";
-        }
+	@Autowired private I2b2HelperService i2b2HelperService
+	@Autowired private OntologyService ontologyService
+	@Autowired private SecurityService securityService
 
-        def searchCategory = session['searchCategory'];
-        def globalOperator = session['globalOperator'];
-        def dseOpenedNodes = session["dseOpenedNodes"];
-        def dseClosedNodes = session['dseClosedNodes'];
+	def index(String accession, String path) {
+		String pathToExpand
+		//If we have an accession passed, retrieve its path
+		if (accession) {
+			pathToExpand = ontologyService.getPathForAccession(accession)
+		}
 
-        //Grab i2b2 credentials from the config file
-        def i2b2Domain = grailsApplication.config.com.recomdata.i2b2.subject.domain
-        def i2b2ProjectID = grailsApplication.config.com.recomdata.i2b2.subject.projectid
-        def i2b2Username = grailsApplication.config.com.recomdata.i2b2.subject.username
-        def i2b2Password = grailsApplication.config.com.recomdata.i2b2.subject.password
+		//code for retrieving a saved comparison
+		pathToExpand = pathToExpand ?: path
 
-        def tokens = i2b2HelperService.getSecureTokensCommaSeparated()
-        def initialaccess = new JSON(i2b2HelperService.getAccess(i2b2HelperService.getRootPathsWithTokens())).toString();
-        render(view: "datasetExplorer", model: [pathToExpand      : pathToExpand,
-                                                admin             : securityService.principal().isAdmin(),
-                                                tokens            : tokens,
-                                                initialaccess     : initialaccess,
-                                                i2b2Domain        : i2b2Domain,
-                                                i2b2ProjectID     : i2b2ProjectID,
-                                                i2b2Username      : i2b2Username,
-                                                i2b2Password      : i2b2Password,
-                                                rwgSearchFilter   : rwgSearchFilter,
-                                                rwgSearchOperators: rwgSearchOperators,
-                                                globalOperator    : globalOperator,
-                                                rwgSearchCategory : searchCategory,
-                                                debug             : params.debug,
-                                                dseOpenedNodes    : dseOpenedNodes,
-                                                dseClosedNodes    : dseClosedNodes])
-    }
+		def rwgSearchFilter = session.rwgSearchFilter
+		if (rwgSearchFilter) {
+			rwgSearchFilter = rwgSearchFilter.join(',,,')
+		}
+		else {
+			rwgSearchFilter = ''
+		}
 
-    def queryPanelsLayout = {
-        render(view: '_queryPanel', model: [])
-    }
+		def rwgSearchOperators = session.rwgSearchOperators
+		if (rwgSearchOperators) {
+			rwgSearchOperators = rwgSearchOperators.join(';')
+		}
+		else {
+			rwgSearchOperators = ''
+		}
+
+		def tokens = i2b2HelperService.getSecureTokensCommaSeparated()
+		def initialaccess = new JSON(i2b2HelperService.getAccess(i2b2HelperService.getRootPathsWithTokens())).toString()
+		render view: 'datasetExplorer', model: [pathToExpand      : pathToExpand,
+		                                        admin             : securityService.principal().isAdmin(),
+		                                        tokens            : tokens,
+		                                        initialaccess     : initialaccess,
+		                                        i2b2Domain        : i2b2Domain,
+		                                        i2b2ProjectID     : i2b2ProjectId,
+		                                        i2b2Username      : i2b2Username,
+		                                        i2b2Password      : i2b2Password,
+		                                        rwgSearchFilter   : rwgSearchFilter,
+		                                        rwgSearchOperators: rwgSearchOperators,
+		                                        globalOperator    : session.globalOperator,
+		                                        rwgSearchCategory : session.searchCategory,
+		                                        debug             : params.debug,
+		                                        dseOpenedNodes    : session.dseOpenedNodes,
+		                                        dseClosedNodes    : session.dseClosedNodes]
+	}
+
+	def queryPanelsLayout() {
+		render view: '_queryPanel'
+	}
 }

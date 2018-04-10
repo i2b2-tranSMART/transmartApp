@@ -1,303 +1,258 @@
 package com.recomdata.transmart.asynchronous.job
 
+import com.recomdata.asynchronous.JobResultsService
 import com.recomdata.transmart.domain.i2b2.AsyncJob
 import grails.transaction.Transactional
-import groovy.json.JsonSlurper
-import org.apache.commons.lang.StringUtils
+import groovy.util.logging.Slf4j
 import org.json.JSONArray
 import org.json.JSONObject
+import org.quartz.Scheduler
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Propagation
 import org.transmart.plugin.shared.SecurityService
-import org.transmartproject.core.users.User
 
+@Slf4j('logger')
 class AsyncJobService {
 
-    boolean transactional = true
+	@Autowired private JobResultsService jobResultsService
+	@Autowired private Scheduler quartzScheduler
+	@Autowired private SecurityService securityService
 
-    def quartzScheduler
-    def jobResultsService
-    def dataExportService
-    SecurityService securityService
+	/**
+	 * The jobs to show in the jobs tab.
+	 */
+	JSONObject getjobs(String jobType = null) {
+		JSONObject result = new JSONObject()
+		JSONArray rows = new JSONArray()
 
-    /**
-     * Method that will get the list of jobs to show in the jobs tab
-     */
-    def getjobs(jobType = null) {
-        JSONObject result = new JSONObject()
-        JSONArray rows = new JSONArray()
+		String userName = securityService.currentUsername()
+		List<AsyncJob> jobResults = AsyncJob.createCriteria().list {
+			like 'jobName', userName + '%'
+			if (jobType) {
+				eq 'jobType', jobType
+			}
+			else {
+				or {
+					ne 'jobType', 'DataExport'
+					isNull 'jobType'
+				}
+			}
+			ge 'lastRunOn', new Date() - 7
+			order 'id', 'desc'
+		}
 
-        def userName = securityService.currentUsername()
-        def jobResults = null
-        def c = AsyncJob.createCriteria()
-        if (StringUtils.isNotEmpty(jobType)) {
-            jobResults = c {
-                like("jobName", "${userName}%")
-                eq("jobType", "${jobType}")
-                ge("lastRunOn", new Date() - 7)
-                order("id", "desc")
-            }
-        } else {
-            jobResults = c {
-                like("jobName", "${userName}%")
-                or {
-                    ne("jobType", "DataExport")
-                    isNull("jobType")
-                }
-                ge("lastRunOn", new Date() - 7)
-                order("id", "desc")
-            }
-        }
-        def m = [:]
-        for (jobResult in jobResults) {
-            m = [:]
-            m["name"] = jobResult.jobName
-            m["type"] = jobResult.jobType
-            m["status"] = jobResult.jobStatus
-            m["runTime"] = jobResult.jobStatusTime
-            m["startDate"] = jobResult.lastRunOn
-            m["viewerURL"] = jobResult.viewerURL
-            m["altViewerURL"] = jobResult.altViewerURL
-            rows.put(m)
-        }
+		for (AsyncJob jobResult in jobResults) {
+			rows.put([name: jobResult.jobName, type: jobResult.jobType, status: jobResult.jobStatus, runTime: jobResult.jobStatusTime,
+						startDate: jobResult.lastRunOn, viewerURL: jobResult.viewerURL, altViewerURL: jobResult.altViewerURL])
+		}
 
-        result.put("success", true)
-        result.put("totalCount", jobResults.size())
-        result.put("jobs", rows)
+		result.put 'success', true
+		result.put 'totalCount', jobResults.size()
+		result.put 'jobs', rows
 
-        return result
-    }
+		result
+	}
 
-    /**
-     * get job info by job name
-     * @param jobName
-     * @return
-     */
-    def getjobbyname(jobName = '') {
+	/**
+	 * get job info by job name
+	 */
+	JSONObject getjobbyname(String jobName = '') {
 
-        JSONObject result = new JSONObject()
-        JSONArray rows = new JSONArray()
-        def jobResults = null
+		JSONObject result = new JSONObject()
+		JSONArray rows = new JSONArray()
+		List<AsyncJob> jobResults = null
+		if (jobName) {
+			jobResults = AsyncJob.findAllByJobNameLike('%' + jobName + '%')
+			for (jobResult in jobResults) {
+				rows.put(name: jobResult.jobName, status: jobResult.jobStatus, runTime: jobResult.runTime,
+						startDate: jobResult.lastRunOn, viewerURL: jobResult.viewerURL,
+						altViewerURL: jobResult.altViewerURL,
+						jobInputsJson: new JSONObject(jobResult.jobInputsJson ?: '{}'))
+			}
+		}
 
-        def c = AsyncJob.createCriteria()
+		result.put 'success', true
+		result.put 'totalCount', jobResults.size()
+		result.put 'jobs', rows
 
-        if (StringUtils.isNotEmpty(jobName)) {
-            jobResults = c {
-                like("jobName", "%${jobName}%")
-            }
-        }
+		result
+	}
 
-        def m = [:]
-        for (jobResult in jobResults) {
-            m = [:]
-            m["name"] = jobResult.jobName
-            m["status"] = jobResult.jobStatus
-            m["runTime"] = jobResult.runTime
-            m["startDate"] = jobResult.lastRunOn
-            m["viewerURL"] = jobResult.viewerURL
-            m["altViewerURL"] = jobResult.altViewerURL
-            m["jobInputsJson"] = new JSONObject(jobResult.jobInputsJson ?: "{}")
-            rows.put(m)
-        }
+	/**
+	 * Retrieve the job results (HTML) stored in the JOB_RESULTS field for Haploview and Survival Analysis.
+	 */
+	JSONObject getjobresults(String jobName) {
+		JSONObject result = new JSONObject()
+		result.put 'jobResults', AsyncJob.findByJobName(jobName).results
+		result
+	}
 
-        result.put("success", true)
-        result.put("totalCount", jobResults.size())
-        result.put("jobs", rows)
+	/**
+	 * Method that will create the new asynchronous job name
+	 * Current methodology is username-jobtype-ID from sequence generator
+	 */
+	JSONObject createnewjob(Map params) {
+		String userName = securityService.currentUsername()
+		String jobStatus = 'Started'
 
-        return result
+		AsyncJob newJob = new AsyncJob(lastRunOn: new Date())
+		newJob.save()
 
-    }
+		String jobName = params.jobName
+		if (!jobName) {
+			StringBuilder sb = new StringBuilder(userName)
+			sb << '-'
+			if (params.jobType) {
+				sb << params.jobType
+			}
+			sb << '-' << newJob.id
+			jobName = sb.toString()
+		}
+		newJob.jobName = jobName
+		newJob.jobType = params.jobType
+		newJob.jobStatus = jobStatus
+		newJob.jobInputsJson = new JSONObject(params).toString()
+		newJob.save()
 
-    /**
-     * Called to retrieve the job results (HTML) stored in the JOB_RESULTS field for Haploview and Survival Analysis
-     */
-    def getjobresults(jobName) {
-        JSONObject result = new JSONObject()
-        def jobResults = AsyncJob.findByJobName(jobName).results
-        result.put("jobResults", jobResults)
-        return result
-    }
+		jobResultsService[jobName] = [:]
+		updateStatus jobName, jobStatus
 
-    /**
-     * Method that will create the new asynchronous job name
-     * Current methodology is username-jobtype-ID from sequence generator
-     */
-    def createnewjob(params) {
-        def userName = securityService.currentUsername()
-        def jobStatus = "Started"
+		logger.debug 'Sending {} back to the client', jobName
+		JSONObject result = new JSONObject()
+		result.put 'jobName', jobName
+		result.put 'jobStatus', jobStatus
 
-        def newJob = new AsyncJob(lastRunOn: new Date())
-        newJob.save()
+		result
+	}
 
-        def jobName = params?.jobName
-        if (StringUtils.isEmpty(jobName)) {
-            def jobNameBuf = new StringBuffer(userName)
-            jobNameBuf.append('-')
-            if (StringUtils.isNotEmpty(params.jobType)) jobNameBuf.append(params.jobType)
-            jobNameBuf.append('-').append(newJob.id)
-            jobName = jobNameBuf.toString()
-        }
-        newJob.jobName = jobName
-        newJob.jobType = params?.jobType
-        newJob.jobStatus = jobStatus
-        newJob.jobInputsJson = new JSONObject(params).toString()
-        newJob.save()
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	def updateJobInputs(final String jobName, final Map params) {
+		assert jobName
+		assert params
 
-        jobResultsService[jobName] = [:]
-        updateStatus(jobName, jobStatus)
+		AsyncJob job = AsyncJob.findByJobName(jobName)
+		assert "${jobName} job is not found.", job
 
-        log.debug("Sending ${jobName} back to the client")
-        JSONObject result = new JSONObject()
-        result.put("jobName", jobName)
-        result.put("jobStatus", jobStatus)
+		job.jobInputsJson = new JSONObject(params).toString()
+		job.save(flush: true)
+	}
 
-        return result;
-    }
+	/**
+	 * Cancel a running job
+	 */
+	JSONObject canceljob(String jobName, String group = null) {
+		String jobStatus = 'Cancelled'
+		logger.debug 'Attempting to delete {} from the Quartz scheduler', jobName
+		boolean result = quartzScheduler.deleteJob(jobName, group)
+		logger.debug 'Deletion attempt successful? {}', result
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    def updateJobInputs(final String jobName, final Map params) {
-        assert jobName
-        assert params
+		updateStatus jobName, jobStatus
 
-        def job = AsyncJob.findByJobName(jobName)
-        assert "${jobName} job is not found.", job
+		new JSONObject(jobName: jobName)
+	}
 
-        job.jobInputsJson = new JSONObject(params).toString()
-        job.save(flush: true)
-    }
+	/**
+	 * Repeatedly called by datasetExplorer.js to get the job status and results
+	 */
+	JSONObject checkJobStatus(String jobName, String jobType = null) {
+		JSONObject result = new JSONObject()
+		if (!jobType) {
+			jobType = jobName.split('-')[1]
+		}
 
-    /**
-     * Method called that will cancel a running job
-     */
-    def canceljob(jobName, group = null) {
-        def jobStatus = "Cancelled"
-        def result = null
-        log.debug("Attempting to delete ${jobName} from the Quartz scheduler")
-        result = quartzScheduler.deleteJob(jobName, group)
-        log.debug("Deletion attempt successful? ${result}")
+		String jobStatus = jobResultsService[jobName]['Status']
+		def statusIndex = null
+		if (jobResultsService[jobName]['StatusList'] != null) {
+			statusIndex = jobResultsService[jobName]['StatusList'].indexOf(jobStatus)
+		}
+		Exception jobException = jobResultsService[jobName]['Exception']
+		String viewerUrl = jobResultsService[jobName]['ViewerURL']
+		String altViewerUrl = jobResultsService[jobName]['AltViewerURL']
+		String jobResults = jobResultsService[jobName]['Results']
+		String errorType = ''
+		if (viewerUrl != null) {
+			def jobResultType = jobResultsService[jobName]['resultType']
+			if (jobResultType != null) {
+				result.put 'resultType', jobResultType
+			}
+			logger.debug '{} is being sent to the client', viewerUrl
+			result.put 'jobViewerURL', viewerUrl
+			if (altViewerUrl != null) {
+				logger.debug '{} for Comparative Marker Selection', altViewerUrl
+				result.put 'jobAltViewerURL', altViewerUrl
+			}
+			jobStatus = 'Completed'
+		}
+		else if (jobResults != null) {
+			result.put 'jobResults', jobResults
+			result.put 'resultType', jobType
+			jobStatus = 'Completed'
+		}
+		else if (jobException != null) {
+			logger.warn 'An exception was thrown, passing this back to the user', jobException
+			result.put 'jobException', jobException
+			jobStatus = 'Error'
+			errorType = 'data'
+		}
+		if (statusIndex != null) {
+			result.put 'statusIndexExists', true
+			result.put 'statusIndex', statusIndex
+		}
+		else {
+			result.put 'statusIndexExists', false
+		}
 
-        updateStatus(jobName, jobStatus)
+		updateStatus jobName, jobStatus, viewerUrl, altViewerUrl, jobResults
 
-        JSONObject jsonResult = new JSONObject()
-        jsonResult.put("jobName", jobName)
-        return jsonResult
-    }
+		result.put 'jobStatus', jobStatus
+		result.put 'errorType', errorType
+		result.put 'jobName', jobName
 
-    /**
-     * Repeatedly called by datasetExplorer.js to get the job status and results
-     */
-    def checkJobStatus(jobName, jobType = null) {
-        JSONObject result = new JSONObject()
-        if (StringUtils.isEmpty(jobType)) {
-            def jobNameArray = jobName.split("-")
-            jobType = jobNameArray[1]
-        }
-        def jobStatus = jobResultsService[jobName]["Status"]
-        def statusIndex = null
-        if (jobResultsService[jobName]["StatusList"] != null) {
-            statusIndex = jobResultsService[jobName]["StatusList"].indexOf(jobStatus)
-        }
-        def jobException = jobResultsService[jobName]["Exception"]
-        def viewerURL = jobResultsService[jobName]["ViewerURL"]
-        def altViewerURL = jobResultsService[jobName]["AltViewerURL"]
-        def jobResults = jobResultsService[jobName]["Results"]
-        def errorType = ""
-        if (viewerURL != null) {
-            def jobResultType = jobResultsService[jobName]["resultType"]
-            if (jobResultType != null) result.put("resultType", jobResultType)
-            log.debug("${viewerURL} is being sent to the client")
-            result.put("jobViewerURL", viewerURL)
-            if (altViewerURL != null) {
-                log.debug("${altViewerURL} for Comparative Marker Selection")
-                result.put("jobAltViewerURL", altViewerURL)
-            }
-            jobStatus = "Completed"
-        } else if (jobResults != null) {
-            result.put("jobResults", jobResults)
-            result.put("resultType", jobType)
-            jobStatus = "Completed"
-        } else if (jobException != null) {
-            log.warn("An exception was thrown, passing this back to the user")
-            log.warn(jobException)
-            result.put("jobException", jobException)
-            jobStatus = "Error"
-            errorType = "data"
-        }
-        if (statusIndex != null) {
-            result.put('statusIndexExists', true)
-            result.put("statusIndex", statusIndex)
-        } else {
-            result.put('statusIndexExists', false)
-        }
+		result
+	}
 
-        updateStatus(jobName, jobStatus, viewerURL, altViewerURL, jobResults)
+	/**
+	 * Helper to update the status of the job and log it
+	 *
+	 * @param jobName - the unique job name
+	 * @param status - the new status
+	 * @param viewerUrl - optional, store the viewer URL if the job is completed
+	 * @param altViewerUrl - optional, store the alternate viewer URL for CMS heatmaps
+	 * @param results - optional, store the results from survival analysis, haploview, etc.
+	 *
+	 * @return true if the job was cancelled
+	 */
+	@Transactional
+	boolean updateStatus(String jobName, String status, String viewerUrl = null,
+	                     String altViewerUrl = null, String results = null) {
+		boolean cancelled = false
+		String jobId = jobName.split('-')[-1]
 
-        //log.debug("Returning status: ${jobStatus} for ${jobName}")
-        result.put("jobStatus", jobStatus)
-        result.put("errorType", errorType)
-        result.put("jobName", jobName)
+		if (jobResultsService[jobName]['Status'] == 'Cancelled') {
+			logger.warn '{} has been cancelled', jobName
+			cancelled = true
+		}
+		else {
+			jobResultsService[jobName]['Status'] = status
+		}
+		//If the job isn't already cancelled, update the job info.
+		if (!cancelled) {
+			AsyncJob asyncJob = AsyncJob.get(jobId)
+			asyncJob.jobStatus = status
+			if (viewerUrl) {
+				asyncJob.viewerURL = viewerUrl
+			}
+			if (altViewerUrl && asyncJob.altViewerURL != null) {
+				asyncJob.altViewerURL = altViewerUrl
+			}
+			if (results) {
+				asyncJob.results = results
+			}
+			jobResultsService[jobName]['ViewerURL'] = viewerUrl
+			//We need to flush so that the value doesn't overwrite cancelled when the controller finishes.
+			asyncJob.save(flush: true)
+		}
 
-        return result
-    }
-
-    /**
-     * Helper to update the status of the job and log it
-     *
-     * @param jobName - the unique job name
-     * @param status - the new status
-     * @param viewerURL - optional, store the viewer URL if the job is completed
-     * @param altViewerURL - optional, store the alternate viewer URL for CMS heatmaps
-     * @param results - optional, store the results from survival analysis, haploview, etc.
-     *
-     * @return true if the job was cancelled
-     */
-    def updateStatus(jobName, status, viewerURL = null, altViewerURL = null, results = null) {
-        def retValue = false   // true if the job was cancelled
-        def jobNameArray = jobName.split("-")
-        def jobID = jobNameArray[-1]
-
-        //log.debug("Checking to see if the user cancelled the job")
-        if (jobResultsService[jobName]["Status"] == "Cancelled") {
-            log.warn("${jobName} has been cancelled")
-            retValue = true
-        } else {
-            jobResultsService[jobName]["Status"] = status
-        }
-        //If the job isn't already cancelled, update the job info.
-        if (!retValue) {
-            def asyncJob = AsyncJob.get(Long.parseLong(jobID))
-
-            // TimeDuration td = TimeCategory.minus(new Date(), asyncJob.lastRunOn)
-            //log.debug("Job has been running for ${td}}")
-            //asyncJob.runTime = td
-            asyncJob.jobStatus = status
-            if (viewerURL && viewerURL != '') asyncJob.viewerURL = viewerURL
-            if (altViewerURL && altViewerURL != '' && asyncJob.altViewerURL != null) asyncJob.altViewerURL = altViewerURL
-            if (results && results != '') asyncJob.results = results
-            jobResultsService[jobName]["ViewerURL"] = viewerURL
-            //We need to flush so that the value doesn't overwrite cancelled when the controller finishes.
-            asyncJob.save(flush: true)
-        }
-
-        return retValue
-    }
-
-    boolean isUserAllowedToExportResults(final User user, final String jobName) {
-        assert user
-        assert jobName
-
-        def job = AsyncJob.findByJobName(jobName)
-        assert "${jobName} is not found.", job
-
-        job.jobInputsJson
-        def jobInputsJsonObj = new JsonSlurper().parseText(job.jobInputsJson)
-
-        List<Long> resultInstanceIds = []
-        int subsetNumber = 1
-        while (jobInputsJsonObj['result_instance_id' + subsetNumber]) {
-            resultInstanceIds << (jobInputsJsonObj['result_instance_id' + subsetNumber] as Long)
-            subsetNumber += 1
-        }
-        dataExportService.isUserAllowedToExport(user, resultInstanceIds)
-    }
-
+		cancelled
+	}
 }

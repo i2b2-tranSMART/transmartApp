@@ -1,4 +1,5 @@
 import com.recomdata.search.query.LiteratureDataQuery
+import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap
 import org.transmart.GlobalFilter
 import org.transmart.LiteratureFilter
 import org.transmart.SearchFilter
@@ -44,13 +45,15 @@ class LiteratureQueryService {
      *
      * @return the results
      */
-    def executeLitQueryData(String table, LinkedHashMap namedParams, GlobalFilter gfilter, params, LiteratureDataQuery query) {
+    def executeLitQueryData(String table, LinkedHashMap namedParams, GlobalFilter gfilter,
+                            GrailsParameterMap params, LiteratureDataQuery query) {
         if (gfilter == null || gfilter.isTextOnly()) {
             return []
         }
 
-        if (params != null) {
-            params = globalFilterService.createPagingParamMap(params)
+        Map pagingParams
+        if (params) {
+            pagingParams = globalFilterService.createPagingParamMap(params)
         }
 
         query.addSelect("data")
@@ -60,13 +63,11 @@ class LiteratureQueryService {
         }
         query.createGlobalFilterCriteria(gfilter);
 
-        def results = []
-        if (params != null) {
-            results = Literature.executeQuery(query.generateSQL(), namedParams, params)
+        if (pagingParams) {
+            Literature.executeQuery(query.generateSQL(), namedParams, pagingParams)
         } else {
-            results = Literature.executeQuery(query.generateSQL(), namedParams)
+            Literature.executeQuery(query.generateSQL(), namedParams)
         }
-        return results
     }
 
     /**
@@ -118,16 +119,17 @@ class LiteratureQueryService {
      *
      * @return the summary results
      */
-    def executeLitSumQueryData(table, LinkedHashMap namedParams, sfilter, params, LiteratureDataQuery query) {
+    def executeLitSumQueryData(table, LinkedHashMap namedParams, sfilter,
+                               GrailsParameterMap params, LiteratureDataQuery query) {
         GlobalFilter gfilter = sfilter.globalFilter
         LiteratureFilter litFilter = sfilter.litFilter
         if (gfilter == null || gfilter.isTextOnly()) {
             return []
         }
 
-        def sort = params?.sort != null ? params.sort : 'dataType'
-        def dir = params?.dir != null ? params.dir : 'ASC'
-        params = globalFilterService.createPagingParamMap(params)
+        def sort = params?.sort ?: 'dataType'
+        def dir = params?.dir ?: 'ASC'
+        Map pagingParams = globalFilterService.createPagingParamMap(params)
 
         query.setDistinct = true
         query.addSelect("sumdata")
@@ -149,7 +151,7 @@ class LiteratureQueryService {
             query.addTable("JOIN data.diseases data_dis2")
         }
         query.createGlobalFilterCriteria(gfilter);
-        return Literature.executeQuery(query.generateSQL(), namedParams, params)
+        Literature.executeQuery(query.generateSQL(), namedParams, pagingParams)
     }
 
     /*************************************************************************

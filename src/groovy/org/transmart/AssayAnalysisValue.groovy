@@ -1,41 +1,41 @@
 package org.transmart
 
-
+import groovy.transform.CompileStatic
+import org.transmart.biomart.BioAssayAnalysisData
 import org.transmart.biomart.BioMarker
 
 /**
- * @author $Author: mmcduffie $
- * @version $Revision: 9178 $
- * $Id: AssayAnalysisValue.groovy 9178 2011-08-24 13:50:06Z mmcduffie $
- *
+ * @author mmcduffie
  */
-public class AssayAnalysisValue implements Comparable {
+@CompileStatic
+class AssayAnalysisValue implements Comparable<AssayAnalysisValue> {
 
-    def analysisData
-    BioMarker bioMarker
+	BioAssayAnalysisData analysisData
+	BioMarker bioMarker
 
-    // indicator for the up/down regulation (i.e. gene lists and signatures). If null implies
-    // we don't care about the up/down regulation such as for a pathway
-    Double valueMetric
+	// indicator for the up/down regulation (i.e. gene lists and signatures). If null implies
+	// we don't care about the up/down regulation such as for a pathway
+	Double valueMetric
 
-    /**
-     * comparable interface implementation, sort on NPV
-     */
-    public int compareTo(Object obj) {
-        // verify correct object type
-        if (!(obj instanceof AssayAnalysisValue)) return -1
+	/**
+	 * comparable interface implementation, sort on NPV
+	 */
+	int compareTo(AssayAnalysisValue compare) {
+		Double thisScore = analysisData.teaNormalizedPValue
+		Double compScore = compare.analysisData.teaNormalizedPValue
 
-        // compare objects
-        AssayAnalysisValue compare = (AssayAnalysisValue) obj;
-        Double thisScore = analysisData.teaNormalizedPValue
-        Double compScore = compare.analysisData.teaNormalizedPValue
-
-        // handle invalid values
-        if (compScore == null && thisScore != null) return 1;
-        if (thisScore == null && compScore != null) return -1;
-        if (thisScore == null && compScore == null) return 0;
-
-        return (thisScore.compareTo(compScore))
-    }
-
+		// handle invalid values
+		if (compScore == null && thisScore != null) {
+			1
+		}
+		else if (thisScore == null && compScore != null) {
+			-1
+		}
+		else  if (thisScore == null && compScore == null) {
+			0
+		}
+		else {
+			thisScore <=> compScore
+		}
+	}
 }

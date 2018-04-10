@@ -3,253 +3,246 @@
  * @author $Author: jliu $
  * @version $Revision: 10280 $
  */
+
 import com.recomdata.util.DomainObjectExcelHelper
 import grails.converters.JSON
+import groovy.util.logging.Slf4j
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.transmart.AnalysisResult
+import org.transmart.ExpAnalysisResultSet
+import org.transmart.SearchFilter
 import org.transmart.SearchResult
+import org.transmart.TrialAnalysisResult
+import org.transmart.TrialFilter
 import org.transmart.biomart.BioAssayAnalysis
 import org.transmart.biomart.ClinicalTrial
+import org.transmart.biomart.Compound
+import org.transmart.biomart.Disease
 import org.transmart.biomart.Experiment
+import org.transmart.plugin.shared.UtilService
 import org.transmart.searchapp.SearchKeyword
 
+@Slf4j('logger')
 class TrialController {
 
-    def trialQueryService
-    def heatmapService
-    def filterQueryService
-    def analysisDataExportService
-    def searchService
-    def clinicalTrialAnalysisTEAService
+	@Autowired private AnalysisDataExportService analysisDataExportService
+	@Autowired private ClinicalTrialAnalysisTEAService clinicalTrialAnalysisTEAService
+	@Autowired private FilterQueryService filterQueryService
+	@Autowired private SearchService searchService
+	@Autowired private TrialQueryService trialQueryService
+	@Autowired private UtilService utilService
 
-    def showTrialFilter = {
-        def contentType = BioAssayAnalysis.executeQuery("SELECT DISTINCT assayDataType FROM org.transmart.biomart.BioAssayAnalysis WHERE assayDataType IS NOT NULL")
-        if (contentType == null) contentType = []
+	@Value('${com.recomdata.search.paginate.max}')
+	private int paginateMax
 
-        def diseases = filterQueryService.trialDiseaseFilter(session.searchFilter);
-        def compounds = filterQueryService.trialCompoundFilter(session.searchFilter);
-        def phases = filterQueryService.trialPhaseFilter();
-        def studyTypes = filterQueryService.studyTypeFilter();
-        def studyDesigns = filterQueryService.studyDesignFilter("Clinical Trial");
+	@Value('${com.recomdata?.view.studyview:_clinicaltrialdetail}')
+	private String studyview
 
-        render(template: 'trialFilter', model: [studyPlatform: contentType,
-                                                diseases     : diseases,
-                                                compounds    : compounds,
-                                                phases       : phases,
-                                                studyTypes   : studyTypes,
-                                                studyDesigns : studyDesigns])
-    }
+	def showTrialFilter() {
+		List<String> contentType = BioAssayAnalysis.executeQuery('''
+				SELECT DISTINCT assayDataType
+				FROM org.transmart.biomart.BioAssayAnalysis
+				WHERE assayDataType IS NOT NULL''')
 
-    def filterTrial = {
-        // selected trials before this post
-        def befCTrials = session.searchFilter.trialFilter.selectedtrials;
+		List<Disease> diseases = filterQueryService.trialDiseaseFilter(sessionSearchFilter())
+		List<Compound> compounds = filterQueryService.trialCompoundFilter(sessionSearchFilter())
+		List<String> phases = filterQueryService.trialPhaseFilter()
+		List<String> studyTypes = filterQueryService.studyTypeFilter()
+		List<String> studyDesigns = filterQueryService.studyDesignFilter('Clinical Trial')
 
-        bindData(session.searchFilter.trialFilter, params)
-        def ctrials = params.checked;
-        session.searchFilter.trialFilter.selectedtrials = []
-        if (ctrials != null && ctrials.length() > 0) {
-            def allselected = ctrials.split(",").toList()
-            if (!allselected.contains("EmptyTrial")) { // EmptyTrial indicates All has been checked
-                session.searchFilter.trialFilter.selectedtrials.addAll(allselected)
-            }
-        } else {
-            // session.searchFilter.trialFilter.selectedtrials.add("-1")
+		render template: 'trialFilter', model: [studyPlatform: contentType,
+		                                        diseases     : diseases,
+		                                        compounds    : compounds,
+		                                        phases       : phases,
+		                                        studyTypes   : studyTypes,
+		                                        studyDesigns : studyDesigns]
+	}
 
-            // selecting no trials does not make sense since the result is always nothing!
-            // In this case, assume the previous search trials will be used (usually this happens when user clicks filter button
-            // before the tree has populated with trials)
-            session.searchFilter.trialFilter.selectedtrials = befCTrials;
-        }
+	def filterTrial(String checked) {
+		// selected trials before this post
+		TrialFilter trialFilter = sessionSearchFilter().trialFilter
+		List<String> befCTrials = trialFilter.selectedtrials
 
-        log.info "filterTrial:" + session.searchFilter.trialFilter.selectedtrials
-        def sResult = new SearchResult()
+		bindData trialFilter, params
+		trialFilter.selectedtrials = []
+		if (checked) {
+			List<String> allselected = checked.split(',') as List
+			if (!allselected.contains('EmptyTrial')) { // EmptyTrial indicates All has been checked
+				trialFilter.selectedtrials.addAll allselected
+			}
+		}
+		else {
+			// selecting no trials does not make sense since the result is always nothing!
+			// In this case, assume the previous search trials will be used (usually this happens when user clicks filter button
+			// before the tree has populated with trials)
+			trialFilter.selectedtrials = befCTrials
+		}
 
-        session.searchFilter.datasource = "trial"
-        searchService.doResultCount(sResult, session.searchFilter)
-        render(view: '/search/list', model: [searchresult: sResult, page: false])
-    }
+		logger.info 'filterTrial:{}', trialFilter.selectedtrials
+		SearchResult sResult = new SearchResult()
 
-    def datasourceTrial = {
-        def sResult = new SearchResult()
-        def max = grailsApplication.config.com.recomdata.search.paginate.max
-        def paramMap = searchService.createPagingParamMap(params, max, 0)
-        sResult.trialCount = trialQueryService.countTrial(session.searchFilter)
-        def trialAnalysisCount = trialQueryService.countAnalysis(session.searchFilter)
-        sResult.result = trialQueryService.queryTrial(false, session.searchFilter, paramMap)
-        sResult.result.analysisCount = trialAnalysisCount;
-        sResult.result.expCount = sResult.trialCount;
-        render(template: 'trialResult', model: [searchresult: sResult, page: false])
-    }
+		sessionSearchFilter().datasource = 'trial'
+		searchService.doResultCount sResult, sessionSearchFilter()
 
-    def datasourceTrialTEA = {
-        def sResult = new SearchResult()
-        def max = grailsApplication.config.com.recomdata.search.paginate.max
-        def paramMap = searchService.createPagingParamMap(params, max, 0)
-        sResult.trialCount = trialQueryService.countTrial(session.searchFilter)
-        //sResult.result=trialQueryService.queryTrial(false, session.searchFilter, paramMap)
-        //sResult.trialCount =clinicalTrialAnalysisTEAService.countAnalysis(session.searchFilter)
-        sResult.result = clinicalTrialAnalysisTEAService.queryExpAnalysis(session.searchFilter, paramMap)
-        sResult.result.expCount = sResult.trialCount;
-        render(template: 'trialResult', model: [searchresult: sResult, page: false])
-    }
+		render view: '/search/list', model: [searchresult: sResult, page: false]
+	}
 
-    def showAnalysis = {
-        def analysis = BioAssayAnalysis.get(params.id)
-        render(template: 'analysisdetail', model: [analysis: analysis])
-    }
+	def datasourceTrial() {
+		Map<String, ?> paramMap = searchService.createPagingParamMap(params, paginateMax, 0)
+		SearchResult sResult = new SearchResult(
+				trialCount: trialQueryService.countTrial(sessionSearchFilter()),
+				result: trialQueryService.queryTrial(false, sessionSearchFilter(), paramMap))
+		sResult.result.analysisCount = trialQueryService.countAnalysis(sessionSearchFilter())
+		sResult.result.expCount = sResult.trialCount
 
-    def expDetail = {
-        def trialid = Long.valueOf(String.valueOf(params.id))
-        render(template: 'clinicaltrialdetail', model: [clinicalTrial: ClinicalTrial.get(trialid), search: 1])
-    }
+		render template: 'trialResult', model: [searchresult: sResult, page: false]
+	}
 
-    /**
-     * Renders the trial details in the pop up window when a user right clicks a trial in datasetExplorer
-     */
-    def trialDetailByTrialNumber = {
-        def trialNumber = params['id'].toUpperCase()
-        def conceptType = params['conceptType']
-        def istrial = true;
-        def exp = ClinicalTrial.findByTrialNumber(trialNumber);
-        if (exp == null) {
-            exp = Experiment.findByAccession(trialNumber);
-            istrial = false;
-        }
-        //	log.info("test encode:"+URLEncoder.encode("https://sss.ss/ge/pub/220202"));
+	def datasourceTrialTEA() {
+		SearchResult sResult = new SearchResult(
+				trialCount: trialQueryService.countTrial(sessionSearchFilter()),
+				result: clinicalTrialAnalysisTEAService.queryExpAnalysis(sessionSearchFilter()))
+		sResult.result.expCount = sResult.trialCount
+		render template: 'trialResult', model: [searchresult: sResult, page: false]
+	}
 
-        def skid = null;
-        def sk = SearchKeyword.findByKeyword(trialNumber);
-        if (sk != null) {
-            skid = sk.id
-        }
-        if (exp != null) {
+	def showAnalysis(BioAssayAnalysis analysis) {
+		render template: 'analysisdetail', model: [analysis: analysis]
+	}
 
-            if (istrial) {
-                def trialview = grailsApplication.config.com.recomdata?.view?.studyview ?: "_clinicaltrialdetail";
+	def expDetail(ClinicalTrial clinicalTrial) {
+		render template: 'clinicaltrialdetail', model: [clinicalTrial: clinicalTrial, search: 1]
+	}
 
-                if (trialview.startsWith("_")) {
-                    render(template: trialview.substring(1), model: [clinicalTrial: exp, searchId: skid])
-                } else {
-                    render(view: trialview, model: [clinicalTrial: exp, searchId: skid])
-                }
+	/**
+	 * Renders the trial details in the pop up window when a user right clicks a trial in datasetExplorer
+	 */
+	def trialDetailByTrialNumber() {
+		String trialNumber = params.id.toUpperCase()
+		boolean istrial = true
+		Experiment exp = ClinicalTrial.findByTrialNumber(trialNumber)
+		if (exp == null) {
+			exp = Experiment.findByAccession(trialNumber)
+			istrial = false
+		}
 
-            } else {
+		SearchKeyword sk = SearchKeyword.findByKeyword(trialNumber)
+		Long skid = sk?.id
 
-                render(template: '/experiment/expDetail', model: [experimentInstance: exp, searchId: skid])
-            }
+		if (exp) {
+			if (istrial) {
+				if (studyview.startsWith('_')) {
+					render template: studyview.substring(1), model: [clinicalTrial: exp, searchId: skid]
+				}
+				else {
+					render view: studyview, model: [clinicalTrial: exp, searchId: skid]
+				}
+			}
+			else {
+				render template: '/experiment/expDetail', model: [experimentInstance: exp, searchId: skid]
+			}
+		}
+		else {
+			logger.warn 'Experiment is null, indicating that to the user...'
+			render view: '/experiment/noresults'
+		}
+	}
 
+	def getTrialAnalysis(Long id) {
+		render template: 'trialAnalysis', model: [
+				trialresult: trialQueryService.queryTrialAnalysis(id, sessionSearchFilter())]
+	}
 
-        } else {
-            log.warn "Experiment is null, indicating that to the user..."
-            render(view: '/experiment/noresults')
-        }
-    }
+	def trialFilterJSON() {
+		// need to mark  trial with data
+		// tmp solution
 
-    def getTrialAnalysis = {
-        def trialid = params.id
-        def tResult = trialQueryService.queryTrialAnalysis(trialid, session.searchFilter)
-        render(template: 'trialAnalysis', model: [trialresult: tResult])
-    }
+		boolean filtercheck = !sessionSearchFilter().trialFilter.newFilter
+		List<String> selectedTrials = sessionSearchFilter().trialFilter.selectedtrials
+		boolean rootcheck = filtercheck ? selectedTrials.contains('EmptyTrial') : true
 
-    def trialFilterJSON = {
-        // need to mark  trial with data
-        // tmp solution
+		List<Object[]> triallist = ClinicalTrial.executeQuery('''
+				SELECT b.id, b.trialNumber, b.title
+				FROM org.transmart.biomart.ClinicalTrial b, org.transmart.searchapp.SearchKeyword s
+				WHERE s.bioDataId=b.id
+				ORDER BY b.trialNumber''')
 
-        def triallist = ClinicalTrial.executeQuery("SELECT b.id, b.trialNumber, b.title FROM org.transmart.biomart.ClinicalTrial b, org.transmart.searchapp.SearchKeyword s  WHERE s.bioDataId=b.id ORDER BY b.trialNumber");
+		List<Map> ctriallist = []
+		for (Object[] trial in triallist) {
+			boolean c = true
+			long trialid = trial[0]
+			String trialnum = trial[1]
+			String  trialtitle = trial[2]
+			if (filtercheck) {
+				c = selectedTrials.contains(String.valueOf(trialid))
+			}
 
-        //		    def triallist = org.transmart.biomart.ClinicalTrial.listOrderByTrialNumber();
-        boolean filtercheck = !session.searchFilter.trialFilter.newFilter;
+			String tooltip = trialtitle == null ? trialnum : trialtitle
+			String name = trialnum
+			if (trialtitle != null) {
+				int maxSize = 95
+				int len = trialtitle.length() > maxSize ? maxSize : trialtitle.length()
+				if (len < maxSize) {
+					name += ' - ' + trialtitle.substring(0, len)
+				}
+				else {
+					name += ' - ' + trialtitle.substring(0, len) + '...'
+				}
+			}
+			ctriallist << [text: name, id: String.valueOf(trialid), leaf: true, checked: c,
+			               uiProvider: 'Ext.tree.CheckboxUI', qtip: tooltip]
+		}
+		sessionSearchFilter().trialFilter.newFilter = false
 
-        Set selectedTrials = session.searchFilter.trialFilter.selectedtrials;
-        log.info selectedTrials
-        boolean rootcheck = true;
-        if (filtercheck)
-            rootcheck = selectedTrials.contains("EmptyTrial")
-        def ctriallist = []
-        for (trial in triallist) {
-            boolean c = true;
-            def trialid = trial[0];
-            def trialnum = trial[1];
-            def trialtitle = trial[2];
-            if (filtercheck) {
-                c = selectedTrials.contains(String.valueOf(trialid))
-            }
+		render([[text      : 'All Trials',
+		         id        : 'EmptyTrial',
+		         leaf      : false,
+		         uiProvider: 'Ext.tree.CheckboxUI',
+		         checked   : rootcheck,
+		         qtip      : 'All trials',
+		         children  : ctriallist]] as JSON)
+	}
 
-            def tooltip = trialtitle == null ? (trialnum) : (trialtitle)
-            def name = trialnum
-            if (trialtitle != null) {
-                int maxSize = 95;
-                int len = trialtitle.length() > maxSize ? maxSize : trialtitle.length()
-                if (len < maxSize) {
-                    name += " - " + trialtitle.substring(0, len)
-                } else {
-                    name += " - " + trialtitle.substring(0, len) + "..."
-                }
-            }
-            ctriallist.add([text: name, id: String.valueOf(trialid), leaf: true, checked: c, uiProvider: 'Ext.tree.CheckboxUI', qtip: tooltip])
-        }
-        session.searchFilter.trialFilter.newFilter = false;
+	def downloadanalysisexcel(BioAssayAnalysis geneexpr) {
+		String filename = geneexpr.shortDescription.replace('<', '-').replace('>', '-')
+		filename = filename.replace(':', '-').replace('"', '-').replace('/', '-')
+		filename = filename.replace('\\', '-').replace('?', '-').replace('*', '-')
+		if (filename.length() > 50) {
+			filename = filename.substring(0, 50)
+		}
+		filename += '.xls'
+		utilService.sendDownload response, 'application/vnd.ms-excel; charset=utf-8', filename,
+				analysisDataExportService.renderAnalysisInExcel(geneexpr)
+	}
 
-        def trials = [
-                [text      : 'All Trials',
-                 id        : 'EmptyTrial',
-                 leaf      : false,
-                 uiProvider: 'Ext.tree.CheckboxUI',
-                 checked   : rootcheck,
-                 qtip      : 'All trials',
-                 children  : ctriallist]
-        ]
-        def v = trials as JSON
-        render(v)
-    }
+	// download search result to GPE file for Pathway Studio
+	def downloadanalysisgpe(BioAssayAnalysis analysis) {
+		utilService.sendDownload response, null, 'expression.gpe',
+				analysisDataExportService.renderAnalysisInExcel(analysis)
+	}
 
-    def downloadanalysisexcel = {
+	def downloadStudy() {
+		logger.info 'Downloading the Trial Study view'
+		Map<ClinicalTrial, List<AnalysisResult>> trialMap = [:]
 
-        def geneexpr = BioAssayAnalysis.get(Long.parseLong(params.id.toString()))
-        def filename = geneexpr.shortDescription.replace("<", "-").replace(">", "-")
-        filename = filename.replace(":", "-").replace("\"", "-").replace("/", "-")
-        filename = filename.replace("\\", "-").replace("?", "-").replace("*", "-")
-        if (filename.length() > 50) {
-            filename = filename.substring(0, 50)
-        }
-        filename += ".xls"
-        response.setHeader("Content-Type", "application/vnd.ms-excel; charset=utf-8")
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"")
-        response.setHeader("Cache-Control", "must-revalidate, post-check=0, pre-check=0")
-        response.setHeader("Pragma", "public");
-        response.setHeader("Expires", "0");
-        //log.info "before call"
-        response.outputStream << analysisDataExportService.renderAnalysisInExcel(geneexpr)
-    }
+		ExpAnalysisResultSet result = trialQueryService.queryTrial(false, sessionSearchFilter(), null)
+		for (TrialAnalysisResult tar in result.expAnalysisResults) {
+			trialMap[tar.trial] = trialQueryService.queryTrialAnalysis(tar.trial.id, sessionSearchFilter()).analysisResultList
+		}
 
-    // download search result to GPE file for Pathway Studio
-    def downloadanalysisgpe = {
-        response.setHeader("Content-Disposition", "attachment; filename=\"expression.gpe\"")
-        response.setHeader("Cache-Control", "must-revalidate, post-check=0, pre-check=0")
-        response.setHeader("Pragma", "public");
-        response.setHeader("Expires", "0");
-        def analysis = BioAssayAnalysis.get(Long.parseLong(params.id.toString()))
-        response.outputStream << analysisDataExportService.renderAnalysisInExcel(analysis)
-    }
+		DomainObjectExcelHelper.downloadToExcel response, 'trialstudyviewexport.xls',
+				analysisDataExportService.createExcelTrialStudyView(new SearchResult(result: result), trialMap)
+	}
 
-    def downloadStudy = {
-        log.info("Downloading the Trial Study view");
-        def sResult = new SearchResult()
-        def trialRS = null
-        def trialMap = [:]
+	def downloadAnalysisTEA() {
+		logger.info 'Downloading the Trial TEA Analysis view'
+		DomainObjectExcelHelper.downloadToExcel response, 'trialteaviewexport.xls',
+				analysisDataExportService.createExcelTrialTEAView(
+						new SearchResult(result: clinicalTrialAnalysisTEAService.queryExpAnalysis(sessionSearchFilter())))
+	}
 
-        sResult.result = trialQueryService.queryTrial(false, session.searchFilter, null)
-        sResult.result.expAnalysisResults.each() {
-            trialRS = trialQueryService.queryTrialAnalysis(it.trial.id, session.searchFilter)
-            trialMap.put(it.trial, trialRS.analysisResultList)
-        }
-
-        DomainObjectExcelHelper.downloadToExcel(response, "trialstudyviewexport.xls", analysisDataExportService.createExcelTrialStudyView(sResult, trialMap));
-    }
-
-    def downloadAnalysisTEA = {
-        log.info("Downloading the Trial TEA Analysis view");
-        def sResult = new SearchResult()
-
-        sResult.result = clinicalTrialAnalysisTEAService.queryExpAnalysis(session.searchFilter, null)
-        DomainObjectExcelHelper.downloadToExcel(response, "trialteaviewexport.xls", analysisDataExportService.createExcelTrialTEAView(sResult));
-    }
+	private SearchFilter sessionSearchFilter() {
+		session.searchFilter
+	}
 }

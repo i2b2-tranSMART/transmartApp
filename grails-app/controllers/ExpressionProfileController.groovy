@@ -19,6 +19,7 @@ import org.jfree.chart.servlet.ServletUtilities
 import org.jfree.data.statistics.BoxAndWhiskerItem
 import org.jfree.data.statistics.DefaultBoxAndWhiskerCategoryDataset
 import org.transmart.ExpressionProfileResult
+import org.transmart.biomart.BioAssayDataStatistics
 import org.transmart.biomart.BioMarker
 import org.transmart.biomart.Disease
 
@@ -158,18 +159,18 @@ public class ExpressionProfileController {
         def allData = expressionProfileQueryService.queryStatisticsDataExpField(session.searchFilter);
         // don't create graph if no data
         log.info "... number boxplot filter records: " + allData.size()
-        if (allData.size() == 0) {
+        if (!allData) {
             epr.graphURL = "empty"
             epr.datasetItems = null
             return
         }
 
-        def seriesName = ""
+        String seriesName
         def itemName = ""
         def dsItems = []
         def chartMinVal = null
         def chartMaxVal = null
-        def statdata = null;
+	    BioAssayDataStatistics statdata = null;
         int i = 0
 
         for (drow in allData) {

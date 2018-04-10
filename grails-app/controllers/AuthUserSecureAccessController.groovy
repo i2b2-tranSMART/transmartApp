@@ -1,154 +1,157 @@
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.dao.DataIntegrityViolationException
 import org.transmart.plugin.shared.security.Roles
 import org.transmart.searchapp.AuthUser
 import org.transmart.searchapp.AuthUserSecureAccess
-import org.transmart.searchapp.SecureAccessLevel;
-
+import org.transmart.searchapp.SecureAccessLevel
 
 class AuthUserSecureAccessController {
 
-    def index = { redirect(action: "list", params: params) }
+	static allowedMethods = [delete: 'POST', save: 'POST', update: 'POST']
+	static defaultAction = 'list'
 
-    // the delete, save and update actions only accept POST requests
-    static allowedMethods = [delete: 'POST', save: 'POST', update: 'POST']
+	@Value('${com.recomdata.admin.paginate.max:0}')
+	private int paginateMax
 
-    def list = {
-        params.max = Math.min(params.max ? params.max.toInteger() : grailsApplication.config.com.recomdata.admin.paginate.max, 100)
-        //    params.max = Math.min( params.max ? params.max.toInteger() : 20,  100)
+	def list() {
+		int max = Math.min(params.int('max', paginateMax), 100)
 
-        // NOTE: grails <g:sortableColumn> can't reference subobjects, which means that we can just use .list(params) to
-        // query AuthUserSecureAccess. Instead we need to build a hibernate query and map custom property names to the subobjects.
-        // http://grails.org/GSP+Tag+-+sortableColumn
-        params.offset = params.offset ? params.offset.toInteger() : 0
-        params.order = params.order ? params.order : "asc"
-        params.sort = params.sort ? params.sort : "username"
-        def list = AuthUserSecureAccess.withCriteria {
-            maxResults(params.max)
-            firstResult(params.offset)
-            if (params.sort == "username") {
-                authUser {
-                    order("username", params.order)
-                }
-            } else if (params.sort == "accessLevelName") {
-                accessLevel {
-                    order("accessLevelName", params.order)
-                }
-            } else if (params.sort == "displayName") {
-                secureObject {
-                    order("displayName", params.order)
-                }
-            } else {
-                order(params.sort, params.order)
-            }
-        }
-        [authUserSecureAccessInstanceList: list, authUserSecureAccessInstanceTotal: AuthUserSecureAccess.count()]
-    }
+		// NOTE: grails <g:sortableColumn> can't reference subobjects, which means
+		// that we can just use .list(params) to query AuthUserSecureAccess.
+		// Instead we need to build a hibernate query and map custom property
+		// names to the subobjects. http://grails.org/GSP+Tag+-+sortableColumn
+		int offset = params.int('offset', 0)
+		String order = params.order ?: 'asc'
+		String sort = params.sort ?: 'username'
+		List<AuthUserSecureAccess> list = AuthUserSecureAccess.withCriteria {
+			maxResults max
+			firstResult offset
+			if (sort == 'username') {
+				authUser {
+					order 'username', order
+				}
+			}
+			else if (sort == 'accessLevelName') {
+				accessLevel {
+					order 'accessLevelName', order
+				}
+			}
+			else if (sort == 'displayName') {
+				secureObject {
+					order 'displayName', order
+				}
+			}
+			else {
+				order sort, order
+			}
+		}
+		[authUserSecureAccessInstanceList: list, authUserSecureAccessInstanceTotal: AuthUserSecureAccess.count()]
+	}
 
-    def show = {
-        def authUserSecureAccessInstance = AuthUserSecureAccess.get(params.id)
+	def show(AuthUserSecureAccess authUserSecureAccess) {
+		if (authUserSecureAccess) {
+			[authUserSecureAccessInstance: authUserSecureAccess]
+		}
+		else {
+			flash.message = "AuthUserSecureAccess not found with id ${params.id}"
+			redirect action: 'list'
+		}
+	}
 
-        if (!authUserSecureAccessInstance) {
-            flash.message = "AuthUserSecureAccess not found with id ${params.id}"
-            redirect(action: "list")
-        } else {
-            return [authUserSecureAccessInstance: authUserSecureAccessInstance]
-        }
-    }
+	def delete(AuthUserSecureAccess authUserSecureAccess) {
+		if (authUserSecureAccess) {
+			try {
+				authUserSecureAccess.delete()
+				flash.message = "AuthUserSecureAccess ${params.id} deleted"
+				redirect action: 'list'
+			}
+			catch (DataIntegrityViolationException ignored) {
+				flash.message = "AuthUserSecureAccess ${params.id} could not be deleted"
+				redirect action: 'show', id: params.id
+			}
+		}
+		else {
+			flash.message = "AuthUserSecureAccess not found with id ${params.id}"
+			redirect action: 'list'
+		}
+	}
 
-    def delete = {
-        def authUserSecureAccessInstance = AuthUserSecureAccess.get(params.id)
-        if (authUserSecureAccessInstance) {
-            try {
-                authUserSecureAccessInstance.delete()
-                flash.message = "AuthUserSecureAccess ${params.id} deleted"
-                redirect(action: "list")
-            }
-            catch (org.springframework.dao.DataIntegrityViolationException e) {
-                flash.message = "AuthUserSecureAccess ${params.id} could not be deleted"
-                redirect(action: "show", id: params.id)
-            }
-        } else {
-            flash.message = "AuthUserSecureAccess not found with id ${params.id}"
-            redirect(action: "list")
-        }
-    }
+	def edit(AuthUserSecureAccess authUserSecureAccess) {
+		if (authUserSecureAccess) {
+			[authUserSecureAccessInstance: authUserSecureAccess,
+			 accessLevelList: getAccessLevelList(authUserSecureAccess.authUserId)]
+		}
+		else {
+			flash.message = "AuthUserSecureAccess not found with id ${params.id}"
+			redirect action: 'list'
+		}
+	}
 
-    def edit = {
-        def authUserSecureAccessInstance = AuthUserSecureAccess.get(params.id)
+	def update(AuthUserSecureAccess authUserSecureAccess) {
+		if (authUserSecureAccess) {
+			if (params.version) {
+				long version = params.long('version', 0)
+				if (authUserSecureAccess.version > version) {
+					authUserSecureAccess.errors.rejectValue 'version',
+							'authUserSecureAccess.optimistic.locking.failure',
+							'Another user has updated this AuthUserSecureAccess while you were editing.'
+					render view: 'edit', model: [authUserSecureAccessInstance: authUserSecureAccess]
+					return
+				}
+			}
+			authUserSecureAccess.properties = params
+			if (!authUserSecureAccess.hasErrors() && authUserSecureAccess.save()) {
+				flash.message = "AuthUserSecureAccess ${params.id} updated"
+				redirect action: 'show', id: authUserSecureAccess.id
+			}
+			else {
+				render view: 'edit', model: [authUserSecureAccessInstance: authUserSecureAccess]
+			}
+		}
+		else {
+			flash.message = "AuthUserSecureAccess not found with id ${params.id}"
+			redirect action: 'edit', id: params.id
+		}
+	}
 
-        if (!authUserSecureAccessInstance) {
-            flash.message = "AuthUserSecureAccess not found with id ${params.id}"
-            redirect(action: "list")
-        } else {
-            def id = authUserSecureAccessInstance.authUser.id
-            return [authUserSecureAccessInstance: authUserSecureAccessInstance, accessLevelList: getAccessLevelList(id)]
-        }
-    }
+	def create() {
+		[authUserSecureAccessInstance: new AuthUserSecureAccess(params)]
+	}
 
-    def update = {
-        def authUserSecureAccessInstance = AuthUserSecureAccess.get(params.id)
-        if (authUserSecureAccessInstance) {
-            if (params.version) {
-                def version = params.version.toLong()
-                if (authUserSecureAccessInstance.version > version) {
+	def save() {
+		AuthUserSecureAccess authUserSecureAccess = new AuthUserSecureAccess(params)
+		if (!authUserSecureAccess.hasErrors() && authUserSecureAccess.save()) {
+			flash.message = "AuthUserSecureAccess ${authUserSecureAccess.id} created"
+			redirect action: 'show', id: authUserSecureAccess.id
+		}
+		else {
+			render view: 'create', model: [authUserSecureAccessInstance: authUserSecureAccess]
+		}
+	}
 
-                    authUserSecureAccessInstance.errors.rejectValue("version", "authUserSecureAccess.optimistic.locking.failure", "Another user has updated this AuthUserSecureAccess while you were editing.")
-                    render(view: 'edit', model: [authUserSecureAccessInstance: authUserSecureAccessInstance])
-                    return
-                }
-            }
-            authUserSecureAccessInstance.properties = params
-            if (!authUserSecureAccessInstance.hasErrors() && authUserSecureAccessInstance.save()) {
-                flash.message = "AuthUserSecureAccess ${params.id} updated"
-                redirect(action: "show", id: authUserSecureAccessInstance.id)
-            } else {
-                render(view: 'edit', model: [authUserSecureAccessInstance: authUserSecureAccessInstance])
-            }
-        } else {
-            flash.message = "AuthUserSecureAccess not found with id ${params.id}"
-            redirect(action: "edit", id: params.id)
-        }
-    }
+	private boolean isAllowOwn(id) {
+		AuthUser authUser = AuthUser.get(id)
+		for (role in authUser.authorities) {
+			if (Roles.SPECTATOR.authority.equalsIgnoreCase(role.authority)) {
+				return false
+			}
+		}
+		true
+	}
 
-    def create = {
-        def authUserSecureAccessInstance = new AuthUserSecureAccess()
-        authUserSecureAccessInstance.properties = params
-        return ['authUserSecureAccessInstance': authUserSecureAccessInstance]
-    }
+	private List<SecureAccessLevel> getAccessLevelList(id) {
+		if (isAllowOwn(id)) {
+			SecureAccessLevel.listOrderByAccessLevelValue()
+		}
+		else {
+			SecureAccessLevel.executeQuery('''
+					FROM SecureAccessLevel
+					WHERE accessLevelName <> 'OWN'
+					ORDER BY accessLevelValue''')
+		}
+	}
 
-    def save = {
-        def authUserSecureAccessInstance = new AuthUserSecureAccess(params)
-        if (!authUserSecureAccessInstance.hasErrors() && authUserSecureAccessInstance.save()) {
-            flash.message = "AuthUserSecureAccess ${authUserSecureAccessInstance.id} created"
-            redirect(action: "show", id: authUserSecureAccessInstance.id)
-        } else {
-            render(view: 'create', model: [authUserSecureAccessInstance: authUserSecureAccessInstance])
-        }
-    }
-
-    def isAllowOwn(id) {
-        def authUser = AuthUser.get(id);
-        for (role in authUser.authorities) {
-            if (Roles.SPECTATOR.authority.equalsIgnoreCase(role.authority)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    def getAccessLevelList(id) {
-        def accessLevelList = [];
-        if (!isAllowOwn(id)) {
-
-            accessLevelList = SecureAccessLevel.findAll("FROM SecureAccessLevel WHERE accessLevelName <>'OWN' ORDER BY accessLevelValue")
-        } else {
-            accessLevelList = SecureAccessLevel.listOrderByAccessLevelValue();
-        }
-    }
-
-    def listAccessLevel = {
-        //log.debug(params);
-
-        //	log.debug(accessLevelList);
-        render(template: 'accessLevelList', model: [accessLevelList: getAccessLevelList(params.id)]);
-    }
+	def listAccessLevel() {
+		render template: 'accessLevelList', model: [accessLevelList: getAccessLevelList(params.id)]
+	}
 }

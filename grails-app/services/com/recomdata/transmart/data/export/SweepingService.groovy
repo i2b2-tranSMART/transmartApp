@@ -1,30 +1,32 @@
 package com.recomdata.transmart.data.export
 
 import com.recomdata.transmart.domain.i2b2.AsyncJob
+import grails.transaction.Transactional
+import groovy.util.logging.Slf4j
+import org.springframework.beans.factory.annotation.Value
 
+@Slf4j('logger')
 class SweepingService {
 
-    boolean transactional = true
+	@Value('${com.recomdata.export.jobs.sweep.fileAge:0}')
+	private int fileAge
 
-    def grailsApplication
+	@Transactional
+	void sweep() {
+		logger.info 'Triggering file sweep'
+		def now = new Date()
+		def jobList = AsyncJob.createCriteria().list {
+			eq("jobType", "DataExport")
+			eq("jobStatus", "Completed")
+			lt('lastRunOn', now - fileAge)
+			//between('lastRunOn',now-fileAge, now)
+		}
 
-    def sweep() {
-        log.info "Triggering file sweep"
-        def fileAge = grailsApplication.config.com.recomdata.export.jobs.sweep.fileAge;
-        def now = new Date()
-        def c = AsyncJob.createCriteria()
-        def jobList = c.list {
-            eq("jobType", "DataExport")
-            eq("jobStatus", "Completed")
-            lt('lastRunOn', now - fileAge)
-            //between('lastRunOn',now-fileAge, now)
-        }
-
-        def deleteDataFilesProcessor = new DeleteDataFilesProcessor()
-        jobList.each { job ->
-            if (deleteDataFilesProcessor.deleteDataFile(job.viewerURL, job.jobName)) {
-                job.delete()
-            }
-        }
-    }
+		DeleteDataFilesProcessor processor = new DeleteDataFilesProcessor()
+		for (job in jobList) {
+			if (processor.deleteDataFile(job.viewerURL, job.jobName)) {
+				job.delete()
+			}
+		}
+	}
 }

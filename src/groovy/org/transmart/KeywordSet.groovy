@@ -9,41 +9,47 @@ import org.transmart.searchapp.SearchKeyword
 @CompileStatic
 class KeywordSet extends LinkedHashSet<SearchKeyword> {
 
-	List<String> getKeywordUniqueIds() {
-		List<String> uidlist = []
-		for (SearchKeyword keyword in this) {
-			uidlist << keyword.uniqueId
+	KeywordSet plus(KeywordSet ks) {
+		if (ks) {
+			addAll ks
 		}
-		uidlist
+		this
+	}
+
+	List<String> getKeywordUniqueIds() {
+		List<String> uniqueIds = []
+		for (SearchKeyword keyword in this) {
+			uniqueIds << keyword.uniqueId
+		}
+		uniqueIds
 	}
 
 	List<Long> getKeywordDataIds() {
-		List<Long> bioids = []
+		List<Long> bioDataIds = []
 		for (SearchKeyword keyword in this) {
-			bioids << keyword.bioDataId
+			bioDataIds << keyword.bioDataId
 		}
-		bioids
+		bioDataIds
 	}
 
 	String getKeywordDataIdString() {
 		StringBuilder s = new StringBuilder()
 
-		for (keyword in this) {
+		for (SearchKeyword keyword in this) {
 			if (s) {
-				s << ", "
+				s << ', '
 			}
 			s << keyword.bioDataId
 		}
 
-		s
+		s.toString()
 	}
 
 	boolean removeKeyword(SearchKeyword keyword) {
-		for (SearchKeyword k in this) {
+		for (k in this) {
 			if (k.uniqueId == keyword.uniqueId) {
 				return remove(k)
 			}
 		}
-		false
 	}
 }

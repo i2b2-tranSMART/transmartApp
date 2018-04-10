@@ -1,10 +1,12 @@
 package org.transmart
 
+import groovy.transform.CompileStatic
 import org.transmart.biomart.BioAssayAnalysis
 
 /**
  * @author mmcduffie
- * */
+ */
+@CompileStatic
 class AnalysisResult implements Comparable<AnalysisResult> {
 
 	// TEA metrics
@@ -14,13 +16,13 @@ class AnalysisResult implements Comparable<AnalysisResult> {
 	int defaultTop = 5
 
 	BioAssayAnalysis analysis
-	def experimentId
-	def experimentAccession
-	List assayAnalysisValueList = [] // collection of AssayAnalysisValue objects
-	Long bioMarkerCount = 0
+	Long experimentId
+	String experimentAccession
+	List<AssayAnalysisValue> assayAnalysisValueList = []
+	long bioMarkerCount = 0
 
 	int size() {
-		return assayAnalysisValueList.size()
+		assayAnalysisValueList.size()
 	}
 
 	String getGeneNames() {
@@ -29,20 +31,20 @@ class AnalysisResult implements Comparable<AnalysisResult> {
 		}
 
 		StringBuilder s = new StringBuilder()
-		Set nameSet = []
+		LinkedHashSet<String> nameSet = []
 		// remove dup first
 		for (value in assayAnalysisValueList) {
 			def marker = value.bioMarker
 			if (marker.isGene()) {
-				nameSet.add(marker.name)
+				nameSet << marker.name
 			}
 		}
 
 		for (name in nameSet) {
 			if (s) {
-				s.append(", ")
+				s << ', '
 			}
-			s.append(name)
+			s << name
 		}
 
 		s
@@ -50,11 +52,10 @@ class AnalysisResult implements Comparable<AnalysisResult> {
 
 	boolean showTop() {
 		// bioMarkerCount was populated only when it's NOT searching for genes
-		return bioMarkerCount > defaultTop
+		bioMarkerCount > defaultTop
 	}
 
-	def getAnalysisValueSubList() {
-
+	List<AssayAnalysisValue> getAnalysisValueSubList() {
 		if (showTop()) {
 			def total = defaultTop
 			if (assayAnalysisValueList.size() <= defaultTop) {
@@ -64,11 +65,11 @@ class AnalysisResult implements Comparable<AnalysisResult> {
 				total = 0
 			}
 
-			return assayAnalysisValueList.subList(0, total)
+			assayAnalysisValueList.subList(0, total)
 		}
 		else {
 			// show all
-			return assayAnalysisValueList
+			assayAnalysisValueList
 		}
 	}
 
@@ -76,34 +77,32 @@ class AnalysisResult implements Comparable<AnalysisResult> {
 	 * comparable interface implementation, sort on TEAScore
 	 */
 	int compareTo(AnalysisResult compare) {
-		// compare objects
 		Double thisScore = teaScore
 		Double compScore = compare.teaScore
 
 		// handle invalid values
 		if (compScore == null && thisScore != null) {
-			return 1
+			1
 		}
-		if (thisScore == null && compScore != null) {
-			return -1
+		else if (thisScore == null && compScore != null) {
+			-1
 		}
-		if (thisScore == null && compScore == null) {
-			return 0
+		else if (thisScore == null && compScore == null) {
+			0
 		}
-
-		// if score is the same, sort on biomarker ct (desc)
-		if (thisScore == compScore) {
-			return (-1 * assayAnalysisValueList.size().compareTo(compare.assayAnalysisValueList.size()))
+		else if (thisScore == compScore) {
+			// if score is the same, sort on biomarker ct (desc)
+			-1 * assayAnalysisValueList.size().compareTo(compare.assayAnalysisValueList.size())
 		}
 		else {
-			return (thisScore.compareTo(compScore))
+			thisScore.compareTo(compScore)
 		}
 	}
 
 	/**
 	 * the TEA score is calculated as -log(teaScore) for UI purposes
 	 */
-	Double calcDisplayTEAScore() {
+	double calcDisplayTEAScore() {
 		if (teaScore != null) {
 			-Math.log(teaScore.doubleValue())
 		}

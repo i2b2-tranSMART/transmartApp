@@ -1,6 +1,7 @@
 package org.transmart.authorization
 
-import groovy.util.logging.Log4j
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import org.springframework.aop.TargetSource
 import org.springframework.aop.framework.AopInfrastructureBean
 import org.springframework.aop.framework.ProxyFactory
@@ -32,83 +33,83 @@ import org.transmartproject.core.users.User
  * quartz bean, and then to whatever other beans happen to be registered with
  * {@link CurrentUserBeanProxyFactory#registerBeanToTry(java.lang.String)}.
  */
-@Log4j
+@CompileStatic
 class CurrentUserBeanProxyFactory implements FactoryBean<User>, BeanFactoryAware {
 
-    // Don't change this bean name. Rmodules depends on this bean name
-    public final static String BEAN_BAME = 'currentUserBean'
-    public final static String SUB_BEAN_REQUEST = 'currentUserBeanRequestScoped'
-    public final static String SUB_BEAN_QUARTZ = 'currentUserBeanQuartzScope'
+	// Don't change this bean name. Rmodules depends on this bean name
+	public final static String BEAN_BAME = 'currentUserBean'
+	public final static String SUB_BEAN_REQUEST = 'currentUserBeanRequestScoped'
+	public final static String SUB_BEAN_QUARTZ = 'currentUserBeanQuartzScope'
 
-    private User object
+	private User object
 
-    private List<String> extraBeansToTry = [SUB_BEAN_QUARTZ]
+	private List<String> extraBeansToTry = [SUB_BEAN_QUARTZ]
 
-    void registerBeanToTry(String beanName) {
-        extraBeansToTry << beanName
-    }
+	void registerBeanToTry(String beanName) {
+		extraBeansToTry << beanName
+	}
 
-    @Override
-    User getObject() throws Exception {
-        object
-    }
+	User getObject() {
+		object
+	}
 
-    @Override
-    Class<?> getObjectType() {
-        User
-    }
+	Class<User> getObjectType() {
+		User
+	}
 
-    @Override
-    boolean isSingleton() {
-        true
-    }
+	boolean isSingleton() {
+		true
+	}
 
-    class CurrentUserBeanTargetSource implements TargetSource {
+	@CompileStatic
+	@Slf4j('logger')
+	class CurrentUserBeanTargetSource implements TargetSource {
 
-        ConfigurableBeanFactory cbf
+		ConfigurableBeanFactory cbf
 
-        final Class<?> targetClass = User
+		CurrentUserBeanTargetSource(ConfigurableBeanFactory cbf) {
+			this.cbf = cbf
+		}
 
-        final boolean isStatic() {
-            false
-        }
+		final Class<?> targetClass = User
 
-        @Override
-        Object getTarget() throws Exception {
-            if (RequestContextHolder.requestAttributes) {
-                // request context is active
-                cbf.getBean SUB_BEAN_REQUEST
-            } else {
-                for (beanName in extraBeansToTry) {
-                    try {
-                        return cbf.getBean(beanName)
-                    } catch (BeansException e) {
-                        log.debug("BeansException for bean ${beanName}")
-                    }
-                }
+		final boolean isStatic() {
+			false
+		}
 
-                throw new IllegalStateException("Tried to fetch " +
-                        "current user, but it's not available")
-            }
-        }
+		def getTarget() {
+			if (RequestContextHolder.requestAttributes) {
+				// request context is active
+				cbf.getBean SUB_BEAN_REQUEST
+			}
+			else {
+				for (beanName in extraBeansToTry) {
+					try {
+						return cbf.getBean(beanName)
+					}
+					catch (BeansException ignored) {
+						logger.debug 'BeansException for bean {}', beanName
+					}
+				}
 
-        @Override
-        void releaseTarget(Object target) throws Exception {
-            // not really anything to do
-        }
-    }
+				throw new IllegalStateException("Tried to fetch current user, but it's not available")
+			}
+		}
 
-    @Override
-    void setBeanFactory(BeanFactory beanFactory) throws BeansException {
-        ConfigurableBeanFactory cbf = (ConfigurableBeanFactory) beanFactory;
+		void releaseTarget(target) {
+			// not really anything to do
+		}
+	}
 
-        ProxyFactory pf = new ProxyFactory([User] as Class[])
-        pf.targetSource = new CurrentUserBeanTargetSource(cbf: cbf)
+	void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+		ConfigurableBeanFactory cbf = (ConfigurableBeanFactory) beanFactory
 
-        // also expose the thing as a ScopedObject
-        //pf.addAdvice(new DelegatingIntroductionInterceptor(scopedObject))
-        pf.addInterface(AopInfrastructureBean)
+		ProxyFactory pf = new ProxyFactory([User] as Class[])
+		pf.targetSource = new CurrentUserBeanTargetSource(cbf)
+		// also expose the thing as a ScopedObject
+		//pf.addAdvice(new DelegatingIntroductionInterceptor(scopedObject))
+		pf.addInterface AopInfrastructureBean
 
-        object = pf.getProxy(cbf.getBeanClassLoader())
-    }
+		object = (User) pf.getProxy(cbf.getBeanClassLoader())
+	}
 }

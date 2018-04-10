@@ -1,6 +1,3 @@
-/**
- * $Id: GenePatternService.groovy 10246 2011-10-27 19:58:02Z mmcduffie $
- */
 package com.recomdata.asynchronous
 
 import com.recomdata.export.GwasFiles
@@ -24,11 +21,10 @@ import java.nio.channels.FileChannel
 import java.util.List
 
 /**
- * GenePatternService that manages the calls and jobs to the GenePattern server.
+ * Manages the calls and jobs to the GenePattern server.
  * Implements Job as this will run asynchronously
  *
- * @author $Author: mmcduffie $
- * @version $Revision: 10246 $
+ * @author mmcduffie
  */
 class GenePatternService implements Job {
     static scope = "session"
