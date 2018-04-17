@@ -185,7 +185,7 @@ class AuthUserController implements InitializingBean {
 	// the owning side of the many-to-many are the roles
 
 	private void manageRoles(AuthUser authUser) {
-		Collection<Role> oldRoles = authUser.authorities
+		Collection<Role> oldRoles = authUser.authorities ?: []
 		Set<Role> newRoles = params.keySet().findAll { String key ->
 			key.contains('ROLE') && params[key] == 'on'
 		}.collect { String key -> Role.findByAuthority(key) }
@@ -200,7 +200,7 @@ class AuthUserController implements InitializingBean {
 	}
 
 	private Map buildPersonModel(AuthUser authUser) {
-		Set<String> userRoleNames = authUser.authorities*.authority
+		Set<String> userRoleNames = authUser.authorities*.authority ?: []
 		Map<Role, Boolean> roleMap = [:]
 		List<Role> roles = Role.list().sort { Role role -> role.authority }
 		for (role in roles) {
