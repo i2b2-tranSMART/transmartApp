@@ -7,8 +7,8 @@ import com.recomdata.export.GwasFiles
 import com.recomdata.export.SnpViewerFiles
 import com.recomdata.export.SurvivalAnalysisFiles
 import com.recomdata.export.SurvivalData
-import grails.util.Holders
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import i2b2.Concept
 import i2b2.GeneWithSnp
 import i2b2.SampleInfo
@@ -20,9 +20,14 @@ import i2b2.SnpInfo
 import i2b2.SnpProbeSortedDef
 import i2b2.StringLineReader
 import org.apache.commons.lang.StringUtils
+import org.codehaus.groovy.grails.commons.GrailsApplication
+import org.hibernate.SessionFactory
+import org.springframework.beans.factory.InitializingBean
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.GrantedAuthority
 import org.transmart.CohortInformation
+import org.transmart.HeatmapValidator
 import org.transmart.plugin.shared.SecurityService
 import org.transmart.plugin.shared.security.Roles
 import org.transmart.searchapp.AuthUserSecureAccess
@@ -40,6 +45,7 @@ import org.w3c.dom.Node
 import org.w3c.dom.NodeList
 import org.xml.sax.InputSource
 
+import javax.sql.DataSource
 import javax.xml.parsers.DocumentBuilder
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.xpath.XPath
@@ -54,7 +60,7 @@ import static org.transmart.authorization.QueriesResourceAuthorizationDecorator.
 import static org.transmartproject.db.ontology.AbstractAcrossTrialsOntologyTerm.ACROSS_TRIALS_TABLE_CODE
 import static org.transmartproject.db.ontology.AbstractAcrossTrialsOntologyTerm.ACROSS_TRIALS_TOP_TERM_NAME
 
-class I2b2HelperService {
+class I2b2HelperService implements InitializingBean {
 
     static transactional = false
 
@@ -63,12 +69,19 @@ class I2b2HelperService {
 
     static final List<String> DEMOGRAPHICS_HEADERS = ["Sex", "Race", "Age", "Samples", "Trial"] // see method
 
-    def sessionFactory
-    def dataSource
-    def conceptService
+    @Autowired private ConceptService conceptService
     def conceptsResourceService
-    def sampleInfoService
+    @Autowired private DataSource dataSource
+    @Autowired private GrailsApplication grailsApplication
+    @Autowired private SampleInfoService sampleInfoService
     @Autowired private SecurityService securityService
+    @Autowired private SessionFactory sessionFactory
+
+    @Value('${com.recomdata.datasetExplorer.plinkExcutable:}')
+    private String plinkExecutable
+
+    private List<String> censorFlagList
+    private List<String> survivalDataList
 
     /**
      * Gets a distribution of information from the patient dimention table for value columns
@@ -85,8 +98,8 @@ class I2b2HelperService {
             FROM I2B2DEMODATA.patient_dimension f
             WHERE patient_num IN (
                 select distinct patient_num
-			from I2B2DEMODATA.qt_patient_set_collection
-			where result_instance_id = ?)"""
+            from I2B2DEMODATA.qt_patient_set_collection
+            where result_instance_id = ?)"""
         sql.eachRow(sqlt, [result_instance_id], { row ->
             def id = row[2]
             if (row[1]) {
@@ -213,11 +226,11 @@ class I2b2HelperService {
         return res
     }
 
-    def getMarkerTypeFromConceptCd(conceptCd) {
+	String getMarkerTypeFromConceptCd(String conceptCd) {
         log.trace("Getting marker type from concept code:" + conceptCd)
         Sql sql = new Sql(dataSource)
 
-        def markerType = ""
+        String markerType = ''
         sql.eachRow("select dgi.marker_type from I2B2DEMODATA.concept_dimension cd, DEAPP.de_gpl_info dgi where cd.concept_path like('%'||dgi.title||'%') " +
                 "and cd.concept_cd = ?", [conceptCd], { row ->
             markerType = row.marker_type
@@ -351,7 +364,7 @@ class I2b2HelperService {
                 values.add(row.NVAL_NUM)
             }
         })
-        List<Double> returnvalues = new ArrayList<Double>(values.size())
+        List<Double> returnvalues = new ArrayList<>(values.size())
         for (int i = 0; i < values.size(); i++) {
             returnvalues[i] = values.get(i)
         }
@@ -415,7 +428,7 @@ class I2b2HelperService {
         log.trace("Access assured")
 
         List<Double> values = []
-        List<Double> returnvalues = new ArrayList<Double>(values.size())
+        List<Double> returnvalues = new ArrayList<>(values.size())
         if (result_instance_id == "") {
             log.debug("getConceptDistributionDataForValueConceptFromCode called with no result_istance_id")
             return getConceptDistributionDataForValueConcept(concept_cd)
@@ -424,9 +437,9 @@ class I2b2HelperService {
         Sql sql = new Sql(dataSource)
         log.trace("preparing query")
         String sqlt = """SELECT NVAL_NUM FROM I2B2DEMODATA.OBSERVATION_FACT f WHERE CONCEPT_CD = ? AND
-		    PATIENT_NUM IN (select distinct patient_num
-			from I2B2DEMODATA.qt_patient_set_collection
-			where result_instance_id = ?)"""
+            PATIENT_NUM IN (select distinct patient_num
+            from I2B2DEMODATA.qt_patient_set_collection
+            where result_instance_id = ?)"""
         log.trace("executing query: " + sqlt)
         sql.eachRow(sqlt, [
                 concept_cd,
@@ -639,7 +652,7 @@ class I2b2HelperService {
         def xTrialsCaseFlag = isXTrialsConcept(concept_key)
         def leafNodeFlag = isLeafConceptKey(concept_key)
 
-        SortedMap<String, Map<String, Integer>> results = new TreeMap<String, HashMap<String, Integer>>()
+        SortedMap<String, Map<String, Integer>> results = new TreeMap<String, Map<String, Integer>>()
 
         log.trace "input concept_key = " + concept_key
         if (leafNodeFlag) {
@@ -687,15 +700,15 @@ class I2b2HelperService {
 
         Sql sql = new Sql(dataSource)
         String sqlt = """Select DISTINCT m.c_name, coalesce(i.obscount,0) as obscount FROM
-		    (SELECT c_name, c_basecode FROM i2b2metadata.i2b2 WHERE C_FULLNAME LIKE ? escape '\\' AND c_hlevel = ?) m
-		    LEFT OUTER JOIN
-		    (Select c_name, count(c_basecode) as obscount FROM
-			(SELECT c_name, c_basecode FROM i2b2metadata.i2b2 WHERE C_FULLNAME LIKE ? escape '\\' AND c_hlevel = ?) c
-			INNER JOIN I2B2DEMODATA.observation_fact f ON f.concept_cd=c.c_basecode
-			WHERE PATIENT_NUM IN (select distinct patient_num from I2B2DEMODATA.qt_patient_set_collection where result_instance_id = ?)
-		    GROUP BY c_name) i
-		    ON i.c_name=m.c_name
-		    ORDER BY c_name"""
+            (SELECT c_name, c_basecode FROM i2b2metadata.i2b2 WHERE C_FULLNAME LIKE ? escape '\\' AND c_hlevel = ?) m
+            LEFT OUTER JOIN
+            (Select c_name, count(c_basecode) as obscount FROM
+            (SELECT c_name, c_basecode FROM i2b2metadata.i2b2 WHERE C_FULLNAME LIKE ? escape '\\' AND c_hlevel = ?) c
+            INNER JOIN I2B2DEMODATA.observation_fact f ON f.concept_cd=c.c_basecode
+            WHERE PATIENT_NUM IN (select distinct patient_num from I2B2DEMODATA.qt_patient_set_collection where result_instance_id = ?)
+            GROUP BY c_name) i
+            ON i.c_name=m.c_name
+            ORDER BY c_name"""
         sql.eachRow(sqlt, [
                 fullname.asLikeLiteral() + "%", // Note: .asLikeLiteral() defined in github: 994dc5bb50055f8b800045f65c8e565b4aa0c113
                 i,
@@ -806,9 +819,9 @@ class I2b2HelperService {
         int i = 0
         Sql sql = new Sql(dataSource)
         String sqlt = """select count (distinct patient_num) as patcount
-		    FROM i2b2demodata.observation_fact
-		    WHERE (((concept_cd IN (select concept_cd from i2b2demodata.concept_dimension c
-		    where concept_path LIKE ? escape '\\'))))"""
+            FROM i2b2demodata.observation_fact
+            WHERE (((concept_cd IN (select concept_cd from i2b2demodata.concept_dimension c
+            where concept_path LIKE ? escape '\\'))))"""
         sql.eachRow(sqlt, [fullname.asLikeLiteral() + "%"], { row ->
             i = row[0]
         })
@@ -950,8 +963,8 @@ class I2b2HelperService {
                 ) subjectList
         """
 
-		log.trace "sql text ="
-		log.trace sqlt
+        log.trace "sql text ="
+        log.trace sqlt
 
         int count = 0
         sql.eachRow(sqlt, { row ->
@@ -1092,10 +1105,10 @@ class I2b2HelperService {
     def buildMapOfSampleCdsByPatientNum(resultInstanceId) {
         def map = [:]
         def sampleCodesTable = new Sql(dataSource).rows("""
-			SELECT DISTINCT
+            SELECT DISTINCT
                 f.PATIENT_ID,
                 f.SAMPLE_CD
-			FROM
+            FROM
                 DEAPP.de_subject_sample_mapping f
             WHERE
                 f.PATIENT_ID IN (
@@ -1105,8 +1118,8 @@ class I2b2HelperService {
                         I2B2DEMODATA.qt_patient_set_collection
                     WHERE
                         result_instance_id = ? )
-			ORDER BY PATIENT_ID, SAMPLE_CD
-			""", resultInstanceId
+            ORDER BY PATIENT_ID, SAMPLE_CD
+            """, resultInstanceId
         )
 
         for (row in sampleCodesTable) {
@@ -1209,9 +1222,9 @@ class I2b2HelperService {
 
             // All children should be leaf categorical values
             if (item.children.any {
-				if (xTrialsCaseFlag) {
-					return !isLeafConceptKey(it)
-				}
+                if (xTrialsCaseFlag) {
+                    return !isLeafConceptKey(it)
+                }
                 return !isLeafConceptKey(it) || nodeXmlRepresentsValueConcept(it.metadataxml)
             }) {
                 log.trace("Can not show data in gridview for folder nodes with mixed type of children")
@@ -1305,9 +1318,9 @@ class I2b2HelperService {
             log.trace "result_instance_id = " + result_instance_id
             Sql sql = new Sql(dataSource)
             String sqlt = """SELECT PATIENT_NUM, NVAL_NUM, START_DATE FROM I2B2DEMODATA.OBSERVATION_FACT f WHERE CONCEPT_CD = ? AND
-				        PATIENT_NUM IN (select distinct patient_num
-						from I2B2DEMODATA.qt_patient_set_collection
-						where result_instance_id = ?)"""
+                        PATIENT_NUM IN (select distinct patient_num
+                        from I2B2DEMODATA.qt_patient_set_collection
+                        where result_instance_id = ?)"""
             sql.eachRow(sqlt, [concept_cd,result_instance_id], { row ->
                 /*If I already have this subject mark it in the subset column as belonging to both subsets*/
                 String subject = row.PATIENT_NUM
@@ -1321,9 +1334,9 @@ class I2b2HelperService {
             log.debug "concept_cd = " + concept_cd
             Sql sql = new Sql(dataSource)
             String sqlt = """SELECT PATIENT_NUM, TVAL_CHAR, START_DATE FROM I2B2DEMODATA.OBSERVATION_FACT f WHERE CONCEPT_CD = ? AND
-				        PATIENT_NUM IN (select distinct patient_num
-				        from I2B2DEMODATA.qt_patient_set_collection
-						where result_instance_id = ?)"""
+                        PATIENT_NUM IN (select distinct patient_num
+                        from I2B2DEMODATA.qt_patient_set_collection
+                        where result_instance_id = ?)"""
 
             sql.eachRow(sqlt, [concept_cd,result_instance_id], { row ->
                 String subject = row.PATIENT_NUM
@@ -1480,8 +1493,8 @@ class I2b2HelperService {
         List<String> concepts = []
         Sql sql = new Sql(dataSource)
         String sqlt = """SELECT REQUEST_XML FROM I2B2DEMODATA.QT_QUERY_MASTER c INNER JOIN I2B2DEMODATA.QT_QUERY_INSTANCE a
-		    ON a.QUERY_MASTER_ID=c.QUERY_MASTER_ID INNER JOIN I2B2DEMODATA.QT_QUERY_RESULT_INSTANCE b
-		    ON a.QUERY_INSTANCE_ID=b.QUERY_INSTANCE_ID WHERE RESULT_INSTANCE_ID = ?"""
+            ON a.QUERY_MASTER_ID=c.QUERY_MASTER_ID INNER JOIN I2B2DEMODATA.QT_QUERY_RESULT_INSTANCE b
+            ON a.QUERY_INSTANCE_ID=b.QUERY_INSTANCE_ID WHERE RESULT_INSTANCE_ID = ?"""
 
         String xmlrequest = ""
         sql.eachRow(sqlt, [resultInstanceId], { row ->
@@ -1552,9 +1565,9 @@ class I2b2HelperService {
         try {
             Sql sql = new Sql(dataSource)
             String sqlQuery = """select parent_cd from deapp.de_xtrial_child_map xcm
-				inner join I2B2DEMODATA.concept_dimension cd
-				on xcm.concept_cd=cd.concept_cd
-				where concept_path = ?"""
+                inner join I2B2DEMODATA.concept_dimension cd
+                on xcm.concept_cd=cd.concept_cd
+                where concept_path = ?"""
             String parentConcept = ""
             sql.eachRow(sqlQuery, [conceptPath], { row -> parentConcept = row.parent_cd })
             return parentConcept ?: null
@@ -1582,13 +1595,13 @@ class I2b2HelperService {
         Sql sql = new Sql(dataSource)
         String sqlTemplate1 =
                 """SELECT distinct x.concept_CD
-				FROM deapp.de_xtrial_child_map x
-				WHERE x.study_id IN (
-						select distinct p.trial
-						from I2B2DEMODATA.qt_patient_set_collection q
-						inner join I2B2DEMODATA.patient_trial p
-						on q.patient_num=p.patient_num
-						where q.result_instance_id="""
+                FROM deapp.de_xtrial_child_map x
+                WHERE x.study_id IN (
+                        select distinct p.trial
+                        from I2B2DEMODATA.qt_patient_set_collection q
+                        inner join I2B2DEMODATA.patient_trial p
+                        on q.patient_num=p.patient_num
+                        where q.result_instance_id="""
 
         String sqlTemplate2 = """ or result_instance_id="""
         String sqlTemplate3 = """) and x.parent_cd="""
@@ -1622,8 +1635,8 @@ class I2b2HelperService {
 
     Set<String> getDistinctConceptSet(String result_instance_id1, String result_instance_id2) {
         /* get all distinct  concepts for analysis from both subsets into map
-		 * only need one concept from each family, because the rendering functions find the others
-		 * */
+         * only need one concept from each family, because the rendering functions find the others
+         * */
 
         Set<String> workingSet = []
         Set<String> finalSet = []
@@ -1661,8 +1674,8 @@ class I2b2HelperService {
         if (resultInstanceId) {
             Sql sql = new Sql(dataSource)
             String sqlt = """select QUERY_MASTER_ID FROM I2B2DEMODATA.QT_QUERY_INSTANCE a
-		    	INNER JOIN I2B2DEMODATA.QT_QUERY_RESULT_INSTANCE b
-		    	ON a.QUERY_INSTANCE_ID=b.QUERY_INSTANCE_ID WHERE RESULT_INSTANCE_ID = ?"""
+                INNER JOIN I2B2DEMODATA.QT_QUERY_RESULT_INSTANCE b
+                ON a.QUERY_INSTANCE_ID=b.QUERY_INSTANCE_ID WHERE RESULT_INSTANCE_ID = ?"""
             sql.eachRow(sqlt, [resultInstanceId], { row -> qid = row.QUERY_MASTER_ID })
         }
         return qid
@@ -1696,8 +1709,8 @@ class I2b2HelperService {
         Sql sql = new Sql(dataSource)
 
         String sqlt = """select REQUEST_XML from I2B2DEMODATA.QT_QUERY_MASTER c INNER JOIN I2B2DEMODATA.QT_QUERY_INSTANCE a
-		    ON a.QUERY_MASTER_ID=c.QUERY_MASTER_ID INNER JOIN I2B2DEMODATA.QT_QUERY_RESULT_INSTANCE b
-		    ON a.QUERY_INSTANCE_ID=b.QUERY_INSTANCE_ID WHERE RESULT_INSTANCE_ID = ?"""
+            ON a.QUERY_MASTER_ID=c.QUERY_MASTER_ID INNER JOIN I2B2DEMODATA.QT_QUERY_RESULT_INSTANCE b
+            ON a.QUERY_INSTANCE_ID=b.QUERY_INSTANCE_ID WHERE RESULT_INSTANCE_ID = ?"""
         log.trace(sqlt)
         sql.eachRow(sqlt, [resultInstanceId], { row ->
             log.trace("in xml query")
@@ -1718,7 +1731,7 @@ class I2b2HelperService {
         Sql sql = new Sql(dataSource)
 
         String sqlt = """select distinct patient_num from I2B2DEMODATA.qt_patient_set_collection where result_instance_id = ?
-		AND patient_num IN (select patient_num from I2B2DEMODATA.patient_dimension where sourcesystem_cd not like '%:S:%')"""
+        AND patient_num IN (select patient_num from I2B2DEMODATA.patient_dimension where sourcesystem_cd not like '%:S:%')"""
 
         def ids = []
         sql.eachRow(sqlt, [resultInstanceId], { row ->
@@ -1763,20 +1776,16 @@ class I2b2HelperService {
     /**
      * Gets a list of subjects for a list of sample ids.
      */
-    List<Long> getSubjectsAsListFromSampleLong(List SampleIDList) {
+    List<Long> getSubjectsAsListFromSampleLong(List sampleIdList) {
 
         //This is the list of patient_nums we return.
         List<Long> subjectIds = []
 
-        //This is the SQL object we use to gather our data.
-        Sql sql = new Sql(dataSource)
+        String sqlt = "select distinct PATIENT_ID from DEAPP.DE_SUBJECT_SAMPLE_MAPPING where SAMPLE_ID in (" + listToIN(sampleIdList) + ")"
 
-        //This is the SQL statement we run.
-        String sqlt = "select distinct PATIENT_ID from DEAPP.DE_SUBJECT_SAMPLE_MAPPING where SAMPLE_ID in (" + listToIN(SampleIDList) + ")"
+        new Sql(dataSource).eachRow(sqlt, [], { row -> subjectIds.add(row.PATIENT_ID) })
 
-        sql.eachRow(sqlt, [], { row -> subjectIds.add(row.PATIENT_ID) })
-
-        return subjectIds
+        subjectIds
     }
 
     /**
@@ -1787,15 +1796,11 @@ class I2b2HelperService {
         //This is the list of patient_nums we return.
         List<String> conceptIds = []
 
-        //This is the SQL object we use to gather our data.
-        Sql sql = new Sql(dataSource)
-
-        //This is the SQL statement we run.
         String sqlt = "select distinct CONCEPT_CODE from DEAPP.DE_SUBJECT_SAMPLE_MAPPING where SAMPLE_ID in (" + listToIN(SampleIDList) + ")"
 
-        sql.eachRow(sqlt, [], { row -> conceptIds.add(row.CONCEPT_CODE) })
+        new Sql(dataSource).eachRow(sqlt, [], { row -> conceptIds.add(row.CONCEPT_CODE) })
 
-        return conceptIds
+        conceptIds
     }
 
     /**
@@ -1920,11 +1925,9 @@ class I2b2HelperService {
             return ids
         }
         Sql sql = new Sql(dataSource)
-        //println(ids)
         StringBuilder fids = new StringBuilder()
         StringBuilder sampleQ = new StringBuilder("SELECT distinct s.patient_id FROM DEAPP.de_subject_sample_mapping s WHERE s.patient_id IN (").append(ids).append(")")
 
-        //	println(sampleQ)
         sql.eachRow(sampleQ.toString(),
                 { row ->
                     String st = row.patient_id
@@ -2023,7 +2026,7 @@ class I2b2HelperService {
 
             String curGeneSymbol = null
             Map<Long, Float> assayIdValueMap = null
-            StringBuffer dataBuf = new StringBuffer()
+            StringBuilder dataBuf = new StringBuilder()
             Sql sql = new Sql(dataSource)
             int geneNum = 0
             sql.eachRow(sqlStr) { row ->
@@ -2096,11 +2099,11 @@ class I2b2HelperService {
     }
 
     void outputMRNAValueToBuffer(List<SampleInfo> sampleInfoList, String curGeneSymbol, Map<Long, Float> assayIdValueMap,
-                                 StringBuffer dataBuf, String analysisType) {
+                                 StringBuilder dataBuf, String analysisType) {
         if (!sampleInfoList) {
             return
         }
-        StringBuffer tempBuffer = new StringBuffer()
+        StringBuilder tempBuffer = new StringBuilder()
 
         for (SampleInfo sampleInfo : sampleInfoList) {
             if (tempBuffer) { // Not the first value, add "\t"
@@ -2228,9 +2231,6 @@ class I2b2HelperService {
 
                     while (rs.next()) {
                         cs.setLength(0)
-                        if (rows == 0) {
-                            System.out.println("getting first row!")
-                        }
                         sval = null
                         for (int count = 1; count < totalCol; count++) {
                             if (count > 1) {
@@ -2240,7 +2240,6 @@ class I2b2HelperService {
 
                             sval = rs.getString(count)
                             if (sval != null) {
-                                //	sval = val.toString()
                                 if (sval.equals("null")) {
                                     s.append(whiteString)
                                     cs.append(whiteString)
@@ -2282,7 +2281,6 @@ class I2b2HelperService {
 
                 // force clean up
                 //rowsObj = null
-                //	log.trace("results: " + s)
             } else if (datatype.toUpperCase() == "RBM") {
                 StringBuilder s = new StringBuilder("")
                 String query = createRBMHeatmapQuery(pathwayName, ids1, ids2,
@@ -2313,7 +2311,6 @@ class I2b2HelperService {
                 }
 
                 rowsObj = null
-                //	log.trace("results: " + s)
             } else if (datatype.toUpperCase() == "PROTEIN") {
                 String query = createProteinHeatmapQuery(pathwayName, ids1, ids2,
                         concepts1, concepts2, timepoint1, timepoint2)
@@ -2349,7 +2346,6 @@ class I2b2HelperService {
                     gpf.writeToGctFile(s.toString())
                     gpf.writeToCSVFile(s.toString().replaceAll("\t", ","))
                 }
-                //	log.trace("results: " + s)
             }
 
             if (rows == 0) {
@@ -2392,8 +2388,8 @@ class I2b2HelperService {
         File clsFile = saFiles.getClsFile()
         File dataFile = saFiles.getDataFile()
 
-        StringBuffer clsBuf = new StringBuffer()
-        StringBuffer dataBuf = new StringBuffer()
+        StringBuilder clsBuf = new StringBuilder()
+        StringBuilder dataBuf = new StringBuilder()
 
         int totalCount = survivalDataList_1.size() + survivalDataList_2.size()
 
@@ -2489,9 +2485,8 @@ class I2b2HelperService {
     }
 
     boolean isSurvivalData(String conceptName) {
-        def dataList = Holders.config.com.recomdata.analysis.survival.survivalDataList
-        for (String data : dataList) {
-            if (conceptName.indexOf(data) > 0) {
+        for (String data in survivalDataList) {
+            if (conceptName.contains(data)) {
                 return true
             }
         }
@@ -2499,9 +2494,8 @@ class I2b2HelperService {
     }
 
     boolean isSurvivalCensor(String conceptName) {
-        def censorList = Holders.config.com.recomdata.analysis.survival.censorFlagList
-        for (String data : censorList) {
-            if (conceptName.indexOf(data) > 0) {
+        for (String data in censorFlagList) {
+            if (conceptName.contains(data)) {
                 return true
             }
         }
@@ -2535,7 +2529,7 @@ class I2b2HelperService {
      * For now the patients have to be in the same trial, for the sake of simplicity.
      */
     void getSNPViewerDataByProbe(String subjectIds1, String subjectIds2, List<Long> geneSearchIdList, List<String> geneNameList,
-                                 List<String> snpNameList, SnpViewerFiles snpFiles, StringBuffer geneSnpPageBuf) {
+                                 List<String> snpNameList, SnpViewerFiles snpFiles, StringBuilder geneSnpPageBuf) {
         if (snpFiles == null) {
             throw new Exception("The SNPViewerFiles object is not instantiated")
         }
@@ -2591,7 +2585,7 @@ class I2b2HelperService {
         Map<Long, SnpDataset[]> snpDatasetBySubjectMap = allDataByProbe.snpDatasetBySubjectMap
         getSnpDatasetBySubjectMap(snpDatasetBySubjectMap, subjectListStr)
 
-        StringBuffer sampleInfoBuf = new StringBuffer()
+        StringBuilder sampleInfoBuf = new StringBuilder()
         List<SnpDataset> datasetList = allDataByProbe.datasetList
         List<String> datasetNameForSNPViewerList = allDataByProbe.datasetNameForSNPViewerList
         getSnpSampleInfo(datasetList, datasetNameForSNPViewerList, patientNumListArray, snpDatasetBySubjectMap, sampleInfoBuf)
@@ -2737,7 +2731,7 @@ class I2b2HelperService {
         if (!inCollection) {
             return null
         }
-        StringBuffer buf = new StringBuffer()
+        StringBuilder buf = new StringBuilder()
         for (Object obj : inCollection) {
             if (buf) {
                 buf.append(", ")
@@ -2842,8 +2836,8 @@ class I2b2HelperService {
             } else {
                 if (gene.chrom != chrom) {
                     throw new Exception("Inconsistant SNP-Gene mapping in database: The Gene " + gene.name +
-		                    ", with Entrez ID of " + gene.entrezId + ", is mapped to chromosome " +
-		                    gene.chrom + " and " + chrom)
+                            ", with Entrez ID of " + gene.entrezId + ", is mapped to chromosome " +
+                            gene.chrom + " and " + chrom)
                 }
             }
 
@@ -2963,7 +2957,7 @@ class I2b2HelperService {
     }
 
     /* This function merge the sorted snp in sorted gene, organized by chromosome
-	 * In the rare case that snp are merged into a same gene, the chrom position of the gene may change. Organize gene first. */
+     * In the rare case that snp are merged into a same gene, the chrom position of the gene may change. Organize gene first. */
 
     Map<String, SortedMap<Long, Map<Long, GeneWithSnp>>> mergeGeneWithSnpMap(Collection<Map<String, SortedMap<Long, Map<Long, GeneWithSnp>>>> mapList) {
 
@@ -3107,7 +3101,7 @@ class I2b2HelperService {
     }
 
     void getSnpSampleInfo(List<SnpDataset> datasetList, List<String> datasetNameForSNPViewerList,
-                          List<Long>[] patientNumListArray, Map<Long, SnpDataset[]> snpDatasetBySubjectMap, StringBuffer sampleInfoBuf) {
+                          List<Long>[] patientNumListArray, Map<Long, SnpDataset[]> snpDatasetBySubjectMap, StringBuilder sampleInfoBuf) {
         if (datasetList == null) {
             throw new Exception("The datasetList is null")
         }
@@ -3115,7 +3109,7 @@ class I2b2HelperService {
             throw new Exception("The patient number list for two subsets cannot be null")
         }
         if (sampleInfoBuf == null) {
-            throw new Exception("The StringBuffer for sample info text needs to instantiated")
+            throw new Exception("The StringBuilder for sample info text needs to instantiated")
         }
         // Organize the datasetList and SNPViewer dataset name List, also generate the SNPViewer sample info text in this pass
         sampleInfoBuf.append("Array\tSample\tType\tPloidy(numeric)\tGender\tPaired")
@@ -3162,7 +3156,7 @@ class I2b2HelperService {
         }
     }
 
-    void getSnpGeneAnnotationPage(StringBuffer geneSnpPageBuf, Map<String, SortedMap<Long, Map<Long, GeneWithSnp>>> allGeneSnpMap,
+    void getSnpGeneAnnotationPage(StringBuilder geneSnpPageBuf, Map<String, SortedMap<Long, Map<Long, GeneWithSnp>>> allGeneSnpMap,
                                   Map<Long, GeneWithSnp> geneEntrezIdMap, Map<String, GeneWithSnp> geneNameToGeneWithSnpMap,
                                   List<String> geneNameList, List<String> snpNameList) {
         geneSnpPageBuf.append("<html><header></hearder><body><p>Selected Genes and SNPs</p>")
@@ -3219,7 +3213,7 @@ class I2b2HelperService {
         geneSnpPageBuf.append("</table>")
 
         if (geneNotUsedNameSet) {
-            StringBuffer geneBuf = new StringBuffer()
+            StringBuilder geneBuf = new StringBuilder()
             for (String geneName : geneNotUsedNameSet) {
                 if (geneBuf) {
                     geneBuf.append(", ")
@@ -3241,7 +3235,7 @@ class I2b2HelperService {
                 }
             }
             if (snpNotUsedNameSet) {
-                StringBuffer snpBuf = new StringBuffer()
+                StringBuilder snpBuf = new StringBuilder()
                 for (String snpName : snpNotUsedNameSet) {
                     if (snpBuf) {
                         snpBuf.append(", ")
@@ -3283,7 +3277,7 @@ class I2b2HelperService {
             throw new Exception("Error: The selected cohorts do not have SNP data.")
         }
 
-        StringBuffer sampleInfoBuf = new StringBuffer()
+        StringBuilder sampleInfoBuf = new StringBuilder()
         List<SnpDataset> datasetList = []
         List<String> datasetNameForSNPViewerList = []
         getSnpSampleInfo(datasetList, datasetNameForSNPViewerList, patientNumListArray, snpDatasetBySubjectMap, sampleInfoBuf)
@@ -3420,7 +3414,7 @@ class I2b2HelperService {
         Map<Long, String> patientGenderMap = [:]
         getPatientGenderMap(subjectListStr, patientGenderMap)
 
-        StringBuffer sampleInfoBuf = new StringBuffer()
+        StringBuilder sampleInfoBuf = new StringBuilder()
         List<SnpDataset> datasetList = []
         List<String> datasetNameForSNPViewerList = []
         getSnpSampleInfo(datasetList, datasetNameForSNPViewerList, patientNumListArray, snpDatasetBySubjectMap, sampleInfoBuf)
@@ -3505,8 +3499,6 @@ class I2b2HelperService {
         File mapFile = gwasFiles.getMapFile()
         String mapFilePath = mapFile.absolutePath
         String outputFileRoot = pedFile.parent + File.separator + gwasFiles.fileNameRoot
-
-        String plinkExecutable = Holders.config.com.recomdata.datasetExplorer.plinkExcutable
 
         String cmdLine = plinkExecutable + " --ped " + pedFilePath + " --map " + mapFilePath + " --out " + outputFileRoot + " --assoc --noweb"
 
@@ -3597,7 +3589,7 @@ class I2b2HelperService {
         }
         getSnpGeneGwasScore(neededSnpNameDataMap, entrezScoreNegativeMap, entrezSnpMap, snpEntrezMap, entrezNameMap)
 
-        StringBuffer buf = new StringBuffer()
+        StringBuilder buf = new StringBuilder()
         buf.append("<html><head><title>Genome-Wide Association Study using PLINK</title></head><body><h2>Genome-Wide Association Study</h2>")
         String countStr1 = "", countStr2 = ""
         List<Integer> patientCountList = gwasFiles.patientCountList
@@ -3627,7 +3619,7 @@ class I2b2HelperService {
                 + countStr2 + "</th></tr><tr><td>" + querySummary1 + "</td><td>" + querySummary2 + "</td></tr></table>")
 
         List<String> chromList = gwasFiles.getChromList()
-        StringBuffer chromBuf = new StringBuffer()
+        StringBuilder chromBuf = new StringBuilder()
         for (String chrom : chromList) {
             if (chromBuf) {
                 chromBuf.append(", ")
@@ -3647,7 +3639,7 @@ class I2b2HelperService {
             double score = 0 - (scoreNegative.doubleValue())
             Set<String> entrezSet = scoreEntry.getValue()
             for (String entrezId : entrezSet) {
-                StringBuffer snpBuf = new StringBuffer()
+                StringBuilder snpBuf = new StringBuilder()
                 Set<String> snpNameSet = entrezSnpMap.get(entrezId)
                 for (String snpName : snpNameSet) {
                     String[] snpData = snpNameDataMap.get(snpName)
@@ -3673,7 +3665,7 @@ class I2b2HelperService {
             for (Map.Entry snpEntry : mostSignificantSnps) {
                 String[] snpData = snpEntry.getValue()
                 String snpName = snpData[0]
-                StringBuffer geneBuf = new StringBuffer()
+                StringBuilder geneBuf = new StringBuilder()
                 Set<String> entrezSet = snpEntrezMap.get(snpName)
                 if (entrezSet) {
                     for (String entrezId : entrezSet) {
@@ -3701,7 +3693,7 @@ class I2b2HelperService {
             for (Map.Entry snpEntry : significantSnps) {
                 String[] snpData = snpEntry.getValue()
                 String snpName = snpData[0]
-                StringBuffer geneBuf = new StringBuffer()
+                StringBuilder geneBuf = new StringBuilder()
                 Set<String> entrezSet = snpEntrezMap.get(snpName)
                 if (entrezSet) {
                     for (String entrezId : entrezSet) {
@@ -3749,7 +3741,7 @@ class I2b2HelperService {
             throw new Exception("The object entrezNameMap is not instantiated")
         }
 
-        StringBuffer snpNamesBuf = new StringBuffer()
+        StringBuilder snpNamesBuf = new StringBuilder()
         for (Map.Entry snpEntry : snpNameDataMap) {
             String snpName = snpEntry.getKey()
             if (snpNamesBuf) {
@@ -3779,7 +3771,7 @@ class I2b2HelperService {
         }
 
         // Contruct the entrezId list string, and get entrezNameMap
-        StringBuffer entrezListBuf = new StringBuffer()
+        StringBuilder entrezListBuf = new StringBuilder()
         for (Map.Entry entrezEntry : entrezSnpMap) {
             String entrezId = entrezEntry.getKey()
             if (entrezListBuf) {
@@ -4041,7 +4033,7 @@ class I2b2HelperService {
             return "'ALL'"
         }
         String[] values = chroms.split(",")
-        StringBuffer buf = new StringBuffer()
+        StringBuilder buf = new StringBuilder()
         for (int i = 0; i < values.length; i++) {
             if (i != 0) {
                 buf.append(",")
@@ -4801,7 +4793,7 @@ class I2b2HelperService {
     String createMRNAHeatmapCountQuery(String pathwayName, String ids1, String ids2, String concepts1,
                                        String concepts2, String timepoint1, String timepoint2, String sample1,
                                        String sample2, String intensityType) {
-    	createMRNAHeatmapBaseQuery(pathwayName, ids1, ids2, concepts1, concepts2, timepoint1, timepoint2,
+        createMRNAHeatmapBaseQuery(pathwayName, ids1, ids2, concepts1, concepts2, timepoint1, timepoint2,
           sample1, sample2, intensityType, true)
     }
 
@@ -5011,7 +5003,6 @@ class I2b2HelperService {
             //return access levels for the children of this path that have them
             def results = AuthUserSecureAccess.executeQuery(s.toString())
             //for each of the ones that were found with access put their access levels into the object
-            //    log.trace("***********************")
             for (row in results) {
                 def accessLevel = row[0]
                 def accessPath = row[1]
@@ -5022,7 +5013,6 @@ class I2b2HelperService {
                     log.trace("GRANTING ACCESS TO:" + accessPath)
                 }
             }
-            //	log.trace("***********************")
         }
         return access
     }
@@ -5077,7 +5067,6 @@ class I2b2HelperService {
                 }
 
                 normalunits = ((Node) xpath.evaluate("//ValueMetadata/UnitValues/NormalUnits", doc, XPathConstants.NODE)).getTextContent()
-                //	    log.debug("normalunits": normalunits)
             }
             catch (ex) {
                 log.error("BAD METADATAXML FOUND")
@@ -5141,20 +5130,23 @@ class I2b2HelperService {
         return access
     }
 
-    def getGenesForHaploviewFromResultInstanceId(resultInstanceId) {
+    List<String> getGenesForHaploviewFromResultInstanceId(String resultInstanceId) {
         checkQueryResultAccess resultInstanceId
 
         log.debug("getting genes for happloview")
-        def genes = []
+        List<String> genes = []
         Sql sql = new Sql(dataSource)
-        String sqlt = "select distinct gene from DEAPP.haploview_data a inner join I2B2DEMODATA.qt_patient_set_collection b on a.I2B2_ID=b.patient_num where result_instance_id = ? order by gene asc"
+        String sqlt = '''
+                select distinct gene
+                from DEAPP.haploview_data a
+                inner join I2B2DEMODATA.qt_patient_set_collection b on a.I2B2_ID=b.patient_num
+                where result_instance_id = ?
+                order by gene asc'''
         sql.eachRow(sqlt, [resultInstanceId as Long], { row ->
-            log.trace("IN ROW ITERATOR")
-            log.trace("Found:" + row.gene)
-            genes.add(row.gene)
-            log.trace(row.gene)
+            log.trace("IN ROW ITERATOR; Found:" + row.gene)
+            genes << row.gene
         })
-        return genes
+        genes
     }
 
     /**
@@ -5268,9 +5260,9 @@ class I2b2HelperService {
 
             String concept_cd = getConceptCodeFromKey(concept_key)
             String sqlt = """SELECT TRIAL, NVAL_NUM FROM I2B2DEMODATA.OBSERVATION_FACT f INNER JOIN I2B2DEMODATA.PATIENT_TRIAL t
-			    ON f.PATIENT_NUM=t.PATIENT_NUM WHERE CONCEPT_CD = ? AND
-			    f.PATIENT_NUM IN (select distinct patient_num from I2B2DEMODATA.qt_patient_set_collection
-				where result_instance_id = ?)"""
+                ON f.PATIENT_NUM=t.PATIENT_NUM WHERE CONCEPT_CD = ? AND
+                f.PATIENT_NUM IN (select distinct patient_num from I2B2DEMODATA.qt_patient_set_collection
+                where result_instance_id = ?)"""
             sql.eachRow(sqlt, [
                     concept_cd,
                     result_instance_id
@@ -5305,11 +5297,11 @@ class I2b2HelperService {
             Sql sql = new Sql(dataSource)
 
             String sqlt = """SELECT TRIAL, NVAL_NUM FROM I2B2DEMODATA.OBSERVATION_FACT f INNER JOIN I2B2DEMODATA.PATIENT_TRIAL t
-			ON f.PATIENT_NUM=t.PATIENT_NUM
-			WHERE CONCEPT_CD IN (""" + listToIN(childConcepts.asList()) + """) AND
-			f.PATIENT_NUM IN (select distinct patient_num
-					from I2B2DEMODATA.qt_patient_set_collection
-					where result_instance_id=""" + result_instance_id + """) """
+            ON f.PATIENT_NUM=t.PATIENT_NUM
+            WHERE CONCEPT_CD IN (""" + listToIN(childConcepts.asList()) + """) AND
+            f.PATIENT_NUM IN (select distinct patient_num
+                    from I2B2DEMODATA.qt_patient_set_collection
+                    where result_instance_id=""" + result_instance_id + """) """
 
             log.trace("about to execute query: " + sqlt)
             sql.eachRow(sqlt,
@@ -5669,7 +5661,7 @@ class I2b2HelperService {
      * Gets the platforms found
      * For now, subids could be null due to complexity of workflow and user error
      */
-    def fillHeatmapValidator(subids, conids, hv) {
+    void fillHeatmapValidator(List<String> subids, List<String> conids, HeatmapValidator hv) {
 
         //If the list of subids does not have any elements, or it has only one element which is "ALL"
         if (!subids || (subids.size == 1 && subids[0] == "ALL")) {
@@ -5856,7 +5848,7 @@ class I2b2HelperService {
      * For now, subids could be null due to complexity of workflow and user error
      * Incoming ci contains a list of codes. Outgoing ci contains codes:label maps
      */
-    def fillCohortInformation(subids, conids, ci, infoType) {
+    void fillCohortInformation(List<String> subids, List<String> conids, CohortInformation ci, int infoType) {
         //If the list of subids does not have any elements, or it has only one element which is "ALL"
         if (!subids || (subids.size == 1 && subids[0] == "ALL")) {
             subids = null
@@ -5897,16 +5889,16 @@ class I2b2HelperService {
                 if (ci.platforms.get(0) == 'RBM') {
                     sqlt += " and instr(timepoint_cd, ':Z:')>0"
                 }
-                if (ci.gpls.size > 0) {
+                if (ci.gpls) {
                     sqlt += " and gpl_id in(" + listToIN(ci.gpls) + ")"
                 }
-                if (ci.tissues.size > 0) {
+                if (ci.tissues) {
                     sqlt += " and tissue_type_cd in(" + listToIN(ci.tissues) + ")"
                 }
-                if (ci.samples.size > 0) {
+                if (ci.samples) {
                     sqlt += " and sample_type_cd in (" + listToIN(ci.samples) + ")"
                 }
-                if (ci.rbmpanels.size > 0) {
+                if (ci.rbmpanels) {
                     sqlt += " and rbm_panel in (" + listToIN(ci.rbmpanels) + ")"
                 }
                 sqlt += " order by timepoint"
@@ -5920,7 +5912,7 @@ class I2b2HelperService {
                 ci.samples = []
                 sqlt = "select distinct sample_type, sample_type_cd from DEAPP.de_subject_sample_mapping where trial_name in (" + listToIN(ci.trials) + ") " +
                         "and platform in (" + listToIN(ci.platforms) + ")"
-                if (ci.gpls.size > 0) {
+                if (ci.gpls) {
                     sqlt += " and gpl_id in(" + listToIN(ci.gpls) + ")"
                 }
                 sqlt += " order by sample_type"
@@ -5932,10 +5924,10 @@ class I2b2HelperService {
                 ci.tissues = []
                 sqlt = "select distinct tissue_type, tissue_type_cd from DEAPP.de_subject_sample_mapping where trial_name in (" + listToIN(ci.trials) + ") " +
                         "and platform in (" + listToIN(ci.platforms) + ")"
-                if (ci.gpls.size > 0) {
+                if (ci.gpls) {
                     sqlt += " and gpl_id in(" + listToIN(ci.gpls) + ")"
                 }
-                if (ci.samples.size > 0) {
+                if (ci.samples) {
                     sqlt += " and sample_type_cd in (" + listToIN(ci.samples) + ")"
                 }
                 sqlt += " order by tissue_type"
@@ -5974,7 +5966,7 @@ class I2b2HelperService {
      *
      * If there are multiple, search by concept_code. Return none to multiple defaults.
      */
-    def fillDefaultGplInHeatMapValidator(hv, ci, concepts) {
+    void fillDefaultGplInHeatMapValidator(HeatmapValidator hv, CohortInformation ci, List<String> concepts) {
         ci.platforms.add(hv.getFirstPlatform())
         fillCohortInformation(null, null, ci, CohortInformation.GPL_TYPE)
         if (ci.gpls.size() == 1) {
@@ -6032,9 +6024,9 @@ class I2b2HelperService {
         if (rid1 != null & rid2 != null) {
             Sql sql = new Sql(dataSource)
             String sqlt = """SELECT DISTINCT SECURE_OBJ_TOKEN FROM I2B2DEMODATA.PATIENT_TRIAL t
-			    WHERE t.PATIENT_NUM IN (select distinct patient_num
-				from I2B2DEMODATA.qt_patient_set_collection
-				where result_instance_id IN (?, ?))"""
+                WHERE t.PATIENT_NUM IN (select distinct patient_num
+                from I2B2DEMODATA.qt_patient_set_collection
+                where result_instance_id IN (?, ?))"""
             log.debug(sqlt)
             sql.eachRow(sqlt, [rid1, rid2], { row ->
                 if (row.SECURE_OBJ_TOKEN != null) {
@@ -6055,9 +6047,9 @@ class I2b2HelperService {
             }
             Sql sql = new Sql(dataSource)
             String sqlt = """SELECT DISTINCT SECURE_OBJ_TOKEN FROM I2B2DEMODATA.PATIENT_TRIAL t
-			    WHERE t.PATIENT_NUM IN (select distinct patient_num
-				from I2B2DEMODATA.qt_patient_set_collection
-				where result_instance_id = ?)"""
+                WHERE t.PATIENT_NUM IN (select distinct patient_num
+                from I2B2DEMODATA.qt_patient_set_collection
+                where result_instance_id = ?)"""
             log.debug(sqlt)
             sql.eachRow(sqlt, [rid], { row ->
                 if (row.SECURE_OBJ_TOKEN != null) {
@@ -6091,10 +6083,17 @@ class I2b2HelperService {
         })
 
         return trials
+    }
+
+    void afterPropertiesSet() {
+        censorFlagList = grailsApplication.config.com.recomdata.analysis.survival.censorFlagList as List<String>
+        survivalDataList = grailsApplication.config.com.recomdata.analysis.survival.survivalDataList as List<String>
+    }
 }
 
-}
-
+@CompileStatic
 class SurvivalConcepts {
-    Concept conceptSurvivalTime, conceptCensoring, conceptEvent
+    Concept conceptSurvivalTime
+    Concept conceptCensoring
+    Concept conceptEvent
 }

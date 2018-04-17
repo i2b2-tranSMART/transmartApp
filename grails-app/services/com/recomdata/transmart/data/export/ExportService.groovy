@@ -15,6 +15,7 @@ import org.quartz.JobDetail
 import org.quartz.Scheduler
 import org.quartz.impl.JobDetailImpl
 import org.quartz.impl.triggers.SimpleTriggerImpl
+import org.springframework.beans.factory.annotation.Value
 import org.transmart.plugin.shared.SecurityService
 import org.transmartproject.core.users.User
 import org.transmartproject.db.dataquery.highdim.HighDimensionResourceService
@@ -35,8 +36,11 @@ class ExportService {
 	Scheduler quartzScheduler
 	SecurityService securityService
 
+	@Value('${com.recomdata.plugins.tempFolderDirectory:}')
+	private String tempFolderDirectory
+
 	@Transactional
-	def createExportDataAsyncJob(String analysis, String querySummary1, String querySummary2) {
+	JSONObject createExportDataAsyncJob(String analysis, String querySummary1, String querySummary2) {
 		String jobStatus = 'Started'
 
 		AsyncJob newJob = new AsyncJob(lastRunOn: new Date(), jobType: analysis, jobStatus: jobStatus)
@@ -66,7 +70,6 @@ class ExportService {
 	 * This method than builds a pointlessly deeply nested map for you!
 	 *
 	 * @param selectedCheckboxList List with selected checkboxes
-	 * @return
 	 */
 	protected Map getHighDimDataTypesAndFormats(selectedCheckboxList) {
 		Map formats = [:]
@@ -90,16 +93,16 @@ class ExportService {
 		formats
 	}
 
-	private Map getSubsetSelectedFilesMap(List selectedCheckboxJsonList) {
-		def subsetSelectedFilesMap = [:]
+	private Map<String, List<String>> getSubsetSelectedFilesMap(List selectedCheckboxJsonList) {
+		Map<String, List<String>> subsetSelectedFilesMap = [:]
 
-		selectedCheckboxJsonList?.unique()?.each { checkboxItem ->
+		for (checkboxItem in selectedCheckboxJsonList?.unique()) {
 			String currentSubset = null
 			if (checkboxItem.subset) {
 				//The first item is the subset name.
 				currentSubset = checkboxItem.subset.trim().replace(' ', '')
-				if (null == subsetSelectedFilesMap.get(currentSubset)) {
-					subsetSelectedFilesMap.put(currentSubset, [])
+				if (null == subsetSelectedFilesMap[currentSubset]) {
+					subsetSelectedFilesMap[currentSubset] = []
 				}
 			}
 
@@ -110,42 +113,39 @@ class ExportService {
 						|| checkboxItem.dataTypeId in highDimensionResourceService.knownTypes)) {
 					selectedFile += '.' + checkboxItem.fileType
 				}
-				subsetSelectedFilesMap.get(currentSubset)?.push(selectedFile)
+				subsetSelectedFilesMap[currentSubset] << selectedFile
 			}
 		}
 
 		subsetSelectedFilesMap
 	}
 
-	def getsubsetSelectedPlatformsByFiles(checkboxList) {
-		def subsetSelectedPlatformsByFiles = [:]
+	Map<String, Map> getsubsetSelectedPlatformsByFiles(checkboxList) {
+		Map<String, Map> subsetSelectedPlatformsByFiles = [:]
 		//Split the list on commas first, each box is seperated by ','.
-		checkboxList.each { checkboxItem ->
+		for (checkboxItem in checkboxList) {
 			//Split the item by '_' to get the different attributes.
 			// Attributes are: <subset_id>_<datatype>_<exportformat>_<platform>
 			// e.g. subset1_mrna_TSV_GPL570
 			String[] checkboxItemArray = StringUtils.split(checkboxItem, '_')
 
 			//The first item is the subset name.
-			def currentSubset = checkboxItemArray[0].trim().replace(' ', '')
+			String currentSubset = checkboxItemArray[0].trim().replace(' ', '')
 
 			//Fourth item is the selected (gpl) platform
 			if (checkboxItemArray.size() > 3) {
-				def fileName = checkboxItemArray[1].trim() + checkboxItemArray[2].trim()
-				def platform = checkboxItemArray[3].trim()
+				String fileName = checkboxItemArray[1].trim() + checkboxItemArray[2].trim()
+				String platform = checkboxItemArray[3].trim()
 				if (subsetSelectedPlatformsByFiles.containsKey(currentSubset)) {
 					if (subsetSelectedPlatformsByFiles.get(currentSubset).containsKey(fileName)) {
-						def platformFilesList = subsetSelectedPlatformsByFiles.get(currentSubset).get(fileName)
-						platformFilesList.push(platform)
+						subsetSelectedPlatformsByFiles.get(currentSubset).get(fileName) << platform
 					}
 					else {
 						subsetSelectedPlatformsByFiles.get(currentSubset).put(fileName, [platform])
 					}
 				}
 				else {
-					def platformsMap = new HashMap()
-					platformsMap.put(fileName, [platform])
-					subsetSelectedPlatformsByFiles.put(currentSubset, platformsMap)
+					subsetSelectedPlatformsByFiles[currentSubset] = [(fileName): [platform]]
 				}
 			}
 		}
@@ -154,8 +154,6 @@ class ExportService {
 	}
 
 	private Date createExportDataJob(params) {
-		//Put together a map with an entry for each file type we need to output.
-		def fileTypeMap = [:]
 
 		//We need a sub hash for each subset.
 		Map resultInstanceIds = [subset1: params.result_instance_id1, subset2: params.result_instance_id2]
@@ -216,6 +214,6 @@ class ExportService {
 	}
 
 	InputStream downloadFile(String jobName) {
-		new ExportDataProcessor().getExportJobFileStream AsyncJob.findByJobName(jobName).viewerURL
+		new ExportDataProcessor(tempFolderDirectory).getExportJobFileStream AsyncJob.findByJobName(jobName).viewerURL
 	}
 }

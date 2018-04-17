@@ -1,5 +1,8 @@
 package org.transmartfoundation.status
 
+import groovy.transform.CompileStatic
+
+@CompileStatic
 class SolrStatus {
 
 	String url
@@ -12,7 +15,7 @@ class SolrStatus {
 	int sampleNumberOfRecords
 	Date lastProbe
 
-	String toString () {
-		return "SolrStatus (URL: " + url + ") - probe at: " + lastProbe
+	String toString() {
+		'SolrStatus (URL: ' + url + ') - probe at: ' + lastProbe
 	}
 }

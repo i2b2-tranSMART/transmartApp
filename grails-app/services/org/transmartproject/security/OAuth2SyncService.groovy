@@ -1,84 +1,93 @@
 package org.transmartproject.security
 
+import grails.transaction.Transactional
 import groovy.util.logging.Slf4j
+import org.codehaus.groovy.grails.commons.GrailsApplication
+import org.springframework.beans.factory.InitializingBean
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.authentication.encoding.PasswordEncoder
 import org.transmart.oauth2.Client
 
 /**
  * Synchronize OAuth2 client configuration.
  */
-@Slf4j
-class OAuth2SyncService {
+@Slf4j('logger')
+class OAuth2SyncService implements InitializingBean {
 
-    static datasource = 'oauth2'
+	static datasource = 'oauth2'
 
-    def springSecurityService
+	@Autowired private GrailsApplication grailsApplication
+	@Autowired private PasswordEncoder passwordEncoder
 
-    def grailsApplication
+	private List<Map> clients
 
-    void syncOAuth2Clients() {
-        def clients = grailsApplication.config.grails.plugin.springsecurity.oauthProvider.clients
+	@Transactional
+	void syncOAuth2Clients() {
 
-        if (clients == false) {
-            log.debug('Clients list in config is false; will do no synchronization')
-            return
-        }
+		if (!clients) {
+			logger.debug 'Clients list in config is false; will do no synchronization'
+			return
+		}
 
-        clients.each { Map m ->
-            if (!m['clientId']) {
-                log.error("Client data without clientId: $m")
-                return
-            }
+		for (Map m in clients) {
+			if (!m.clientId) {
+				logger.error 'Client data without clientId: {}', m
+				continue
+			}
 
-            def client = Client.findByClientId(m['clientId'])
-            if (client == null) {
-                client = new Client()
-            }
-            def dirty = false
-            m.each { String prop, def value ->
-                if (Client.hasProperty(prop)) {
-                    log.error("Invalid property $prop in client definition $m")
-                    return
-                }
+			Client client = Client.findByClientId(m.clientId) ?: new Client()
 
-                // Convert GStrings to Strings, Lists to Sets
-                if (!(value instanceof List)) {
-                    value = value.toString()
-                } else {
-                    value = value*.toString() as Set
-                }
+			boolean dirty = false
+			m.each { String prop, value ->
+				if (Client.hasProperty(prop)) {
+					logger.error 'Invalid property {} in client definition {}', prop, m
+					return
+				}
 
-                if (prop == 'clientSecret' && springSecurityService.passwordEncoder) {
-                    if (springSecurityService.passwordEncoder.isPasswordValid(client."$prop", value, null)) {
-                        return
-                    }
-                } else if (client."$prop" == value) {
-                    return
-                }
+				// Convert GStrings to Strings, Lists to Sets
+				if (!(value instanceof List)) {
+					value = value.toString()
+				}
+				else {
+					value = value*.toString() as Set
+				}
 
-                client."$prop" = value
-                dirty = true
-            }
+				if (prop == 'clientSecret') {
+					if (passwordEncoder.isPasswordValid(client[prop], value, null)) {
+						return
+					}
+				}
+				else if (client[prop] == value) {
+					return
+				}
 
-            if (dirty) {
-                log.info("Updating client ${m['clientId']}")
-                client.save(flush: true)
-            }
-        }
+				client[prop] = value
+				dirty = true
+			}
 
-        def allClientIds = clients.collect { Map m -> m['clientId'] }.findAll()
+			if (dirty) {
+				logger.info 'Updating client {}', m.clientId
+				client.save(flush: true)
+			}
+		}
 
-        int n = 0
-        n = Client.where {
-            ne 'clientId', '__BOGUS' // hack to avoid empty WHERE clause
-            if (allClientIds) {
-                not {
-                    'in' 'clientId', allClientIds
-                }
-            }
-        }.deleteAll()
+		List<String> allClientIds = clients.collect { Map m -> m.clientId }.findAll()
 
-        if (n != 0) {
-            log.warn("Deleted $n OAuth2 clients")
-        }
-    }
+		int n = Client.where {
+			ne 'clientId', '__BOGUS' // hack to avoid empty WHERE clause
+			if (allClientIds) {
+				not {
+					'in' 'clientId', allClientIds
+				}
+			}
+		}.deleteAll()
+
+		if (n) {
+			logger.warn 'Deleted {} OAuth2 clients', n
+		}
+	}
+
+	void afterPropertiesSet() {
+		clients = grailsApplication.config.grails.plugin.springsecurity.oauthProvider.clients ?: []
+	}
 }

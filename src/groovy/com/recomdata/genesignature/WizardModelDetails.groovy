@@ -4,11 +4,13 @@
 package com.recomdata.genesignature
 
 import com.recomdata.util.ModelDetails
+import groovy.transform.CompileStatic
 import org.transmart.biomart.ConceptCode
 
 /**
  * @author jspencer
  */
+@CompileStatic
 class WizardModelDetails extends ModelDetails {
 
 	// wizard tyes
@@ -20,20 +22,20 @@ class WizardModelDetails extends ModelDetails {
 	int wizardType = WIZ_TYPE_CREATE
 
 	// pick lists
-	def sources
-	def owners
-	def species
-	def mouseSources
-	def tissueTypes
-	def expTypes
-	def analyticTypes
-	def normMethods
 	def analysisMethods
-	def schemas
-	def pValCutoffs
-	def foldChgMetrics
-	def platforms
+	def analyticTypes
 	def compounds
+	def expTypes
+	def foldChgMetrics
+	def mouseSources
+	def normMethods
+	def owners
+	def platforms
+	def pValCutoffs
+	def schemas
+	def sources
+	def species
+	def tissueTypes
 
 	// domain class
 	def geneSigInst

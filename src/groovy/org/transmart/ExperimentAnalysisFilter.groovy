@@ -1,66 +1,66 @@
 package org.transmart
 
+import groovy.transform.CompileStatic
+
 /**
- * @author $Author: mmcduffie $
- * $Id: ExperimentAnalysisFilter.groovy 9178 2011-08-24 13:50:06Z mmcduffie $
- * @version $Revision: 9178 $
- *
+ * @author mmcduffie
  */
+@CompileStatic
+class ExperimentAnalysisFilter {
 
-public class ExperimentAnalysisFilter {
+	String dataSource
+	Long bioDiseaseId
+	String species
+	String expDesign
+	String expType
+	Long bioCompoundId
+	String tissueType
+	String cellLine
+	String expDescrKeyword
+	Double foldChange
+	Double pvalue
 
-    String dataSource
-    Long bioDiseaseId
-    String species
-    String expDesign
-    String expType
-    Long bioCompoundId
-    String tissueType
-    String cellLine
-    String expDescrKeyword
-    //String platformOrganism
-    //Double foldChange = 1.2
-    //Double pValue = 0.05
-    Double foldChange
-    Double pvalue
+	boolean isUsed() {
+		species ||
+		expDesign ||
+		expType ||
+		dataSource ||
+		bioCompoundId != null ||
+		bioDiseaseId != null ||
+		foldChange != null ||
+		pvalue != null ||
+		cellLine
+	}
 
-    def isUsed() {
-        return validString(species) || validString(expDesign) || validString(expType) || validString(dataSource) || bioCompoundId != null || bioDiseaseId != null || foldChange != null || pvalue != null || validString(cellLine);
-    }
+	boolean filterFoldChange() {
+		foldChange > 0
+	}
 
-    def filterFoldChange() {
-        return foldChange != null && foldChange > 0;
-    }
+	boolean filterPValue() {
+		pvalue > 0
+	}
 
-    def filterPValue() {
-        return pvalue != null && pvalue > 0;
-    }
+	boolean filterDisease() {
+		bioDiseaseId > 0
+	}
 
-    def filterDisease() {
-        return bioDiseaseId != null && bioDiseaseId > 0;
-    }
+	boolean filterCompound() {
+		bioCompoundId > 0
+	}
 
-    def filterCompound() {
-        return bioCompoundId != null && bioCompoundId > 0;
-    }
+	boolean filterSpecies() {
+		species
+	}
 
-    def filterSpecies() {
-        return validString(species);
-    }
+	boolean filterExpDesign() {
+		expDesign
+	}
 
-    def filterExpDesign() {
-        return validString(expDesign);
-    }
+	boolean filterExpType() {
+		expType
+	}
 
-    def filterExpType() {
-        return validString(expType);
-    }
-
-    def filterDataSource() {
-        return validString(dataSource)
-    }
-
-    def validString(String s) {
-        return s != null && s.length() > 0;
-    }
+	boolean filterDataSource() {
+		dataSource
+	}
 }

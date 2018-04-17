@@ -4,9 +4,12 @@
  */
 package com.recomdata.util
 
+import groovy.transform.CompileStatic
+
 /**
  * @author jspencer
  */
+@CompileStatic
 class ModelDetails {
 	def loggedInUser
 }

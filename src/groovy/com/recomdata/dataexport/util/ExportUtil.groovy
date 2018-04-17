@@ -1,46 +1,54 @@
 package com.recomdata.dataexport.util
 
-import org.apache.commons.lang.StringUtils;
+import groovy.transform.CompileStatic
+import org.apache.commons.lang.StringUtils
 
+@CompileStatic
 class ExportUtil {
 
-    public static String getShortConceptPath(String conceptPath, removalArr) {
-        def arr = StringUtils.split(conceptPath, "\\")
-        def valList = []
-        //Remove upto Study-name and any string values specified in the removalArr
-        if (arr.length > 2) arr.eachWithIndex { val, i ->
-            def valShouldBeRemoved = false
-            removalArr.each { removalVal ->
-                if (StringUtils.equalsIgnoreCase(removalVal, val)) {
-                    valShouldBeRemoved = true
-                    return
-                }
-            }
+	static String getShortConceptPath(String conceptPath, List<String> removalArr) {
+		String[] split = StringUtils.split(conceptPath, "\\")
+		List<String> values = []
+		//Remove upto Study-name and any string values specified in the removalArr
+		if (split.length > 2) {
+			split.eachWithIndex { String value, int i ->
+				boolean valShouldBeRemoved = false
+				for (String removalVal in removalArr) {
+					if (StringUtils.equalsIgnoreCase(removalVal, value)) {
+						valShouldBeRemoved = true
+						break
+					}
+				}
 
-            if (i > 1 && !valShouldBeRemoved) {
-                valList.add(val)
-            } else if (valShouldBeRemoved) {
-                arr[i] = ''
-            }
-        }
+				if (i > 1 && !valShouldBeRemoved) {
+					values << value
+				}
+				else if (valShouldBeRemoved) {
+					split[i] = ''
+				}
+			}
+		}
 
-        def shortenedConceptPath = StringUtils.join(valList, '\\')
-        shortenedConceptPath = StringUtils.leftPad(shortenedConceptPath, shortenedConceptPath.length() + 1, '\\')
+		String shortenedConceptPath = StringUtils.join(values, '\\')
+		StringUtils.leftPad(shortenedConceptPath, shortenedConceptPath.length() + 1, '\\')
+	}
 
-        return shortenedConceptPath
-    }
-
-    public static String getSampleValue(String value, String sampleType, String timepoint, String tissueType) {
-        def retVal = null;
-        if (StringUtils.equalsIgnoreCase(value, "E") || StringUtils.equalsIgnoreCase(value, "normal")) {
-            def retVals = []
-            if (null != sampleType && StringUtils.isNotEmpty(sampleType)) retVals.add(sampleType)
-            if (null != timepoint && StringUtils.isNotEmpty(timepoint)) retVals.add(timepoint)
-            if (null != tissueType && StringUtils.isNotEmpty(tissueType)) retVals.add(tissueType)
-            retVal = StringUtils.join(retVals, "/")
-        } else {
-            retVal = value
-        }
-        return retVal
-    }
+	static String getSampleValue(String value, String sampleType, String timepoint, String tissueType) {
+		if (StringUtils.equalsIgnoreCase(value, "E") || StringUtils.equalsIgnoreCase(value, "normal")) {
+			List<String> values = []
+			if (sampleType) {
+				values << sampleType
+			}
+			if (timepoint) {
+				values << timepoint
+			}
+			if (tissueType) {
+				values << tissueType
+			}
+			StringUtils.join values, "/"
+		}
+		else {
+			value
+		}
+	}
 }

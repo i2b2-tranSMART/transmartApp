@@ -1,21 +1,27 @@
 package com.recomdata.transmart.data.export
 
-import grails.util.Holders
 import groovy.util.logging.Slf4j
+import org.codehaus.groovy.grails.commons.GrailsApplication
+import org.springframework.beans.factory.InitializingBean
+import org.springframework.beans.factory.annotation.Autowired
 import org.transmartproject.core.dataquery.highdim.assayconstraints.AssayConstraint
 import org.transmartproject.core.ontology.OntologyTerm
+import org.transmartproject.export.HighDimExporter
 import org.transmartproject.export.HighDimExporterRegistry
 
 //TODO Remove duplicated code for both subset. Make code more generic for any number of subsets
 @Slf4j('logger')
-class ExportMetadataService {
+class ExportMetadataService implements InitializingBean {
 
 	static transactional = false
 
-	DataCountService dataCountService
+	@Autowired private DataCountService dataCountService
+	@Autowired private GrailsApplication grailsApplication
 	def highDimensionResourceService
 	HighDimExporterRegistry highDimExporterRegistry
 	def queriesResourceService
+
+	private Map<String, String> dataTypesMap
 
 	private Map createJSONFileObject(Map fileData, patientsNumber) {
 		Map file = [dataTypeHasCounts: true,
@@ -101,46 +107,41 @@ class ExportMetadataService {
 	 * This method was taken from the ExportService before high dimensional datatypes were exported through core-api.
 	 * SNP data is not yet implemented there. FIXME: implement SNP in core-db and remove this method
 	 */
-	def getLegacyHighDimensionMetaData(Long resultInstanceId1, Long resultInstanceId2) {
-		def dataTypesMap = Holders.config.com.recomdata.transmart.data.export.dataTypesMap
+	List<Map> getLegacyHighDimensionMetaData(Long resultInstanceId1, Long resultInstanceId2) {
 
 		//The result instance id's are stored queries which we can use to get information from the i2b2 schema.
-		def rIDs = [resultInstanceId1, resultInstanceId2].toArray(new Long[0])
+		Long[] rIDs = [resultInstanceId1, resultInstanceId2]
 
-		def subsetLen = (resultInstanceId1 && resultInstanceId2) ? 2 : (resultInstanceId1 || resultInstanceId2) ? 1 : 0
-		log.debug('rID1 :: ' + resultInstanceId1 + ' :: rID2 :: ' + resultInstanceId2)
+		int subsetLen = (resultInstanceId1 && resultInstanceId2) ? 2 : (resultInstanceId1 || resultInstanceId2) ? 1 : 0
+		logger.debug 'rID1 :: {} :: rID2 :: {}', resultInstanceId1, resultInstanceId2
 
 		//Retrieve the counts for each subset. We get back a map that looks like ['RBM':2,'MRNA':30]
 		Map subset1CountMap = dataCountService.getDataCounts(resultInstanceId1, rIDs)
 		Map subset2CountMap = dataCountService.getDataCounts(resultInstanceId2, rIDs)
-		log.debug('subset1CountMap :: ' + subset1CountMap + ' :: subset2CountMap :: ' + subset2CountMap)
+		logger.debug 'subset1CountMap :: {} :: subset2CountMap :: {}', subset1CountMap, subset2CountMap
 
 		Map finalMap = [subset1: subset1CountMap, subset2: subset2CountMap]
-		//render '{"subset1": [{"PLINK": "102","RBM":"28"}],"subset2": [{"PLINK": "1","RBM":"2"}]}'
-		def result = [noOfSubsets: subsetLen]
 
-		def rows = []
-		dataTypesMap.each { key, value ->
+		List<Map> rows = []
+		dataTypesMap.each { String key, String value ->
 			if (key != 'SNP') {
 				return
 			}
-			def dataType = [:]
-			def dataTypeHasCounts = false
-			dataType['dataTypeId'] = key
-			dataType['dataTypeName'] = value
+			boolean dataTypeHasCounts = false
+			Map dataType = [dataTypeId: key, dataTypeName: value]
 			//TODO replace 2 with subsetLen
 			for (i in 1..2) {
 				if (key == 'SNP') {
 					dataType['subset' + i] = createJSONFileObject(
-							[".PED, .MAP & .CNV": "Processed Data", ".CEL": "Raw Data", ".TXT": 'Text'],
-							finalMap["subset${i}"][key])
+							['.PED, .MAP & .CNV': 'Processed Data', '.CEL': 'Raw Data', '.TXT': 'Text'],
+							finalMap['subset' + i][key])
 				}
-				if ((null != finalMap["subset${i}"][key] && finalMap["subset${i}"][key] > 0)) {
+				if ((null != finalMap['subset' + i][key] && finalMap['subset' + i][key] > 0)) {
 					dataTypeHasCounts = true
-				};
+				}
 
-				dataType['subsetId' + i] = "subset" + i
-				dataType['subsetName' + i] = "Subset " + i
+				dataType['subsetId' + i] = 'subset' + i
+				dataType['subsetName' + i] = 'Subset ' + i
 				dataType.isHighDimensional = true
 			}
 			if (dataTypeHasCounts) {
@@ -154,12 +155,12 @@ class ExportMetadataService {
 	/**
 	 * Converts information about clinical data and high dimensional data into a map
 	 * that can be handled by the frontend javascript
+	 * see dataTab.js
+	 * see ExportService.getClinicalMetaData ( )
+	 * see ExportService.getHighDimMetaData ( )
 	 * @param clinicalData
 	 * @param highDimensionalData
-	 * @see dataTab.js
-	 * @see ExportService.getClinicalMetaData ( )
-	 * @see ExportService.getHighDimMetaData ( )
-	 * @return Map with root key "exportMetaData", which in turn contains a list of
+	 * @return Map with root key 'exportMetaData', which in turn contains a list of
 	 *              datatypes to export. Each item in the list is a map that has keys,
 	 *              as below:
 	 *                  subsetId1
@@ -175,13 +176,13 @@ class ExportMetadataService {
 	 *                  subset2
 	 */
 	protected Map convertIntoMetaDataMap(clinicalData, highDimensionalData) {
-		Map clinicalOutput = [subsetId1        : "subset1",
-		                      subsetId2        : "subset2",
-		                      subsetName1      : "Subset 1",
-		                      subsetName2      : "Subset 2",
+		Map clinicalOutput = [subsetId1        : 'subset1',
+		                      subsetId2        : 'subset2',
+		                      subsetName1      : 'Subset 1',
+		                      subsetName2      : 'Subset 2',
 
-		                      dataTypeId       : "CLINICAL",
-		                      dataTypeName     : "Clinical & Low Dimensional Biomarker Data",
+		                      dataTypeId       : 'CLINICAL',
+		                      dataTypeName     : 'Clinical & Low Dimensional Biomarker Data',
 		                      isHighDimensional: false,
 
 		                      subset1          : [
@@ -200,6 +201,8 @@ class ExportMetadataService {
 	/**
 	 * Converts information about high dimensional data into a map
 	 * that can be handled by the frontend javascript
+	 * see dataTab.js
+	 * see ExportService.getHighDimMetaData ( )
 	 * @param highDimensionalData A list with datatypes that can be exported
 	 * @return A list of datatypes to export. Each item in the list is a map that has keys,
 	 *              as below:
@@ -214,8 +217,6 @@ class ExportMetadataService {
 	 *
 	 *                  subset1
 	 *                  subset2
-	 * @see dataTab.js
-	 * @see ExportService.getHighDimMetaData ( )
 	 */
 	protected convertHighDimMetaData(highDimensionalData) {
 		// TODO: Support multiple export formats per datatype (e.g. raw data and processed data)
@@ -225,14 +226,14 @@ class ExportMetadataService {
 		highDimensionalData.collect { highDimRow ->
 			// Determine the types of files that can be exported for this
 			// datatype
-			def exporters = highDimExporterRegistry
+			List<HighDimExporter> exporters = highDimExporterRegistry
 					.findExporters(dataType: highDimRow.datatype.dataTypeName)
 					.sort { it.format }
 
-			[subsetId1        : "subset1",
-			 subsetId2        : "subset2",
-			 subsetName1      : "Subset 1",
-			 subsetName2      : "Subset 2",
+			[subsetId1        : 'subset1',
+			 subsetId2        : 'subset2',
+			 subsetName1      : 'Subset 1',
+			 subsetName2      : 'Subset 2',
 			 dataTypeId       : highDimRow.datatype.dataTypeName,
 			 dataTypeName     : highDimRow.datatype.dataTypeDescription,
 			 isHighDimensional: true,
@@ -248,5 +249,9 @@ class ExportMetadataService {
 					 ontologyTermKeys : highDimRow.subset2_hd_terms]
 			]
 		}
+	}
+
+	void afterPropertiesSet() {
+		dataTypesMap = grailsApplication.config.com.recomdata.transmart.data.export.dataTypesMap ?: [:]
 	}
 }

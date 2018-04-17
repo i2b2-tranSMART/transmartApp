@@ -1,16 +1,15 @@
-/**
- * @author JIsikoff
- *
- */
 package command
 
 import grails.validation.Validateable
 
+/**
+ * @author JIsikoff
+ */
 @Validateable
-public class UserGroupCommand {
-    String[] userstoadd
-    String[] userstoremove
-    String[] groupstoadd
-    String[] groupstoremove
-    String searchtext
+class UserGroupCommand {
+	String[] userstoadd
+	String[] userstoremove
+	String[] groupstoadd
+	String[] groupstoremove
+	String searchtext
 }

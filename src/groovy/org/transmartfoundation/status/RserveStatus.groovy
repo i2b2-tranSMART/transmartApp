@@ -1,18 +1,18 @@
 package org.transmartfoundation.status
 
-import java.util.Date;
+import groovy.transform.CompileStatic
 
+@CompileStatic
 class RserveStatus {
 
-    String url
-    boolean connected
-    boolean simpleExpressionOK
-    boolean librariesOk
-    String lastErrorMessage
-    Date lastProbe
+	String url
+	boolean connected
+	boolean simpleExpressionOK
+	boolean librariesOk
+	String lastErrorMessage
+	Date lastProbe
 
-    String toString () {
-        return "RserveStatus (" + url + ") - probe at: " + lastProbe
-    }
-
+	String toString() {
+		'RserveStatus (' + url + ') - probe at: ' + lastProbe
+	}
 }

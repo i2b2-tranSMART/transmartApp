@@ -3,8 +3,11 @@ import com.recomdata.search.DocumentQuery
 import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.beans.factory.annotation.Value
+import org.transmart.GlobalFilter
+import org.transmart.KeywordSet
 import org.transmart.SearchFilter
 import org.transmart.SearchKeywordService
+import org.transmart.searchapp.SearchKeyword
 
 /**
  * @author mmcduffie
@@ -35,108 +38,83 @@ class DocumentService implements InitializingBean {
 
 	Map<String, List<String>> documentTerms(SearchFilter sfilter) {
 
-		def gfilter = sfilter.globalFilter
-		def geneFilters = gfilter.getGeneFilters()
-		def pathwayIds = gfilter.formatIdList(gfilter.getAllListFilters(), ",")
+		GlobalFilter gfilter = sfilter.globalFilter
+		KeywordSet geneFilters = gfilter.geneFilters
+		String pathwayIds = gfilter.formatIdList(gfilter.allListFilters, ',')
 		// If there are pathways, then get all genes in pathways and add them to the geneFilters (hash set)
-		if (pathwayIds.size() > 0) {
-			geneFilters.addAll(searchKeywordService.expandAllListToGenes(pathwayIds))
+		if (pathwayIds) {
+			geneFilters.addAll searchKeywordService.expandAllListToGenes(pathwayIds)
 		}
-		def compoundFilters = gfilter.getCompoundFilters()
-		def diseaseFilters = gfilter.getDiseaseFilters()
-		def trialFilters = gfilter.getTrialFilters()
-		def textFilters = gfilter.getTextFilters()
 
 		Map<String, List<String>> terms = [:]
+		int termCount = 0
+		processKeywordSet geneFilters, terms, GlobalFilter.CATEGORY_GENE, termCount
+		processKeywordSet gfilter.compoundFilters, terms, GlobalFilter.CATEGORY_COMPOUND, termCount
+		processKeywordSet gfilter.diseaseFilters, terms, GlobalFilter.CATEGORY_DISEASE, termCount
+		processKeywordSet gfilter.trialFilters, terms, GlobalFilter.CATEGORY_TRIAL, termCount
+		processKeywordSet gfilter.textFilters, terms, GlobalFilter.CATEGORY_TEXT, termCount
 
-		int termCount = 0;
-		if (geneFilters.size() > 0) {
-			def list = getTermList(geneFilters)
-			termCount += list.size()
-			if (termCount < DocumentQuery.MAX_CLAUSE_COUNT) {
-				terms.put(gfilter.CATEGORY_GENE, list)
-			}
-		}
-		if (compoundFilters.size() > 0) {
-			def list = getTermList(compoundFilters)
-			termCount += list.size()
-			if (termCount < DocumentQuery.MAX_CLAUSE_COUNT) {
-				terms.put(gfilter.CATEGORY_COMPOUND, list)
-			}
-		}
-		if (diseaseFilters.size() > 0) {
-			def list = getTermList(diseaseFilters)
-			termCount += list.size()
-			if (termCount < DocumentQuery.MAX_CLAUSE_COUNT) {
-				terms.put(gfilter.CATEGORY_DISEASE, list)
-			}
-		}
-		if (trialFilters.size() > 0) {
-			def list = getTermList(trialFilters)
-			termCount += list.size()
-			if (termCount < DocumentQuery.MAX_CLAUSE_COUNT) {
-				terms.put(gfilter.CATEGORY_TRIAL, list)
-			}
-		}
-		if (textFilters.size() > 0) {
-			def list = getTermList(textFilters)
-			termCount += list.size()
-			if (termCount < DocumentQuery.MAX_CLAUSE_COUNT) {
-				terms.put(gfilter.CATEGORY_TEXT, list)
-			}
-		}
-
-		return terms
-
+		terms
 	}
 
-	List<String> getTermList(keywords) {
-
+	private List<String> getTermList(KeywordSet keywords) {
 		List<String> terms = []
-		for (keyword in keywords) {
+		for (SearchKeyword keyword in keywords) {
 			if (terms.size() < DocumentQuery.MAX_CLAUSE_COUNT - 1) {
-				terms.add(keyword.keyword)
+				terms << keyword.keyword
 			}
 			else {
 				break
 			}
 		}
-		return terms
 
+		terms
 	}
 
 	// Encode string value for display on HMTL page and encode out-of-band characters.
 	String encodeHTML(String value) {
 		if (!value) {
-			return ""
+			return ''
 		}
 
-		value = value.replace("<span class=\"search-term\">", "???HIT_OPEN???")
-		value = value.replace("</span>", "???HIT_CLOSE???")
+		value = value.replace('<span class="search-term">', '???HIT_OPEN???')
+		value = value.replace('</span>', '???HIT_CLOSE???')
 		value = value.encodeAsHTML()
-		value = value.replace("???HIT_OPEN???", "<span class=\"search-term\">")
-		value = value.replace("???HIT_CLOSE???", "</span>")
+		value = value.replace('???HIT_OPEN???', '<span class="search-term">')
+		value = value.replace('???HIT_CLOSE???', '</span>')
 
 		StringBuilder result = new StringBuilder()
 
 		if (value.length() > 0) {
-			def len = value.length() - 1
+			int len = value.length() - 1
 			for (i in 0..len) {
-				def int ch = value.charAt(i)
+				int ch = value.charAt(i)
 				if (ch < 32) {
-					result.append(' ')
+					result << ' '
 				}
 				else if (ch >= 128) {
-					result.append("&#")
-					result.append(ch)
+					result << '&#' << ch
 				}
 				else {
-					result.append((char) ch)
+					result << (char) ch
 				}
 			}
 		}
 
 		result
+	}
+
+	private int processKeywordSet(KeywordSet keywordSet, Map<String, List<String>> terms,
+	                              String key, int termCount) {
+		if (keywordSet) {
+			List<String> list = getTermList(keywordSet)
+			termCount += list.size()
+			if (termCount < DocumentQuery.MAX_CLAUSE_COUNT) {
+				terms[key] = list
+			}
+		}
+
+		termCount
 	}
 
 	void afterPropertiesSet() {

@@ -1,30 +1,25 @@
-import grails.util.Holders
-
 class BuildInfoController {
 
-    static final List buildInfoProperties = [
-            'scm.version',
-            'build.date',
-            'build.timezone',
-            'build.java',
-            'env.os',
-            'env.username',
-            'env.computer',
-            'env.proc.type',
-            'env.proc.cores'
-    ]
+	private static final List<String> buildInfoProperties = [
+			'scm.version',
+			'build.date',
+			'build.timezone',
+			'build.java',
+			'env.os',
+			'env.username',
+			'env.computer',
+			'env.proc.type',
+			'env.proc.cores'].asImmutable()
 
-    def index = {
-        def buildInfoConfig = Holders.config?.buildInfo
-        def customProperties = buildInfoProperties
-        if (buildInfoConfig?.properties?.exclude) {
-            customProperties -= buildInfoConfig.properties.exclude
-        }
-        if (buildInfoConfig?.properties?.include) {
-            customProperties += buildInfoConfig.properties.include
-        }
+	def index() {
+		List<String> customProperties = [] + buildInfoProperties
+		if (grailsApplication.config.buildInfo.exclude) {
+			customProperties -= grailsApplication.config.buildInfo.exclude
+		}
+		if (grailsApplication.config.buildInfo.include) {
+			customProperties += grailsApplication.config.buildInfo.include
+		}
 
-        Map model = [buildInfoProperties: customProperties.sort()]
-        render(view: 'index', model: model)
-    }
+		[buildInfoProperties: customProperties.sort()]
+	}
 }

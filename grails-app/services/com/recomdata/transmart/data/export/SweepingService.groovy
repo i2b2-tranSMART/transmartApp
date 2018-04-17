@@ -11,20 +11,19 @@ class SweepingService {
 	@Value('${com.recomdata.export.jobs.sweep.fileAge:0}')
 	private int fileAge
 
+	@Value('${com.recomdata.plugins.tempFolderDirectory:}')
+	private String tempFolderDirectory
+
+	private DeleteDataFilesProcessor processor = new DeleteDataFilesProcessor()
+
 	@Transactional
 	void sweep() {
 		logger.info 'Triggering file sweep'
-		def now = new Date()
-		def jobList = AsyncJob.createCriteria().list {
-			eq("jobType", "DataExport")
-			eq("jobStatus", "Completed")
-			lt('lastRunOn', now - fileAge)
-			//between('lastRunOn',now-fileAge, now)
-		}
+		List<AsyncJob> jobList = AsyncJob.findAllByJobTypeAndJobStatusAndLastRunOnLessThan(
+				'DataExport', 'Completed', new Date() - fileAge)
 
-		DeleteDataFilesProcessor processor = new DeleteDataFilesProcessor()
-		for (job in jobList) {
-			if (processor.deleteDataFile(job.viewerURL, job.jobName)) {
+		for (AsyncJob job in jobList) {
+			if (processor.deleteDataFile(job.viewerURL, job.jobName, tempFolderDirectory)) {
 				job.delete()
 			}
 		}

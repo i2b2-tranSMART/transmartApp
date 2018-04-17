@@ -1,56 +1,53 @@
-import i2b2.SampleInfo;
+import groovy.transform.CompileStatic
+import i2b2.SampleInfo
+import org.springframework.beans.factory.annotation.Autowired
 
+import javax.sql.DataSource
+
+@CompileStatic
 class SampleInfoService {
-    def dataSource;
 
-    /*
-     * Get a list of SampleInfo objects based on a string of sample ID's.
-     */
+	static transactional = false
 
-    public List<SampleInfo> getSampleInfoListInOrder(String sampleIdListStr) throws Exception {
-        //Verify we received a sample id list.
-        if (sampleIdListStr == null || sampleIdListStr.length() == 0) return null;
+	@Autowired private DataSource dataSource
 
-        //Get the list of SampleInfo objects from de_subject_sample_mapping.
-        List<SampleInfo> sampleInfoList = SampleInfo.findAll("from SampleInfo where id in (" + quoteCSV(sampleIdListStr) + ")");
+	/*
+	 * Get a list of SampleInfo objects based on a string of sample IDs.
+	 */
+	List<SampleInfo> getSampleInfoListInOrder(String sampleIdListStr) {
+		if (!sampleIdListStr) {
+			return null
+		}
 
-        //Create a map of the SampleInfo objects with their id as the key.
-        Map<Long, SampleInfo> sampleInfoMap = new HashMap<Long, SampleInfo>();
-        for (SampleInfo sampleInfo : sampleInfoList) {
-            sampleInfoMap.put(sampleInfo.id, sampleInfo);
-        }
+		List<SampleInfo> sampleInfoList = SampleInfo.findAll('from SampleInfo where id in (' + quoteCSV(sampleIdListStr) + ')')
 
-        //Construct a list of sampleID's in the same order as the passed in string.
-        List<SampleInfo> sampleInfoListInOrder = new ArrayList<SampleInfo>();
+		Map<String, SampleInfo> sampleInfoById = [:]
+		for (SampleInfo sampleInfo : sampleInfoList) {
+			sampleInfoById[sampleInfo.id] = sampleInfo
+		}
 
-        //Split the input string.
-        String[] sampleIdStrList = sampleIdListStr.split(",");
+		List<SampleInfo> infos = []
 
-        //For each id in the string add that sampleId to the list.
-        for (String sampleIdStr : sampleIdStrList) {
-            //Add the sampleID to the list.
-            sampleInfoListInOrder.add(sampleInfoMap.get(sampleIdStr));
+		for (String sampleIdStr in sampleIdListStr.split(',')) {
+			infos << sampleInfoById[sampleIdStr]
+		}
 
-        }
-        return sampleInfoListInOrder;
-    }
+		infos
+	}
 
-    /*
-     * Take a comma seperated list and return the same list with single quotes around each item.
-     */
+	/**
+	 * Take a comma seperated list and return the same list with single quotes around each item.
+	 */
+	String quoteCSV(String val) {
+		StringBuilder s = new StringBuilder()
 
-    def String quoteCSV(String val) {
-        String[] inArray;
-        StringBuilder s = new StringBuilder();
-
-        if (val != null && val.length() > 0) {
-            inArray = val.split(",");
-            s.append("'" + inArray[0] + "'");
-            for (int i = 1; i < inArray.length; i++) {
-                s.append(",'" + inArray[i] + "'");
-            }
-        }
-        return s.toString();
-    }
-
+		if (val != null && val.length() > 0) {
+			String[] split = val.split(',')
+			s << "'" << split[0] << "'"
+			for (int i = 1; i < split.length; i++) {
+				s << ",'" << split[i] << "'"
+			}
+		}
+		s
+	}
 }
