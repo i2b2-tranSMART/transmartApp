@@ -370,7 +370,7 @@ class RecomTagLib {
 
 		int index = 0
 		for (item in lineage) {
-			out << "<div class='diseaseHierarchy'" << (index == 0 ? " style='background-image: none;'" : "") << ">" << item.disease
+			out << "<div class='diseaseHierarchy'" << (index == 0 ? " style='background-image: none;'" : '') << ">" << item.disease
 			index++
 		}
 		for (item in lineage) {

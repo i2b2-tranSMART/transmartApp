@@ -2,6 +2,7 @@ import com.recomdata.search.DocumentHit
 import com.recomdata.search.DocumentQuery
 import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap
 import org.springframework.beans.factory.InitializingBean
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.transmart.GlobalFilter
 import org.transmart.KeywordSet
@@ -14,8 +15,10 @@ import org.transmart.searchapp.SearchKeyword
  */
 class DocumentService implements InitializingBean {
 
-	SearchKeywordService searchKeywordService
-	GlobalFilterService globalFilterService
+	static transactional = false
+
+	@Autowired private SearchKeywordService searchKeywordService
+	@Autowired private GlobalFilterService globalFilterService
 
 	@Value('${com.recomdata.searchengine.index:}')
 	private String index
@@ -85,7 +88,7 @@ class DocumentService implements InitializingBean {
 
 		StringBuilder result = new StringBuilder()
 
-		if (value.length() > 0) {
+		if (value) {
 			int len = value.length() - 1
 			for (i in 0..len) {
 				int ch = value.charAt(i)

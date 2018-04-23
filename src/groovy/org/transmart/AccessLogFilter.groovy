@@ -1,15 +1,12 @@
 package org.transmart
 
+import groovy.transform.CompileStatic
+
 /**
- * @author $Author: mmcduffie $
- * $Revision: 9178 $
- * $Id: AccessLogFilter.groovy 9178 2011-08-24 13:50:06Z mmcduffie $
- *
+ * @author mmcduffie
  */
-public class AccessLogFilter {
-
-    Date startdate
-    Date enddate
-
-
+@CompileStatic
+class AccessLogFilter {
+	Date startdate
+	Date enddate
 }

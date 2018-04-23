@@ -721,7 +721,7 @@ class AnalysisController {
 		String[] geneAndIdList = geneAndIdListStr.split('\\|\\|\\|')
 		for (String geneAndIdStr : geneAndIdList) {
 			String[] geneIdPair = geneAndIdStr.split('\\|\\|')
-			geneIdMap.put(geneIdPair[0].trim(), new Long(geneIdPair[1].trim()))
+			geneIdMap[geneIdPair[0].trim()] = Long.valueOf(geneIdPair[1].trim())
 		}
 		String[] geneValues = genes.split(',')
 		for (String geneStr : geneValues) {

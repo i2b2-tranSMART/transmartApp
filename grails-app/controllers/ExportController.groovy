@@ -11,7 +11,7 @@ class ExportController {
 	I2b2HelperService i2b2HelperService
 	UtilService utilService
 
-	def index = {}
+	def index() {}
 
 	def exportSecurityCheck(String result_instance_id1, String result_instance_id2) {
 		logger.debug 'Check export security'

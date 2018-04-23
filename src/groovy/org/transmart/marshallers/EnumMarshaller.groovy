@@ -1,9 +1,12 @@
 package org.transmart.marshallers
 
-class EnumMarshaller {
-    static targetType = Enum
+import groovy.transform.CompileStatic
 
-    def convert(Enum enumeration) {
-        enumeration.name()
-    }
+@CompileStatic
+class EnumMarshaller {
+	static targetType = Enum
+
+	String convert(Enum enumeration) {
+		enumeration.name()
+	}
 }

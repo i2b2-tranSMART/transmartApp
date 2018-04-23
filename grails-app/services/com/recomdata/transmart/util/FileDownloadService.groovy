@@ -66,12 +66,11 @@ class FileDownload extends Thread {
 	}
 
 	void run() {
+		if (!fileURI) {
+			return
+		}
 		FileOutputStream fos = null
 		try {
-			if (StringUtils.isEmpty(fileURI)) {
-				return
-			}
-
 			URL fileURL = new URL(fileURI)
 			fos = new FileOutputStream(new File(fileContainerDir, filename))
 			fos.channel.transferFrom Channels.newChannel(fileURL.openStream()), 0, 1 << 24

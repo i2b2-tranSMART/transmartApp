@@ -65,7 +65,7 @@ class I2b2HelperService implements InitializingBean {
     static transactional = false
 
     static final String GENE_PATTERN_WHITE_SPACE_DEFAULT = "0"
-    static final String GENE_PATTERN_WHITE_SPACE_EMPTY = ""
+    static final String GENE_PATTERN_WHITE_SPACE_EMPTY = ''
 
     static final List<String> DEMOGRAPHICS_HEADERS = ["Sex", "Race", "Age", "Samples", "Trial"] // see method
 
@@ -153,18 +153,14 @@ class I2b2HelperService implements InitializingBean {
      * Gets the short display name from a concept key
      */
     String getShortNameFromKey(String concept_key) {
-        String[] splits = concept_key.split("\\\\")
-        return splits[splits.length - 1]
+        concept_key.split("\\\\")[-1]
     }
 
     /**
      * Gets a grid column name from a concept key
      */
     String getColumnNameFromKey(String concept_key) {
-        String[] splits = concept_key.split("\\\\")
-        String concept_name = ""
-        concept_name = splits[splits.length - 1]
-        return concept_name
+        concept_key.split("\\\\")[-1]
     }
 
     /**
@@ -238,15 +234,14 @@ class I2b2HelperService implements InitializingBean {
         return markerType
     }
 
-    Boolean isXTrialsConcept(String concept_key) {
-        def itemProbe = conceptsResourceService.getByKey(concept_key)
-        return (itemProbe instanceof AcrossTrialsOntologyTerm)
+    boolean isXTrialsConcept(String concept_key) {
+        conceptsResourceService.getByKey(concept_key) instanceof AcrossTrialsOntologyTerm
     }
 
     /**
      * Determines if a concept key is a value concept or not
      */
-    Boolean isValueConceptKey(String concept_key) {
+    boolean isValueConceptKey(String concept_key) {
         log.trace "----------------- start isValueConceptKey"
         log.trace "concept_key: " + concept_key
         if (isXTrialsConcept(concept_key)) {
@@ -289,10 +284,10 @@ class I2b2HelperService implements InitializingBean {
             return isLeafConceptKey(itemProbe)
         }
         String fullname = concept_key.substring(concept_key.indexOf("\\", 2), concept_key.length())
-        Boolean res = false
+        boolean res = false
         Sql sql = new Sql(dataSource)
         sql.eachRow("SELECT C_VISUALATTRIBUTES FROM I2B2METADATA.I2B2 WHERE C_FULLNAME = ?", [fullname], { row ->
-            res = row.c_visualattributes.indexOf('L') > -1
+            res = row.c_visualattributes.contains('L')
         })
         return res
     }
@@ -324,14 +319,14 @@ class I2b2HelperService implements InitializingBean {
     /**
      * Gets the distinct patient counts for the children of a parent concept key
      */
-    def getChildrenWithPatientCountsForConcept(String concept_key) {
+    Map getChildrenWithPatientCountsForConcept(String concept_key) {
         log.debug "----------------- getChildrenWithPatientCountsForConcept"
         log.debug "concept_key = " + concept_key
 
         def xTrialsTopNode = "\\\\" + ACROSS_TRIALS_TABLE_CODE + "\\" + ACROSS_TRIALS_TOP_TERM_NAME + "\\"
         def xTrialsCaseFlag = isXTrialsConcept(concept_key) || (concept_key == xTrialsTopNode)
 
-        def counts = [:]
+        Map counts = [:]
 
        if (xTrialsCaseFlag) {
             log.trace("XTrials for getConceptDistributionDataForConcept")
@@ -429,7 +424,7 @@ class I2b2HelperService implements InitializingBean {
 
         List<Double> values = []
         List<Double> returnvalues = new ArrayList<>(values.size())
-        if (result_instance_id == "") {
+        if (!result_instance_id) {
             log.debug("getConceptDistributionDataForValueConceptFromCode called with no result_istance_id")
             return getConceptDistributionDataForValueConcept(concept_cd)
         }
@@ -459,12 +454,12 @@ class I2b2HelperService implements InitializingBean {
     /**
      *  Gets the count of a patient set from the result instance id
      */
-    Integer getPatientSetSize(String result_instance_id) {
+    int getPatientSetSize(String result_instance_id) {
         checkQueryResultAccess result_instance_id
 
         log.debug("getPatientSetSize(): result_instance_id = " + result_instance_id)
 
-        Integer i = 0
+        int i = 0
         Sql sql = new Sql(dataSource)
         // original code counted split_part(pd.sourcesystem_cd , ':', 2)
         // but this is a postgres-only built-in function
@@ -490,7 +485,7 @@ class I2b2HelperService implements InitializingBean {
 
         log.debug("Getting patient set intersection - result_instance_id1 = "
                 + result_instance_id1 + ", result_instance_id2 = " + result_instance_id2)
-        Integer i = 0
+        int i = 0
         Sql sql = new Sql(dataSource)
 
         // original code counted split_part(pd.sourcesystem_cd , ':', 2)
@@ -520,7 +515,7 @@ class I2b2HelperService implements InitializingBean {
      */
     String clobToString(clob) {
         if (clob == null) {
-            return ""
+            return ''
         }
         if (clob instanceof String) {
             // postgres schema uses strings in some places oracle uses clobs
@@ -539,11 +534,11 @@ class I2b2HelperService implements InitializingBean {
     /**
      * Determines if a concept code is a value concept code or not by checking the metadata xml
      */
-    Boolean isValueConceptCode(String concept_code) {
+    boolean isValueConceptCode(String concept_code) {
         log.trace "Checking isValueConceptCode for code:" + concept_code
         Sql sql = new Sql(dataSource)
         String sqlt = "SELECT C_METADATAXML FROM I2B2METADATA.I2B2 WHERE C_BASECODE = ?"
-        String xml = ""
+        String xml = ''
         log.trace(sqlt)
         sql.eachRow(sqlt, [concept_code], { row ->
             log.trace("checking metadata xml:" + row.c_metadataxml)
@@ -561,9 +556,9 @@ class I2b2HelperService implements InitializingBean {
      * @param concept_code the concept code to check
      * @return true if i2b2metadata.i2b2.c_visualattributes equals "LAH" for the given concept code
      */
-    Boolean isHighDimensionalConceptCode(String concept_code) {
+    boolean isHighDimensionalConceptCode(String concept_code) {
         log.info "Checking isHighDimensionalConceptCode for code:" + concept_code
-        Boolean res = false
+        boolean res = false
         Sql sql = new Sql(dataSource)
         String sqlt = "SELECT C_VISUALATTRIBUTES FROM I2B2METADATA.I2B2 WHERE C_BASECODE = ?"
         sql.eachRow(sqlt, [concept_code], { row ->
@@ -579,10 +574,8 @@ class I2b2HelperService implements InitializingBean {
         return res
     }
 
-    Boolean nodeXmlRepresentsValueConcept(String xml) {
-        Boolean res = false
-
-        if (xml && !xml.equalsIgnoreCase("")) {
+    boolean nodeXmlRepresentsValueConcept(String xml) {
+        if (xml) {
             DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance()
             domFactory.setNamespaceAware(true) // never forget this!
             DocumentBuilder builder = domFactory.newDocumentBuilder()
@@ -594,11 +587,11 @@ class I2b2HelperService implements InitializingBean {
             Node x = (Node) result
             String key = x.getTextContent()
             if (key.equalsIgnoreCase("Y")) {
-                res = true
+                return true
             }
         }
 
-        return res
+        false
     }
 
     Map<String, Integer> getConceptDistributionDataForConcept(String concept_key, String result_instance_id) throws SQLException {
@@ -679,7 +672,7 @@ class I2b2HelperService implements InitializingBean {
             log.trace("Single study case")
             // if not across trials; all parients in same trial/study
             def study = "Study"
-            if (!trials.isEmpty()) study = trials[0]
+            if (trials) study = trials[0]
             results.put(study,getConceptDistributionDataForConcept(concept_key, result_instance_id))
         }
 
@@ -742,8 +735,8 @@ class I2b2HelperService implements InitializingBean {
         if (parent_concept != null) {
             // lookup appropriate children
             Set<String> childConcepts = lookupChildConcepts(parent_concept, result_instance_id)
-            if (childConcepts.isEmpty()) {
-                childConcepts.add(concept_key)
+            if (!childConcepts) {
+                childConcepts << concept_key
             }
                 log.trace("getConceptDistributionDataForConcept: childConcepts: " + childConcepts)
             for (c in childConcepts) {
@@ -792,7 +785,7 @@ class I2b2HelperService implements InitializingBean {
             String conceptkey = prefix + row.c_fullname
             xml = clobToString(row.c_metadataxml)
             log.trace("METADATA XML:" + xml)
-            if (!xml.equalsIgnoreCase("")) {
+            if (xml) {
                 DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance()
                 domFactory.setNamespaceAware(true) // never forget this!
                 DocumentBuilder builder = domFactory.newDocumentBuilder()
@@ -814,7 +807,7 @@ class I2b2HelperService implements InitializingBean {
     /**
      *  Returns the patient count for a concept key
      */
-    Integer getPatientCountForConcept(String concept_key) {
+    int getPatientCountForConcept(String concept_key) {
         String fullname = concept_key.substring(concept_key.indexOf("\\", 2), concept_key.length())
         int i = 0
         Sql sql = new Sql(dataSource)
@@ -888,7 +881,7 @@ class I2b2HelperService implements InitializingBean {
         return results
     }
 
-    Integer getObservationCountForXTrialsNode(AcrossTrialsOntologyTerm term_node, String result_instance_id) {
+    int getObservationCountForXTrialsNode(AcrossTrialsOntologyTerm term_node, String result_instance_id) {
         log.debug "--------  start getObservationCountForXTrialsNode"
         log.debug "---------- case: term_node and result_instance_id"
         log.debug "term_node.name = " + term_node.name
@@ -932,7 +925,7 @@ class I2b2HelperService implements InitializingBean {
         return count
     }
 
-    Integer getObservationCountForXTrialsNode(AcrossTrialsOntologyTerm term_node) {
+    int getObservationCountForXTrialsNode(AcrossTrialsOntologyTerm term_node) {
         log.debug "-------- start getObservationCountForXTrialsNode"
         log.debug "--------------------------- case: term_node only"
 
@@ -942,7 +935,7 @@ class I2b2HelperService implements InitializingBean {
             modifierList.add(node.code)
         }
 
-        if (modifierList.isEmpty()) return 0
+        if (!modifierList) return 0
 
         Sql sql = new Sql(dataSource)
 
@@ -993,7 +986,7 @@ class I2b2HelperService implements InitializingBean {
     /**
      * Gets the count of the observations in the fact table for a concept and a subset
      */
-    Integer getObservationCountForConceptForSubset(String concept_key, String result_instance_id) {
+    int getObservationCountForConceptForSubset(String concept_key, String result_instance_id) {
         checkQueryResultAccess result_instance_id
 
         log.trace("Getting observation count for concept:" + concept_key + " and instance:" + result_instance_id)
@@ -1061,14 +1054,14 @@ class I2b2HelperService implements InitializingBean {
 
         //if i have an empty table structure so far
         if (!tablein.getColumns()) {
-            tablein.putColumn("subject", new ExportColumn("subject", "Subject", "", "String"))
-            tablein.putColumn("patient", new ExportColumn("patient", "Patient", "", "String"))
-            tablein.putColumn("SAMPLE_CDS", new ExportColumn("SAMPLE_CDS", "Samples", "", "String"))
-            tablein.putColumn("subset", new ExportColumn("subset", "Subset", "", "String"))
-            tablein.putColumn("TRIAL", new ExportColumn("TRIAL", "Trial", "", "String"))
-            tablein.putColumn("SEX_CD", new ExportColumn("SEX_CD", "Sex", "", "String"))
-            tablein.putColumn("AGE_IN_YEARS_NUM", new ExportColumn("AGE_IN_YEARS_NUM", "Age", "", "Number"))
-            tablein.putColumn("RACE_CD", new ExportColumn("RACE_CD", "Race", "", "String"))
+            tablein.putColumn("subject", new ExportColumn("subject", "Subject", '', "String"))
+            tablein.putColumn("patient", new ExportColumn("patient", "Patient", '', "String"))
+            tablein.putColumn("SAMPLE_CDS", new ExportColumn("SAMPLE_CDS", "Samples", '', "String"))
+            tablein.putColumn("subset", new ExportColumn("subset", "Subset", '', "String"))
+            tablein.putColumn("TRIAL", new ExportColumn("TRIAL", "Trial", '', "String"))
+            tablein.putColumn("SEX_CD", new ExportColumn("SEX_CD", "Sex", '', "String"))
+            tablein.putColumn("AGE_IN_YEARS_NUM", new ExportColumn("AGE_IN_YEARS_NUM", "Age", '', "Number"))
+            tablein.putColumn("RACE_CD", new ExportColumn("RACE_CD", "Race", '', "String"))
         }
         sql.eachRow(sqlt, [result_instance_id], { row ->
             /*If I already have this subject mark it in the subset column as belonging to both subsets*/
@@ -1082,13 +1075,13 @@ class I2b2HelperService implements InitializingBean {
                 ExportRowNew newrow = new ExportRowNew()
                 newrow.put("subject", subject)
                 def arr = row.SOURCESYSTEM_CD?.split(":")
-                newrow.put("patient", arr?.length == 2 ? arr[1] : "")
+                newrow.put("patient", arr?.length == 2 ? arr[1] : '')
                 def cds = mapOfSampleCdsByPatientNum[row.PATIENT_NUM as Long]
-                newrow.put("SAMPLE_CDS", cds ? cds : "")
+                newrow.put("SAMPLE_CDS", cds ?: '')
                 newrow.put("subset", subset)
                 newrow.put("TRIAL", row.TRIAL)
                 if (row.SEX_CD) {
-                    newrow.put("SEX_CD", row.SEX_CD.toLowerCase().equals("m") || row.SEX_CD.toLowerCase().equals("male") ? "male" : (row.SEX_CD.toLowerCase().equals("f") || row.SEX_CD.toLowerCase().equals("female") ? "female" : "NULL") )
+                    newrow.put("SEX_CD", row.SEX_CD.toLowerCase() == "m" || row.SEX_CD.toLowerCase() == "male" ? "male" : (row.SEX_CD.toLowerCase() == "f" || row.SEX_CD.toLowerCase() == "female" ? "female" : "NULL") )
                 }
                 if (row.AGE_IN_YEARS_NUM) {
                     newrow.put("AGE_IN_YEARS_NUM", row.AGE_IN_YEARS_NUM.toString())
@@ -1191,10 +1184,10 @@ class I2b2HelperService implements InitializingBean {
 
             // add the subject and columnid column to the table if its not there
             if (tablein.getColumn("subject") == null) {
-                tablein.putColumn("subject", new ExportColumn("subject", "Subject", "", "string"))
+                tablein.putColumn("subject", new ExportColumn("subject", "Subject", '', "string"))
             }
                 if (tablein.getColumn(columnid) == null) {
-                tablein.putColumn(columnid, new ExportColumn(columnid, columnname, "", columnType,columntooltip))
+                tablein.putColumn(columnid, new ExportColumn(columnid, columnname, '', columnType,columntooltip))
                 }
 
             if (xTrialsCaseFlag) {
@@ -1237,10 +1230,10 @@ class I2b2HelperService implements InitializingBean {
 
             // add the subject and columnid column to the table if its not there
             if (tablein.getColumn("subject") == null) {
-                tablein.putColumn("subject", new ExportColumn("subject", "Subject", "", "string"))
+                tablein.putColumn("subject", new ExportColumn("subject", "Subject", '', "string"))
             }
             if (tablein.getColumn(columnid) == null) {
-                tablein.putColumn(columnid, new ExportColumn(columnid, columnname, "", columnType,columntooltip))
+                tablein.putColumn(columnid, new ExportColumn(columnid, columnname, '', columnType,columntooltip))
             }
 
             if (xTrialsCaseFlag) {
@@ -1346,7 +1339,7 @@ class I2b2HelperService implements InitializingBean {
                 }
                 if (isURL(value)) {
                     /* Embed URL in a HTML Link */
-                    value = "<a href=\"" + value + "\" target=\"_blank\">" + value + "</a>"
+                    value = '<a href="' + value + '" target="_blank">' + value + '</a>'
                 }
                 dataList.add(['subject':subject, 'value':value])
             })
@@ -1425,7 +1418,7 @@ class I2b2HelperService implements InitializingBean {
             sql.eachRow(sqlt, [modifier_cd, result_instance_id], { row ->
                 /*If I already have this subject mark it in the subset column as belonging to both subsets*/
                 String subject = row.PATIENT_NUM
-                String value = "" + (row.TVAL_CHAR as String)
+                String value = row.TVAL_CHAR
                 dataList.add(['subject': subject, 'value': value])
             })        }
         dataList
@@ -1496,7 +1489,7 @@ class I2b2HelperService implements InitializingBean {
             ON a.QUERY_MASTER_ID=c.QUERY_MASTER_ID INNER JOIN I2B2DEMODATA.QT_QUERY_RESULT_INSTANCE b
             ON a.QUERY_INSTANCE_ID=b.QUERY_INSTANCE_ID WHERE RESULT_INSTANCE_ID = ?"""
 
-        String xmlrequest = ""
+        String xmlrequest = ''
         sql.eachRow(sqlt, [resultInstanceId], { row ->
             xmlrequest = clobToString(row.request_xml)
             log.trace("REQUEST_XML:" + xmlrequest)
@@ -1528,12 +1521,12 @@ class I2b2HelperService implements InitializingBean {
         /*get all distinct  concepts for analysis from both subsets into map*/
         Map<String, String> h = [:]
         List<String> results = []
-        if (result_instance_id1 != null && result_instance_id1 != "") {
+        if (result_instance_id1) {
             for (String c : getConceptKeysInSubset(result_instance_id1)) {
                 h.put(c, c)
             }
         }
-        if (result_instance_id2 != null && result_instance_id2 != "") {
+        if (result_instance_id2) {
             for (String c : getConceptKeysInSubset(result_instance_id2)) {
                 h.put(c, c)
             }
@@ -1568,7 +1561,7 @@ class I2b2HelperService implements InitializingBean {
                 inner join I2B2DEMODATA.concept_dimension cd
                 on xcm.concept_cd=cd.concept_cd
                 where concept_path = ?"""
-            String parentConcept = ""
+            String parentConcept = ''
             sql.eachRow(sqlQuery, [conceptPath], { row -> parentConcept = row.parent_cd })
             return parentConcept ?: null
         } catch (e) {
@@ -1587,7 +1580,7 @@ class I2b2HelperService implements InitializingBean {
             return (childConcepts)
         }
 
-        if (result_instance_id1 == "" && result_instance_id2 == "") {
+        if (!result_instance_id1 && !result_instance_id2) {
             log.debug("empty result_instance_id fields")
             return (childConcepts)
         }
@@ -1606,10 +1599,10 @@ class I2b2HelperService implements InitializingBean {
         String sqlTemplate2 = """ or result_instance_id="""
         String sqlTemplate3 = """) and x.parent_cd="""
 
-        String sqlQuery = ""
-        if (result_instance_id1 == "") {
+        String sqlQuery = ''
+        if (!result_instance_id1) {
             sqlQuery = sqlTemplate1 + result_instance_id2 + sqlTemplate3 + parentConcept
-        } else if (result_instance_id2 == "") {
+        } else if (!result_instance_id2) {
             sqlQuery = sqlTemplate1 + result_instance_id1 + sqlTemplate3 + parentConcept
         } else {
             sqlQuery = sqlTemplate1 + result_instance_id1 + sqlTemplate2 + result_instance_id2 + sqlTemplate3 + parentConcept
@@ -1670,7 +1663,7 @@ class I2b2HelperService implements InitializingBean {
      * Gets the querymasterid for resultinstanceid
      */
     String getQIDFromRID(String resultInstanceId) {
-        String qid = ""
+        String qid = ''
         if (resultInstanceId) {
             Sql sql = new Sql(dataSource)
             String sqlt = """select QUERY_MASTER_ID FROM I2B2DEMODATA.QT_QUERY_INSTANCE a
@@ -1686,7 +1679,7 @@ class I2b2HelperService implements InitializingBean {
      */
     String getQueryDefinitionXMLFromQID(String qid) {
         log.trace("Called getQueryDefinitionXML")
-        String xmlrequest = ""
+        String xmlrequest = ''
         Sql sql = new Sql(dataSource)
 
         String sqlt = """select REQUEST_XML from I2B2DEMODATA.QT_QUERY_MASTER WHERE QUERY_MASTER_ID = ?"""
@@ -1705,7 +1698,7 @@ class I2b2HelperService implements InitializingBean {
      */
     String getQueryDefinitionXML(String resultInstanceId) {
         log.trace("Called getQueryDefinitionXML")
-        String xmlrequest = ""
+        String xmlrequest = ''
         Sql sql = new Sql(dataSource)
 
         String sqlt = """select REQUEST_XML from I2B2DEMODATA.QT_QUERY_MASTER c INNER JOIN I2B2DEMODATA.QT_QUERY_INSTANCE a
@@ -1879,7 +1872,7 @@ class I2b2HelperService implements InitializingBean {
             if (concepts) {
                 concepts.append(",")
             }
-            if (conceptcds != "") {
+            if (conceptcds) {
                 concepts.append(conceptcds)
             }
             log.trace("Found Concept_CDs: " + conceptcds + " for key: " + key)
@@ -1971,7 +1964,7 @@ class I2b2HelperService implements InitializingBean {
         List<SampleInfo> sampleInfoList = sampleInfoService.getSampleInfoListInOrder(sampleIdAllListStr)
 
         //This will be a list of Assay ID's.
-        String assayIdAllListStr = ""
+        String assayIdAllListStr = ''
 
         //Get the Assay ID for each SampleInfo object and add it to our string.
         for (SampleInfo sampleInfo : sampleInfoList) {
@@ -1997,7 +1990,7 @@ class I2b2HelperService implements InitializingBean {
             sampleNameArray[i] = sampleNameListWithPrefix.get(i)
         }
 
-        Integer columns = sampleNameArray.length
+        int columns = sampleNameArray.length
 
         try {
             gpf.openGctFile()
@@ -2007,8 +2000,7 @@ class I2b2HelperService implements InitializingBean {
 
             //Get the trial names based on sample_id.
             String trialNames = getTrialNameBySampleID(sampleIdAllListStr)
-
-            if (trialNames == "") {
+            if (!trialNames) {
                 throw new Exception("Could not find trial names for the given subjects!")
             }
 
@@ -2109,7 +2101,7 @@ class I2b2HelperService implements InitializingBean {
             if (tempBuffer) { // Not the first value, add "\t"
                 tempBuffer.append("\t")
             }
-            Float zvalue = assayIdValueMap.get(sampleInfo.assayId)
+            Float zvalue = assayIdValueMap[sampleInfo.assayId]
             if (zvalue != null) {
                 tempBuffer.append(zvalue)
             } else {
@@ -2156,7 +2148,7 @@ class I2b2HelperService implements InitializingBean {
         String ids2 = filterSubjectIdByBiomarkerData(sids2)
 
         //Check to see if we actually had data in the table.
-        if (ids1.equals("") || ids2.equals("")) {
+        if (!ids1 || !ids2) {
             throw new Exception("No heatmap data for the given subjects.")
         }
 
@@ -2174,8 +2166,8 @@ class I2b2HelperService implements InitializingBean {
             //Write cls file
             gpf.writeClsFile(ids1, ids2)
 
-            Integer rows = 0
-            def numCols = 0
+            int rows = 0
+            int numCols = 0
             def numColumnsClosure = { meta -> numCols = meta.columnCount }
 
             //Determine if we are dealing with MRNA or Protein data.
@@ -2207,12 +2199,12 @@ class I2b2HelperService implements InitializingBean {
                         intensityType)
                 log.debug("mRNA heatmap query: " + query)
 
-                StringBuilder s = new StringBuilder("")
+                StringBuilder s = new StringBuilder()
 
                 String id = null
                 String sval = null
 
-                StringBuilder cs = new StringBuilder("")
+                StringBuilder cs = new StringBuilder()
 
                 def session = sessionFactory.getCurrentSession()
 
@@ -2240,7 +2232,7 @@ class I2b2HelperService implements InitializingBean {
 
                             sval = rs.getString(count)
                             if (sval != null) {
-                                if (sval.equals("null")) {
+                                if (sval == "null") {
                                     s.append(whiteString)
                                     cs.append(whiteString)
                                 } else {
@@ -2282,7 +2274,7 @@ class I2b2HelperService implements InitializingBean {
                 // force clean up
                 //rowsObj = null
             } else if (datatype.toUpperCase() == "RBM") {
-                StringBuilder s = new StringBuilder("")
+                StringBuilder s = new StringBuilder()
                 String query = createRBMHeatmapQuery(pathwayName, ids1, ids2,
                         concepts1, concepts2, timepoint1, timepoint2, rbmPanels1, rbmPanels2)
                 log.debug("RBM heatmap query: " + query)
@@ -2316,7 +2308,7 @@ class I2b2HelperService implements InitializingBean {
                         concepts1, concepts2, timepoint1, timepoint2)
                 log.debug("Protein heatmap query: " + query)
 
-                StringBuilder s = new StringBuilder("")
+                StringBuilder s = new StringBuilder()
                 Sql sql = new Sql(dataSource)
                 def rowsObj = sql.rows(query, numColumnsClosure)
 
@@ -2547,7 +2539,7 @@ class I2b2HelperService implements InitializingBean {
         allDataByProbe.patientNumList_2 = patientNumListArray[1]
 
         // Get SQL query String for all the subject IDs
-        String subjectListStr = ""
+        String subjectListStr = ''
         if (subjectIds1) {
             subjectListStr += subjectIds1
         }
@@ -2652,7 +2644,7 @@ class I2b2HelperService implements InitializingBean {
                 }
             }
 
-            if (chrom_it.equals(lastChrom)) {
+            if (chrom_it == lastChrom) {
                 break
             }
         }
@@ -2717,10 +2709,10 @@ class I2b2HelperService implements InitializingBean {
 
         for (int i = 0; i < datasetList.size(); i++) {
             SnpDataset snpDataset = datasetList.get(i)
-            Integer location = datasetCompactLocationMap.get(snpDataset.id)
+            int location = datasetCompactLocationMap[snpDataset.id]
             // The snp data is compacted in the format of [##.##][AB] for copy number and genotype
-            String copyNumber = dataByProbe.substring(location.intValue() * 7, location.intValue() * 7 + 5)
-            String genotype = dataByProbe.substring(location.intValue() * 7 + 5, location.intValue() * 7 + 7)
+            String copyNumber = dataByProbe.substring(location * 7, location * 7 + 5)
+            String genotype = dataByProbe.substring(location * 7 + 5, location * 7 + 7)
             dataArray[i][0] = copyNumber
             dataArray[i][1] = genotype
         }
@@ -2752,8 +2744,7 @@ class I2b2HelperService implements InitializingBean {
         List<Long> patientNumList = []
         String[] subjectArray = subjectIdStr.split(",")
         for (String subjectId : subjectArray) {
-            Long patientNum = new Long(subjectId.trim())
-            patientNumList.add(patientNum)
+            patientNumList << Long.valueOf(subjectId.trim())
         }
         return patientNumList
     }
@@ -2774,7 +2765,7 @@ class I2b2HelperService implements InitializingBean {
 
     String getEntrezIdStrFromSearchIdStr(String geneSearchIdListStr) {
         String sqlStr = "select unique_id from SEARCHAPP.search_keyword where search_keyword_id in (" + geneSearchIdListStr + ")"
-        String geneEntrezIdListStr = ""
+        String geneEntrezIdListStr = ''
         Sql sql = new Sql(dataSource)
         sql.eachRow(sqlStr) { row ->
             String unique_id = row.unique_id
@@ -2804,7 +2795,7 @@ class I2b2HelperService implements InitializingBean {
         // Get the gene entrez id
         String sqlStr = "select unique_id, keyword from SEARCHAPP.search_keyword where search_keyword_id in (" + geneSearchIdListStr + ") "
         sqlStr += " and data_category = 'GENE'"
-        String geneEntrezIdListStr = ""
+        String geneEntrezIdListStr = ''
         Sql sql = new Sql(dataSource)
         sql.eachRow(sqlStr) { row ->
             String unique_id = row.unique_id
@@ -2815,7 +2806,7 @@ class I2b2HelperService implements InitializingBean {
             }
             geneEntrezIdListStr += geneEntrezIdStr
             GeneWithSnp gene = new GeneWithSnp()
-            gene.entrezId = new Long(geneEntrezIdStr)
+            gene.entrezId = Long.valueOf(geneEntrezIdStr)
             gene.name = row.keyword
             geneEntrezIdMap.put(gene.entrezId, gene)
             geneNameToGeneWithSnpMap.put(gene.name, gene)
@@ -2916,7 +2907,7 @@ class I2b2HelperService implements InitializingBean {
         }
 
         // Construct the unique_id list from Entrez IDs
-        String geneSearchStr = ""
+        String geneSearchStr = ''
         for (Map.Entry entry : geneEntrezIdMap) {
             if (geneSearchStr) {
                 geneSearchStr += ","
@@ -2931,7 +2922,7 @@ class I2b2HelperService implements InitializingBean {
             String unique_id = row.unique_id
             int idx = unique_id.indexOf(":")
             String geneEntrezIdStr = unique_id.substring(idx + 1).trim()
-            GeneWithSnp gene = geneEntrezIdMap.get(new Long(geneEntrezIdStr))
+            GeneWithSnp gene = geneEntrezIdMap[Long.valueOf(geneEntrezIdStr)]
             gene.name = row.keyword
         }
 
@@ -3052,7 +3043,7 @@ class I2b2HelperService implements InitializingBean {
                 snpDatasetPair = new SnpDataset[2]
                 snpDatasetBySubjectMap.put(snpDataset.patientNum, snpDatasetPair)
             }
-            if (snpDataset.sampleType.equals(SnpDataset.SAMPLE_TYPE_NORMAL)) {
+            if (snpDataset.sampleType == SnpDataset.SAMPLE_TYPE_NORMAL) {
                 snpDatasetPair[0] = snpDataset
             } else {
                 snpDatasetPair[1] = snpDataset
@@ -3115,7 +3106,7 @@ class I2b2HelperService implements InitializingBean {
         sampleInfoBuf.append("Array\tSample\tType\tPloidy(numeric)\tGender\tPaired")
         for (int idxSubset = 0; idxSubset < 2; idxSubset++) {
             if (patientNumListArray[idxSubset] != null) {
-                for (Long patientNum : patientNumListArray[idxSubset]) {
+                for (Long patientNum in patientNumListArray[idxSubset]) {
                     SnpDataset[] snpDatasetPair = snpDatasetBySubjectMap.get(patientNum)
                     if (snpDatasetPair != null) {
                         String datasetNameForSNPViewer_1 = null
@@ -3260,7 +3251,7 @@ class I2b2HelperService implements InitializingBean {
         patientNumListArray[1] = getPatientNumListFromSubjectIdStr(subjectIds2)
 
         // Get SQL query String for all the subject IDs
-        String subjectListStr = ""
+        String subjectListStr = ''
         if (subjectIds1) {
             subjectListStr += subjectIds1
         }
@@ -3320,9 +3311,9 @@ class I2b2HelperService implements InitializingBean {
                 }
 
                 String probeDefStr = probeDef.snpIdDef
-                Integer numProbe = probeDef.getNumProbe()
+                int numProbe = probeDef.numProbe
                 StringLineReader probeReader = new StringLineReader(probeDefStr)
-                for (int idx = 0; idx < numProbe.intValue(); idx++) {
+                for (int idx = 0; idx < numProbe; idx++) {
                     String probeLine = probeReader.readLine()
                     if (!probeLine) {
                         throw new Exception("The number " + idx + " line in probe definition file for chromosome " + chrom + " is empty")
@@ -3349,7 +3340,7 @@ class I2b2HelperService implements InitializingBean {
                 }
                 dataWriter.write("\n")
             }
-            if (chrom.equals(lastChrom)) {
+            if (chrom == lastChrom) {
                 break
             } // Stop at the last needed chrom
         }
@@ -3363,7 +3354,8 @@ class I2b2HelperService implements InitializingBean {
             throw new Exception("The GwasFiles object is not instantiated")
         }
 
-        String subjectIds1 = "", subjectIds2 = ""
+        String subjectIds1 = ''
+        String subjectIds2 = ''
         if (subjectIdList1) {
             for (String subjectId : subjectIdList1) {
                 if (subjectIds1) {
@@ -3387,17 +3379,17 @@ class I2b2HelperService implements InitializingBean {
         patientNumListArray[1] = getPatientNumListFromSubjectIdStr(subjectIds2)
 
         List<Integer> patientCountList = gwasFiles.patientCountList
-        patientCountList.add(new Integer(patientNumListArray[0].size()))
-        patientCountList.add(new Integer(patientNumListArray[1].size()))
+        patientCountList << patientNumListArray[0].size()
+        patientCountList << patientNumListArray[1].size()
 
         List<Integer> datasetCountList = gwasFiles.datasetCountList
         List<Long> idList1 = getSNPDatasetIdList(subjectIds1)
         List<Long> idList2 = getSNPDatasetIdList(subjectIds2)
-        datasetCountList.add(new Integer(idList1.size()))
-        datasetCountList.add(new Integer(idList2.size()))
+        datasetCountList << idList1.size()
+        datasetCountList << idList2.size()
 
         // Get SQL query String for all the subject IDs
-        String subjectListStr = ""
+        String subjectListStr = ''
         if (subjectIds1) {
             subjectListStr += subjectIds1
         }
@@ -3526,8 +3518,8 @@ class I2b2HelperService implements InitializingBean {
 
         TreeMap<Float, String[]> mostSignificantSnps = new TreeMap<Float, String[]>()
         TreeMap<Float, String[]> significantSnps = new TreeMap<Float, String[]>()
-        Float pValueMostSignificant = new Float("1E-6")
-        Float pValueSignificant = new Float("0.01")
+        float pValueMostSignificant = 0.000001
+        float pValueSignificant = 0.01
         Map<String, String[]> snpNameDataMap = [:]
         assocFile.eachLine { line ->
             if (!line.startsWith(" CHR")) {
@@ -3540,7 +3532,7 @@ class I2b2HelperService implements InitializingBean {
 
                 Float pValueFloat = null
                 try {
-                    pValueFloat = new Float(pValue)
+                    pValueFloat = Float.valueOf(pValue)
                 }
                 catch (Exception e) {
                 }    // pValue could be "NA"
@@ -3591,7 +3583,8 @@ class I2b2HelperService implements InitializingBean {
 
         StringBuilder buf = new StringBuilder()
         buf.append("<html><head><title>Genome-Wide Association Study using PLINK</title></head><body><h2>Genome-Wide Association Study</h2>")
-        String countStr1 = "", countStr2 = ""
+        String countStr1 = ''
+        String countStr2 = ''
         List<Integer> patientCountList = gwasFiles.patientCountList
         if (patientCountList != null) {
             if (patientCountList && patientCountList.get(0) != null) {
@@ -3635,8 +3628,8 @@ class I2b2HelperService implements InitializingBean {
         buf.append("<h3>Most Significantly Associated Genes</h3>")
         buf.append("<table border='1' cellpadding='2'><tr><th>Gene</th><th>Total p-Value Score</th><th>SNP (p-Value)</th></tr>")
         for (Map.Entry scoreEntry : entrezScoreNegativeMap) {
-            Double scoreNegative = scoreEntry.getKey()
-            double score = 0 - (scoreNegative.doubleValue())
+            double scoreNegative = scoreEntry.getKey()
+            double score = -scoreNegative
             Set<String> entrezSet = scoreEntry.getValue()
             for (String entrezId : entrezSet) {
                 StringBuilder snpBuf = new StringBuilder()
@@ -3805,11 +3798,10 @@ class I2b2HelperService implements InitializingBean {
                     }
                 }
             }
-            Double scoreDouble = new Double(score)
-            Set<String> entrezSet = entrezScoreNegativeMap.get(scoreDouble)
+            Set<String> entrezSet = entrezScoreNegativeMap[score]
             if (entrezSet == null) {
                 entrezSet = []
-                entrezScoreNegativeMap.put(scoreDouble, entrezSet)
+                entrezScoreNegativeMap[score] = entrezSet
             }
             entrezSet.add(entrezId)
         }
@@ -3852,7 +3844,7 @@ class I2b2HelperService implements InitializingBean {
         }
         for (SnpDatasetByPatient datasetByPatient : datasetByPatientList) {
             SnpDataset dataset = datasetByPatient.snpDataset
-            if (dataset.getId() != null && dataset.getId().equals(datasetId)) {
+            if (dataset.getId() != null && dataset.getId() == datasetId) {
                 return datasetByPatient
             }
         }
@@ -3914,8 +3906,8 @@ class I2b2HelperService implements InitializingBean {
         SortedMap<Integer, String> chromIndexMap = new TreeMap<Integer, String>()
         for (String chrom : chromSet) {
             for (int i = 0; i < allChroms.length; i++) {
-                if (chrom.equals(allChroms[i])) {
-                    chromIndexMap.put(new Integer(i), chrom)
+                if (chrom == allChroms[i]) {
+                    chromIndexMap[i] = chrom
                 }
             }
         }
@@ -4187,7 +4179,7 @@ class I2b2HelperService implements InitializingBean {
 
         log.trace("getTrialName used this query: " + trialQ.toString())
 
-        String trialNames = ""
+        String trialNames = ''
         sql.eachRow(trialQ.toString(), { row ->
             if (trialNames) {
                 trialNames += ","
@@ -4223,7 +4215,7 @@ class I2b2HelperService implements InitializingBean {
         log.debug("getTrialNameBySampleID used this query: " + trialQ.toString())
 
         //This will be the list of trial names.
-        String trialNames = ""
+        String trialNames = ''
 
         //For each of the retrieved SQL records, add the trial name to the list.
         sql.eachRow(trialQ.toString(), { row ->
@@ -5043,8 +5035,8 @@ class I2b2HelperService implements InitializingBean {
     def metadataxmlToJSON(String xml) {
 
         def oktousevalues = false
-        def normalunits = ""
-        if (xml != null && !xml.equalsIgnoreCase("")) {
+        def normalunits = ''
+        if (xml) {
             log.trace(xml)
             try {
                 DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance()
@@ -5220,7 +5212,7 @@ class I2b2HelperService implements InitializingBean {
 
         def trialdata = [:]
 
-        if (result_instance_id != null && result_instance_id != "") {
+        if (result_instance_id) {
             log.debug("Getting concept distribution data for value concept:" + concept_key)
             log.trace "concept_key = " + concept_key
             log.trace "result_instance_id = " + result_instance_id
@@ -5293,7 +5285,7 @@ class I2b2HelperService implements InitializingBean {
 
         def trialdata = [:]
 
-        if (result_instance_id != null && result_instance_id != "" && !childConcepts.isEmpty()) {
+        if (result_instance_id && childConcepts) {
             Sql sql = new Sql(dataSource)
 
             String sqlt = """SELECT TRIAL, NVAL_NUM FROM I2B2DEMODATA.OBSERVATION_FACT f INNER JOIN I2B2DEMODATA.PATIENT_TRIAL t
@@ -5370,7 +5362,7 @@ class I2b2HelperService implements InitializingBean {
             sql.eachRow("""
                 SELECT sourcesystem_cd, secure_obj_token FROM i2b2metadata.i2b2_SECURE WHERE sourcesystem_cd IN  (""" + listToIN(studyIds.asList()) + """) AND c_hlevel = 1
             """, { row ->
-                tokens += [(row.sourcesystem_cd): row.secure_obj_token]
+                tokens[row.sourcesystem_cd] = row.secure_obj_token
             })
         } finally {
             sql.close()
@@ -5400,7 +5392,7 @@ class I2b2HelperService implements InitializingBean {
     /**
      * Gets the children with access for a concept
      */
-    def getChildrenWithAccessForUserNew(String concept_key) {
+    Map getChildrenWithAccessForUserNew(String concept_key) {
         log.debug "----------------- getChildrenWithAccessForUserNew"
 
         def xTrialsTopNode = "\\\\" + ACROSS_TRIALS_TABLE_CODE + "\\" + ACROSS_TRIALS_TOP_TERM_NAME + "\\"
@@ -5430,9 +5422,9 @@ class I2b2HelperService implements InitializingBean {
     /**
      * Checks an arbitrary list of paths with tokens against users access list map (merge)
      */
-    def getAccess(pathswithtokens) {
+    Map getAccess(pathswithtokens) {
         def children = pathswithtokens
-        def access = [:] //new map to merge the other two
+        Map access = [:] //new map to merge the other two
 
         boolean admin = securityService.principal().isAdminOrDseAdmin()
         if (admin) {
@@ -5466,8 +5458,7 @@ class I2b2HelperService implements InitializingBean {
     }
 
     def isXTrialsTopLevel(nodeName) {
-        String match = "\\" + ACROSS_TRIALS_TOP_TERM_NAME + "\\"
-        return match.equals(nodeName)
+        "\\" + ACROSS_TRIALS_TOP_TERM_NAME + "\\" == nodeName
     }
 
     /**
@@ -5539,8 +5530,8 @@ class I2b2HelperService implements InitializingBean {
                         log.debug("Found item ${textContent}")
 
                         Node valueinfo = (Node) xpath.evaluate("constrain_by_value", item, XPathConstants.NODE)
-                        String operator = ""
-                        String constraints = ""
+                        String operator = ''
+                        String constraints = ''
 
                         pw.write(textContent)
 
@@ -5551,25 +5542,25 @@ class I2b2HelperService implements InitializingBean {
                         }
 
                         valueinfo = (Node) xpath.evaluate("constrain_by_omics_value", item, XPathConstants.NODE)
-                        operator = ""
-                        constraints = ""
-                        String value_type = ""
-                        String selector = ""
-                        String projection = ""
-                        if (valueinfo != null) {
+                        operator = ''
+                        constraints = ''
+                        String value_type = ''
+                        String selector = ''
+                        String projection = ''
+                        if (valueinfo) {
                             value_type = ((Node) xpath.evaluate("omics_value_type", valueinfo, XPathConstants.NODE)).getTextContent()
                             operator = ((Node) xpath.evaluate("omics_value_operator", valueinfo, XPathConstants.NODE)).getTextContent()
                             constraints = ((Node) xpath.evaluate("omics_value_constraint", valueinfo, XPathConstants.NODE)).getTextContent()
                             selector = ((Node) xpath.evaluate("omics_selector", valueinfo, XPathConstants.NODE)).getTextContent()
                             projection = ((Node) xpath.evaluate("omics_projection_type", valueinfo, XPathConstants.NODE)).getTextContent()
                             pw.write(selector)
-                            if (value_type.equals('VCF')) {
+                            if (value_type == 'VCF') {
                                 // TBD
                             }
                             // else if (value_type.equals {}   // other non-standard high-dim types here
                             else {
                                 pw.write(" - " + Projection.prettyNames.get(projection, projection) + " " + operator + " ")
-                                if (operator.equals("BETWEEN")) {
+                                if (operator == "BETWEEN") {
                                     String[] bounds = constraints.split(":")
                                     if (bounds.length != 2) {
                                         log.error "BETWEEN constraint type found with values not seperated by ':'"
@@ -5613,7 +5604,6 @@ class I2b2HelperService implements InitializingBean {
      * Gets the children paths concepts of a parent key
      */
     def getRootPathsWithTokens() {
-        //String fullname=concept_key.substring(concept_key.indexOf("\\",2), concept_key.length())
         def rootlevel = -1
         String xml
         def ls = [:]
@@ -5681,7 +5671,7 @@ class I2b2HelperService implements InitializingBean {
             if (row.PLATFORM != null) {
                 hv.platforms.add(row.PLATFORM)
             }
-            if ((row.PLATFORM != null) && (row.TIMEPOINT_CD != null) && !(row.PLATFORM.equals('RBM') && row.TIMEPOINT_CD.indexOf(':Z:') == -1)) {
+            if ((row.PLATFORM != null) && (row.TIMEPOINT_CD != null) && !(row.PLATFORM == 'RBM' && !row.TIMEPOINT_CD.contains(':Z:'))) {
                 if (row.TIMEPOINT_CD != null) {
                     hv.timepoints.add(row.TIMEPOINT_CD)
                 }
@@ -5715,7 +5705,7 @@ class I2b2HelperService implements InitializingBean {
             if (row.PLATFORM != null) {
                 hv.platforms.add(row.PLATFORM)
             }
-            if ((row.PLATFORM != null) && (row.TIMEPOINT_CD != null) && !(row.PLATFORM.equals('RBM') && row.TIMEPOINT_CD.indexOf(':Z:') == -1)) {
+            if ((row.PLATFORM != null) && (row.TIMEPOINT_CD != null) && !(row.PLATFORM == 'RBM' && !row.TIMEPOINT_CD.contains(':Z:'))) {
                 if (row.TIMEPOINT_CD != null) {
                     hv.timepoints.add(row.TIMEPOINT_CD)
                 }
@@ -5750,7 +5740,7 @@ class I2b2HelperService implements InitializingBean {
             if (row.PLATFORM != null) {
                 hv.platforms.add(row.PLATFORM)
             }
-            if ((row.PLATFORM != null) && (row.TIMEPOINT_CD != null) && !(row.PLATFORM.equals('RBM') && row.TIMEPOINT_CD.indexOf(':Z:') == -1)) {
+            if ((row.PLATFORM != null) && (row.TIMEPOINT_CD != null) && !(row.PLATFORM == 'RBM' && !row.TIMEPOINT_CD.contains(':Z:'))) {
                 if (row.TIMEPOINT_CD != null) {
                     hv.timepoints.add(row.TIMEPOINT_CD)
                 }
@@ -5786,7 +5776,7 @@ class I2b2HelperService implements InitializingBean {
             if (row.PLATFORM != null) {
                 hv.platforms.add(row.PLATFORM)
             }
-            if ((row.PLATFORM != null) && (row.TIMEPOINT_CD != null) && !(row.PLATFORM.equals('RBM') && row.TIMEPOINT_CD.indexOf(':Z:') == -1)) {
+            if ((row.PLATFORM != null) && (row.TIMEPOINT_CD != null) && !(row.PLATFORM.equals('RBM') && !row.TIMEPOINT_CD.contains(':Z:'))) {
                 if (row.TIMEPOINT_CD != null) {
                     hv.timepoints.add(row.TIMEPOINT_CD)
                 }
@@ -5820,7 +5810,7 @@ class I2b2HelperService implements InitializingBean {
             if (row.PLATFORM != null) {
                 hv.platforms.add(row.PLATFORM)
             }
-            if ((row.PLATFORM != null) && (row.TIMEPOINT_CD != null) && !(row.PLATFORM.equals('RBM') && row.TIMEPOINT_CD.indexOf(':Z:') == -1)) {
+            if ((row.PLATFORM != null) && (row.TIMEPOINT_CD != null) && !(row.PLATFORM.equals('RBM') && !row.TIMEPOINT_CD.contains(':Z:'))) {
                 if (row.TIMEPOINT_CD != null) {
                     hv.timepoints.add(row.TIMEPOINT_CD)
                 }
@@ -5854,7 +5844,7 @@ class I2b2HelperService implements InitializingBean {
             subids = null
         }
         Sql sql = new Sql(dataSource)
-        String sqlt = ""
+        String sqlt = ''
         switch (infoType) {
             case CohortInformation.TRIALS_TYPE:
                 ci.trials = []
@@ -5879,7 +5869,7 @@ class I2b2HelperService implements InitializingBean {
                 ci.platforms = []
                 sqlt = "select distinct platform from DEAPP.de_subject_sample_mapping where trial_name in (" + listToIN(ci.trials) + ") order by platform"
                 sql.eachRow(sqlt, { row ->
-                    ci.platforms.add([platform: row.platform, platformLabel: ("MRNA_AFFYMETRIX".equals(row.platform) ? "MRNA" : row.platform)])
+                    ci.platforms.add([platform: row.platform, platformLabel: ("MRNA_AFFYMETRIX" == row.platform ? "MRNA" : row.platform)])
                 })
                 break
             case CohortInformation.TIMEPOINTS_TYPE:
@@ -5974,8 +5964,7 @@ class I2b2HelperService implements InitializingBean {
             hv.gplLabels.add(((Map) ci.gpls.get(0)).get('gplLabel'))
         } else if (ci.gpls.size() > 1) {
             Sql sql = new Sql(dataSource)
-            String sqlt = ""
-            sqlt = "select distinct rgi.platform, rgi.title from DEAPP.de_subject_sample_mapping dssm, DEAPP.de_gpl_info rgi where dssm.trial_name in (" + listToIN(ci.trials) + ") " +
+            String sqlt = "select distinct rgi.platform, rgi.title from DEAPP.de_subject_sample_mapping dssm, DEAPP.de_gpl_info rgi where dssm.trial_name in (" + listToIN(ci.trials) + ") " +
                     "and dssm.platform in (" + listToIN(ci.platforms) + ")" +
                     "and dssm.concept_code in (" + listToIN(concepts) + ")" +
                     "and dssm.gpl_id=rgi.platform"
@@ -6001,8 +5990,7 @@ class I2b2HelperService implements InitializingBean {
             hv.rbmpanelsLabels.add(((Map) ci.rbmpanels.get(0)).get('rbmpanelLabel'))
         } else if (ci.rbmpanels.size() > 1) {
             Sql sql = new Sql(dataSource)
-            String sqlt = ""
-            sqlt = "select distinct dssm.rbm_panel from DEAPP.de_subject_sample_mapping dssm where dssm.trial_name in (" + listToIN(ci.trials) + ") " +
+            String sqlt = "select distinct dssm.rbm_panel from DEAPP.de_subject_sample_mapping dssm where dssm.trial_name in (" + listToIN(ci.trials) + ") " +
                     "and dssm.platform in (" + listToIN(ci.platforms) + ") and dssm.CONCEPT_CODE IN (" + listToIN(concepts) + ")"
             sql.eachRow(sqlt, { row ->
                 hv.rbmpanels.add(row.rbm_panel)

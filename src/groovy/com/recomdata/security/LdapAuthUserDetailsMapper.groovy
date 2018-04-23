@@ -164,7 +164,7 @@ class LdapAuthUserDetailsMapper implements UserDetailsContextMapper {
 		collectedAuthorities.addAll(collectAuthoritiesForRoleAttributes(ctx))
 		collectedAuthorities.addAll(collectDatabaseAuthorities(user))
 
-		return new AuthUserDetails(
+		new AuthUserDetails(
 				user.username,
 				user.passwd,
 				user.enabled,
@@ -173,7 +173,8 @@ class LdapAuthUserDetailsMapper implements UserDetailsContextMapper {
 				!bruteForceLoginLockService.isLocked(user.username),
 				collectedAuthorities ?: AuthUserDetailsService.NO_ROLES,
 				user.id,
-				"LDAP '${user.userRealName}'")
+				"LDAP '${user.userRealName}'",
+				user.email)
 	}
 
 	void mapUserToContext(UserDetails user, DirContextAdapter ctx) {

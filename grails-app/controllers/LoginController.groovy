@@ -1,10 +1,3 @@
-/**
- * $Id: LoginController.groovy 10098 2011-10-19 18:39:32Z mmcduffie $
- * @author $Author: mmcduffie $
- * @version $Revision: 10098 $
- */
-
-
 import grails.plugin.springsecurity.SpringSecurityService
 import grails.plugin.springsecurity.SpringSecurityUtils
 import groovy.util.logging.Slf4j

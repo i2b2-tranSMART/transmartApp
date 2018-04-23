@@ -275,7 +275,7 @@ class SolrService {
 			String key = category.key.toString()
 
 			//Only add to the query if the category has values.
-			if (category.value.size() > 0 &&
+			if (category.value &&
 					key != 'count' &&
 					!key.startsWith('GridColumnList') &&
 					!key.startsWith('result_instance_id')) {
@@ -356,7 +356,7 @@ class SolrService {
 			for (Map.Entry category in record) {
 				String key = category.key.toString()
 
-				if (category.value.size() > 0 &&
+				if (category.value &&
 						key != 'count' &&
 						!key.startsWith('GridColumnList') &&
 						!key.startsWith('result_instance_id')) {

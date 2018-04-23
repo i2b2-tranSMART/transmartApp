@@ -148,7 +148,7 @@ class ExperimentAnalysisController {
 		ExportTableNew table
 
 		//Keep this if you want to cache the grid data
-		//ExportTableNew table=(ExportTableNew)request.getSession().getAttribute('gridtable')
+		//ExportTableNew table=(ExportTableNew) session.gridtable
 
 		if (table == null) {
 			table = new ExportTableNew()

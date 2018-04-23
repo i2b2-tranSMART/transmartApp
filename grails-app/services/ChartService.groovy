@@ -37,7 +37,7 @@ class ChartService {
     def highDimensionResourceService
     def public keyCache = []
 
-    def getSubsetsFromRequest(params) {
+    Map getSubsetsFromRequest(params) {
 
         // We retrieve the result instance ids from the client
         def result_instance_id1 = params.result_instance_id1 ?: null;
@@ -45,8 +45,8 @@ class ChartService {
 
         // We create our subset reference Map
         [
-            1: [ exists: !(result_instance_id1 == null || result_instance_id1 == ""), instance: result_instance_id1],
-            2: [ exists: !(result_instance_id2 == null || result_instance_id1 == ""), instance: result_instance_id2],
+            1: [ exists: result_instance_id1 as boolean, instance: result_instance_id1],
+            2: [ exists: result_instance_id2 as boolean, instance: result_instance_id2],
             commons: [:]
         ]
     }
@@ -97,12 +97,12 @@ class ChartService {
 
             // Sex chart has to be generated for each subset
             p.sexData = i2b2HelperService.getPatientDemographicDataForSubset("sex_cd", p.instance)
-            moveKeyToEndOfMap(p.sexData,'')
+            moveKeyToEndOfMap(p.sexData, '')
             p.sexPie = getSVGChart(type: 'pie', data: p.sexData, title: "Sex")
 
             // Same thing for Race chart
             p.raceData = i2b2HelperService.getPatientDemographicDataForSubset("race_cd", p.instance)
-            moveKeyToEndOfMap(p.raceData,'')
+            moveKeyToEndOfMap(p.raceData, '')
             p.racePie = getSVGChart(type: 'pie', data: p.raceData, title: "Race")
 
         }
@@ -122,7 +122,7 @@ class ChartService {
         i2b2HelperService.getDistinctConceptSet(subsets[1].instance, subsets[2].instance).collect {
             i2b2HelperService.getConceptKeyForAnalysis(it)
         }.findAll() {
-            it.indexOf("SECURITY") <= -1
+            !it.contains("SECURITY")
         }.each {
             if (!i2b2HelperService.isHighDimensionalConceptKey(it)) {
                 concepts[it] = getConceptAnalysis(concept: it, subsets: subsets)
@@ -136,7 +136,7 @@ class ChartService {
         // We also retrieve all concepts involved in the query
         def concepts = [:]
         highDimensionQueryService.getHighDimensionalConceptSet(subsets[1].instance, subsets[2].instance).findAll() {
-            it.concept_key.indexOf("SECURITY") <= -1
+            !it.concept_key.contains("SECURITY")
         }.each {
             def key = it.concept_key + it.omics_selector + " - " + it.omics_projection_type
             if (!concepts.containsKey(key))
@@ -145,7 +145,7 @@ class ChartService {
         concepts
     }
 
-    def getConceptAnalysis (Map args) {
+    Map getConceptAnalysis (Map args) {
         // Retrieving function parameters
         def subsets = args.subsets ?: null
         def concept = args.concept ?: null
@@ -178,10 +178,12 @@ class ChartService {
                 p.exists
             }.each { n, p ->
 
-                if (p.instance != "")
+                if (p.instance) {
                     p.patientCount = i2b2HelperService.getPatientSetSize(p.instance)
-                else
+                }
+                else {
                     p.patientCount = i2b2HelperService.getPatientCountForConcept(concept)
+                }
 
                 // Getting the concept data
                 p.conceptData = i2b2HelperService.getConceptDistributionDataForValueConceptFromCode(result.commons.conceptCode, p.instance).toList()
@@ -239,12 +241,14 @@ class ChartService {
                                                property      : result.commons.omics_params.omics_property,
                                                selector      : result.commons.omics_params.omics_selector),
                         concept,
-                        (p.instance == "" ? null : p.instance as Long)).collect {k, v -> v}
+                        (p.instance == '' ? null : p.instance as Long)).collect {k, v -> v}
 
-                if (p.instance != "")
+                if (p.instance) {
                     p.patientCount = i2b2HelperService.getPatientSetSize(p.instance)
-                else
+                }
+                else {
                     p.patientCount = i2b2HelperService.getPatientCountForConcept(concept)
+                }
 
                 p.conceptStats = BoxAndWhiskerCalculator.calculateBoxAndWhiskerStatistics(p.conceptData)
                 conceptHistogramHandle["Subset $n"] = p.conceptData
@@ -254,7 +258,7 @@ class ChartService {
             // Lets build our concept diagrams now that we have all the points in
             result.commons.conceptHisto = getSVGChart(type: 'histogram', data: conceptHistogramHandle, size: chartSize,
                                                       xlabel: Projection.prettyNames.get(args.omics_params.omics_projection_type, args.omics_params.omics_projection_type),
-                                                      ylabel: "", bins: args.omics_params.omics_hist_bins ?: 10)
+                                                      ylabel: '', bins: args.omics_params.omics_hist_bins ?: 10)
             result.commons.conceptPlot = getSVGChart(type: 'boxplot-and-points', data: conceptHistogramHandle, boxplotdata: conceptPlotHandle, size: chartSize)
 
             // Lets calculate the T test if possible
@@ -290,10 +294,12 @@ class ChartService {
                 p.exists
             }.each { n, p ->
 
-                if (p.instance != "")
+                if (p.instance) {
                     p.patientCount = i2b2HelperService.getPatientSetSize(p.instance)
-                else
+                }
+                else {
                     p.patientCount = i2b2HelperService.getPatientCountForConcept(concept)
+                }
 
                 // Getting the concept data
                 p.conceptData = i2b2HelperService.getConceptDistributionDataForConcept(concept, p.instance)
@@ -344,9 +350,9 @@ class ChartService {
         def data = args.data ?: [:]
         def boxplotdata = args.boxplotdata ?: [:]
         def size = args.size ?: [:]
-        def title = args.title ?: ""
-        def xlabel = args.xlabel ?: ""
-        def ylabel = args.ylabel ?: ""
+        def title = args.title ?: ''
+        def xlabel = args.xlabel ?: ''
+        def ylabel = args.ylabel ?: ''
         def bins = 10
         if (args.containsKey('bins'))
             try {
@@ -361,7 +367,7 @@ class ChartService {
         def height = size?.height ?: 300
 
         // If no data is being sent we return an empty string
-        if (data.isEmpty()) return ''
+        if (!data) return ''
         def nValues = 0;
         def nKeys = 0;
 
@@ -429,9 +435,6 @@ class ChartService {
                 def max = null
 
                 set = new HistogramDataset()
-//                data.findAll { it.key && it.value }.each { k, v ->
-//                    set.addSeries(k, (double [])v.toArray(), bins)
-//                }
                 data.each { k, v ->
                     if(v.size()){
                         min = min != null ? (v.min() != null && min > v.min() ? v.min() : min) : v.min()
@@ -523,7 +526,7 @@ class ChartService {
             case 'pie':
 
             // fails if given a null key (e.g. missing gender values)
-            
+
                 data.each { k, v ->
                     if (k) nKeys++;
                 }
@@ -585,9 +588,9 @@ class ChartService {
         def result = renderer.getSVGDocument()
 
         // We need to remove some of the perturbing DOM injected by JFreeChart
-        result = (result =~ /<\?xml(.*)\?>/).replaceAll("")
-        result = (result =~ /<!DOCTYPE(.*?)>/).replaceAll("")
-        result = (result =~ /xmlns(.*?)="(.*?)"(\s*)/).replaceAll("")
+        result = (result =~ /<\?xml(.*)\?>/).replaceAll('')
+        result = (result =~ /<!DOCTYPE(.*?)>/).replaceAll('')
+        result = (result =~ /xmlns(.*?)="(.*?)"(\s*)/).replaceAll('')
         result
     }
 

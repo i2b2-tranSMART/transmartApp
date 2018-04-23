@@ -45,7 +45,7 @@ class DataCountService {
 	/**
 	 * @return The number of patients within the given subset that have clinical data
 	 */
-	Long getClinicalDataCount(Long resultInstanceId) {
+	long getClinicalDataCount(Long resultInstanceId) {
 		// TODO: Convert this into using
 		if (resultInstanceId) {
 			queriesResource.getQueryResultFromId(resultInstanceId).setSize

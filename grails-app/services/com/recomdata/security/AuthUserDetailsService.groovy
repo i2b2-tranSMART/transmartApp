@@ -1,103 +1,84 @@
-/**
- * $Id: AuthUserDetailsService.groovy 9178 2011-08-24 13:50:06Z mmcduffie $
- * @author $Author: mmcduffie $
- * @version $Revision: 9178 $
- */
 package com.recomdata.security
 
 import grails.plugin.springsecurity.SpringSecurityUtils
+import grails.plugin.springsecurity.userdetails.GormUserDetailsService
 import grails.plugin.springsecurity.userdetails.GrailsUserDetailsService
+import groovy.util.logging.Slf4j
+import org.codehaus.groovy.grails.commons.GrailsApplication
 import org.hibernate.criterion.CriteriaSpecification
+import org.springframework.beans.factory.InitializingBean
+import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.transmart.plugin.shared.security.AuthUserDetails
-
-import javax.annotation.Resource
+import org.transmartproject.security.BruteForceLoginLockService
 
 /**
- * Implementation of <code>GrailsUserDetailsService</code> that uses
- * domain classes to load users and roles.
- * See also GormUserDetailsService
+ * @author mmcduffie
  */
-class AuthUserDetailsService implements GrailsUserDetailsService {
+@Slf4j('logger')
+class AuthUserDetailsService implements GrailsUserDetailsService, InitializingBean {
 
-    /* @Resource is required because this bean is declared in resources.groovy
-       and therefore the service does not benefit from Grails' conventional
-       autoinjection into services */
-    @Resource
-    def grailsApplication
-    @Resource
-    def bruteForceLoginLockService
+	/**
+	 * Some Spring Security classes (e.g. RoleHierarchyVoter) expect at least
+	 * one role, so we give a user with no granted roles this one which gets
+	 * past that restriction but doesn't grant anything. */
+	private static final List<? extends GrantedAuthority> NO_ROLES = [GormUserDetailsService.NO_ROLE]
 
-    def conf = SpringSecurityUtils.securityConfig
+	GrailsApplication grailsApplication
+	BruteForceLoginLockService bruteForceLoginLockService
 
-    /**
-     * Some Spring Security classes (e.g. RoleHierarchyVoter) expect at least
-     * one role, so we give a user with no granted roles this one which gets
-     * past that restriction but doesn't grant anything. */
-    static final List NO_ROLES = [new SimpleGrantedAuthority(SpringSecurityUtils.NO_ROLE)]
+	private String usernamePropertyName
+	private Class<?> userClass
 
-    @Override
-    UserDetails loadUserByUsername(String username,
-                                   boolean loadRoles = true) throws UsernameNotFoundException {
-        try {
-            loadUserByProperty((String) conf.userLookup.usernamePropertyName,
-                    username,
-                    loadRoles,
-                    true /* ignore case */)
-        } catch (UsernameNotFoundException unfe) {
-            def splitUsername = username.split('@') as List
-            if (splitUsername.size() != 2) {
-                throw unfe
-            }
+	UserDetails loadUserByUsername(String username, boolean loadRoles = true) throws UsernameNotFoundException {
+		try {
+			loadUserByProperty usernamePropertyName, username, loadRoles, true
+		}
+		catch (UsernameNotFoundException e) {
+			String[] splitUsername = username.split('@')
+			if (splitUsername.length != 2) {
+				throw e
+			}
 
-            loadUserByProperty((String) conf.userLookup.usernamePropertyName,
-                    splitUsername[0],
-                    loadRoles,
-                    true /* ignore case */)
-        }
-    }
+			loadUserByProperty usernamePropertyName, splitUsername[0], loadRoles, true
+		}
+	}
 
-    UserDetails loadUserByProperty(String property,
-                                   String value,
-                                   boolean loadRoles,
-                                   boolean ignoreCase = false)
-            throws UsernameNotFoundException {
+	UserDetails loadUserByProperty(String property, String value, boolean loadRoles,
+	                               boolean ignoreCase = false) throws UsernameNotFoundException {
 
-        log.info "Attempting to find user for $property = $value"
+		logger.info 'Attempting to find user for {} = {}', property, value
 
-        Class<?> userClass = grailsApplication.getDomainClass(
-                conf.userLookup.userDomainClassName).clazz
+		def user = userClass.createCriteria().get {
+			eq property, value, [ignoreCase: ignoreCase]
 
-        def user = userClass.createCriteria().get {
-            eq property, value, [ignoreCase: ignoreCase]
+			if (loadRoles) {
+				createAlias 'authorities', 'a', CriteriaSpecification.LEFT_JOIN
+			}
+		}
 
-            if (loadRoles) {
-                createAlias 'authorities', 'a', CriteriaSpecification.LEFT_JOIN
-            }
-        }
-        def authorities = []
+		if (!user) {
+			logger.warn 'User not found with {} = {}', property, value
+			throw new UsernameNotFoundException('User not found')
+		}
 
-        if (!user) {
-            log.warn "User not found with $property = $value"
-            throw new UsernameNotFoundException("User not found",
-                    "$property = $value")
-        }
+		Collection<GrantedAuthority> authorities = loadRoles ?
+				user.authorities*.authority.collect { String name -> new SimpleGrantedAuthority(name) } : []
 
-        if (loadRoles) {
-            authorities = user.authorities*.authority.collect {
-                new SimpleGrantedAuthority(it)
-            }
-        }
+		if (loadRoles) {
+			logger.debug 'Roles for user {} are: {}', user.username, authorities.join(', ') ?: '(none)'
+		}
 
-        if (loadRoles && log.isDebugEnabled()) {
-            log.debug("Roles for user ${user.username} are: " +
-                    authorities.join(', ') ?: '(none)')
-        }
+		new AuthUserDetails(user.username, user.passwd, user.enabled,
+				true, true, !bruteForceLoginLockService.isLocked(user.username),
+				authorities ?: NO_ROLES, user.id, user.userRealName, user.email)
+	}
 
-        new AuthUserDetails(user.username, user.passwd, user.enabled,
-                true, true, !bruteForceLoginLockService.isLocked(user.username),
-                authorities ?: NO_ROLES, user.id, user.userRealName)
-    }
+	void afterPropertiesSet() {
+		usernamePropertyName = SpringSecurityUtils.securityConfig.userLookup.usernamePropertyName
+		userClass = grailsApplication.getDomainClass(
+				SpringSecurityUtils.securityConfig.userLookup.userDomainClassName).clazz
+	}
 }

@@ -65,7 +65,7 @@ class SnpDataService {
 				FROM DEAPP.de_subject_sample_mapping
 				WHERE platform = 'SNP'
 				  and patient_id in (
-				     SELECT DISTINCT patient_num 
+				     SELECT DISTINCT patient_num
 						FROM I2B2DEMODATA.qt_patient_set_collection
 						WHERE result_instance_id = ?
 				  )
@@ -474,7 +474,7 @@ class SnpDataService {
 			String[] pathwayGeneList = pathwayName.split(',')
 
 			//For each gene, get the long ID.
-			pathwayName = pathwayGeneList.collect { SearchKeyword.get(Long.valueOf(it)).uniqueId }.join(',')
+			pathwayName = pathwayGeneList.collect { SearchKeyword.get(it).uniqueId }.join(',')
 		}
 
 		logger.debug 'pathway_name has been set to a keyword ID: {}', pathwayName

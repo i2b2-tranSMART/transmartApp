@@ -52,7 +52,7 @@ class ExportService {
 		newJob.save()
 
 		jobResultsService[jobName] = [:]
-		String querySummary = 'Subset 1:' + querySummary1 + ((querySummary2 != '') ? ' <br/> Subset 2:' + querySummary2 : '')
+		String querySummary = 'Subset 1:' + querySummary1 + (querySummary2 ? ' <br/> Subset 2:' + querySummary2 : '')
 		asyncJobService.updateStatus(jobName, jobStatus, null, querySummary, null)
 
 		logger.debug 'Sending {} back to the client', newJob.jobName

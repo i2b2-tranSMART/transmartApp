@@ -15,6 +15,8 @@ import javax.annotation.PostConstruct
 
 class ACGHDataService {
 
+	static transactional = false
+
 	HighDimensionResource highDimensionResourceService
 	HighDimensionDataTypeResource<RegionRow> acghResource
 
@@ -33,7 +35,7 @@ class ACGHDataService {
 						name: study),
 				acghResource.createAssayConstraint(
 						AssayConstraint.PATIENT_SET_CONSTRAINT,
-						result_instance_id: resultInstanceId as Long),
+						result_instance_id: resultInstanceId as Long)
 		]
 
 		Projection projection = acghResource.createProjection([:], 'acgh_values')

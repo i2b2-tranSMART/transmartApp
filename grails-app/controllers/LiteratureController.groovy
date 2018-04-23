@@ -202,7 +202,7 @@ class LiteratureController {
 					}
 				}
 			}
-			if (tableName == 'LiteratureAlterationData' && record.assocMoleculeDetails?.size() > 0) {
+			if (tableName == 'LiteratureAlterationData' && record.assocMoleculeDetails) {
 				for (amdRecord in record.assocMoleculeDetails) {
 					for (col in litAMDDataColumns) {
 						String value = amdRecord[col]

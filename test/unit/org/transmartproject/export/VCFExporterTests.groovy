@@ -49,7 +49,7 @@ class VCFExporterTests {
 
             exporter.export(tabularResult, projection, { name, ext -> outputStream}, { true })
 
-            // As the export is cancelled, 
+            // As the export is cancelled,
             assert !outputStream.toString()
         }
     }
@@ -144,8 +144,8 @@ class VCFExporterTests {
 
 
     protected expectHeader(List<String> headerLines) {
-        assert headerLines[0].equals("##fileformat=VCFv4.2")
-        assert headerLines[1].equals("##fileDate=" + new Date().format('yyyyMMdd'))
+        assert headerLines[0] == "##fileformat=VCFv4.2"
+        assert headerLines[1] == "##fileDate=" + new Date().format('yyyyMMdd')
         assert headerLines[2].startsWith("##source=transmart")
     }
 

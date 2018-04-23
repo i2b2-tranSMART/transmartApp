@@ -27,7 +27,7 @@ class HighDimExporterRegistryUnitTests {
         testee.registerHighDimensionExporter(fileFormat, fooExporter)
         testee.registerHighDimensionExporter(fileFormat, barExporter)
 
-        def exporters = testee.findExporters(fileFormat: fileFormat)
+        def exporters = testee.findExporters(fileFormat, null)
 
         assertThat exporters, containsInAnyOrder(fooExporter, barExporter)
     }
@@ -41,7 +41,7 @@ class HighDimExporterRegistryUnitTests {
         testee.registerHighDimensionExporter('CSV', barExporter)
         testee.registerHighDimensionExporter('TXT', fooExporter2)
 
-        def exporters = testee.findExporters(dataType: 'foo')
+        def exporters = testee.findExporters(null, 'foo')
 
         assertThat exporters, containsInAnyOrder(fooExporter, fooExporter2)
     }
@@ -51,7 +51,7 @@ class HighDimExporterRegistryUnitTests {
         testee.registerHighDimensionExporter('TSV', fooExporter)
         testee.registerHighDimensionExporter('CSV', barExporter)
 
-        def exporters = testee.findExporters()
+        def exporters = testee.findExporters(null, null)
 
         assertThat exporters, containsInAnyOrder(fooExporter, barExporter)
     }
@@ -61,7 +61,7 @@ class HighDimExporterRegistryUnitTests {
         testee.registerHighDimensionExporter('TSV', fooExporter)
         testee.registerHighDimensionExporter('CSV', barExporter)
 
-        def exporters = testee.findExporters([dataType: 'foo', fileFormat: 'TSV'])
+        def exporters = testee.findExporters('TSV', 'foo')
 
         assertThat exporters, contains(fooExporter)
     }
@@ -71,7 +71,7 @@ class HighDimExporterRegistryUnitTests {
         testee.registerHighDimensionExporter('TSV', fooExporter)
         testee.registerHighDimensionExporter('CSV', barExporter)
 
-        def exporters = testee.findExporters([dataType: 'foo', fileFormat: 'CSV'])
+        def exporters = testee.findExporters('CSV', 'foo')
 
         assertThat exporters, hasSize(0)
     }

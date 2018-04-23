@@ -295,7 +295,7 @@ class SnpDataLoading {
 					chromCountList[index - 1] = 0 // set the initial count to 0
 				}
 				chromBuf << line << '\n'
-				chromCountList[index.intValue() - 1]++
+				chromCountList[index - 1]++
 				chromCountTotal++
 			}
 		}

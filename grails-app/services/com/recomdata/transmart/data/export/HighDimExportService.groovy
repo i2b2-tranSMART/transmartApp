@@ -1,6 +1,9 @@
 package com.recomdata.transmart.data.export
 
 import au.com.bytecode.opencsv.CSVWriter
+import com.recomdata.asynchronous.JobResultsService
+import groovy.util.logging.Slf4j
+import org.springframework.beans.factory.annotation.Autowired
 import org.transmartproject.core.dataquery.DataRow
 import org.transmartproject.core.dataquery.TabularResult
 import org.transmartproject.core.dataquery.assay.Assay
@@ -9,286 +12,241 @@ import org.transmartproject.core.dataquery.highdim.HighDimensionDataTypeResource
 import org.transmartproject.core.dataquery.highdim.Platform
 import org.transmartproject.core.dataquery.highdim.assayconstraints.AssayConstraint
 import org.transmartproject.core.dataquery.highdim.projections.Projection
+import org.transmartproject.core.ontology.ConceptsResource
 import org.transmartproject.core.ontology.OntologyTerm
 import org.transmartproject.core.ontology.OntologyTermTag
+import org.transmartproject.core.ontology.Study
+import org.transmartproject.core.querytool.QueryResult
+import org.transmartproject.db.dataquery.highdim.HighDimensionResourceService
+import org.transmartproject.db.ontology.OntologyTermTagsResourceService
+import org.transmartproject.db.querytool.QueriesResourceService
 import org.transmartproject.export.HighDimExporter
+import org.transmartproject.export.HighDimExporterRegistry
 
+@Slf4j('logger')
 class HighDimExportService {
 
-    final static List<String> META_FILE_HEADER = ['Attribute', 'Description']
-    private static final META_FILE_NAME = 'meta.tsv'
+	static transactional = false
 
-    final static List<String> SAMPLE_FILE_HEADER = ['Assay ID',
-                                                    'Subject ID',
-                                                    'Sample Type',
-                                                    'Time Point',
-                                                    'Tissue Type',
-                                                    'Platform ID',
-                                                    'Sample Code']
-    private static final SAMPLES_FILE_NAME = 'samples.tsv'
+	private static final META_FILE_NAME = 'meta.tsv'
+	private static final SAMPLES_FILE_NAME = 'samples.tsv'
+	private static final PLATFORM_FILE_NAME = 'platform.tsv'
+	private final static char COLUMN_SEPARATOR = '\t' as char
+	private static final String[] META_FILE_HEADER = ['Attribute', 'Description'].asImmutable()
+	private static final List<String> SAMPLE_FILE_HEADER = ['Assay ID', 'Subject ID', 'Sample Type',
+	                                                        'Time Point', 'Tissue Type', 'Platform ID',
+	                                                        'Sample Code'].asImmutable()
 
-    final static List<String> PLATFORM_FILE_HEADER = ['Platform ID',
-                                                    'Title',
-                                                    'Genome Release ID',
-                                                    'Organism',
-                                                    'Marker Type',
-                                                    'Annotation Date']
-    private static final PLATFORM_FILE_NAME = 'platform.tsv'
+	static final List<String> PLATFORM_FILE_HEADER = ['Platform ID', 'Title', 'Genome Release ID',
+	                                                  'Organism', 'Marker Type', 'Annotation Date'].asImmutable()
 
-    private final static char COLUMN_SEPARATOR = '\t' as char
+	ConceptsResource conceptsResourceService
+	@Autowired private HighDimensionResourceService highDimensionResourceService
+	@Autowired private HighDimExporterRegistry highDimExporterRegistry
+	@Autowired private JobResultsService jobResultsService
+	@Autowired private OntologyTermTagsResourceService ontologyTermTagsResourceService
+	@Autowired private QueriesResourceService queriesResourceService
 
-    def highDimensionResourceService
-    def highDimExporterRegistry
-    def queriesResourceService
-    def conceptsResourceService
-    def ontologyTermTagsResourceService
+	/**
+	 * @param resultInstanceId  id of patient set for denoting patients for which export data for.
+	 * @param studyDir  directory where to store exported files
+	 * @param format  data file format (e.g. 'TSV', 'VCF'; see HighDimExporter.getFormat())
+	 * @param dataType  data format (e.g. 'mrna', 'acgh'; see HighDimensionDataTypeModule.getName())
+	 * @param jobName name of the current export job to check status whether we need to break export.
+	 * @param exportOptions map with boolean values. Specifies what kind of data to export.
+	 *                                  Possible keys:
+	 *                                  - meta - ontology tags data
+	 *                                  - samples - subject sample mapping
+	 *                                  - platform - platform information
+	 * @return exported files
+	 */
+	List<File> exportHighDimData(String jobName, long resultInstanceId, List<String> conceptKeys,
+	                             String dataType, String format, File studyDir,
+	                             Map exportOptions = [:].withDefault { true } /*export everything by default*/) {
 
-    def jobResultsService
+		logger.info 'Start a HD data export job: {}', jobName
 
-    /**
-     * - args.conceptPaths (optional) - collection with concept keys (\\<tableCode>\<conceptFullName>) denoting data
-     * nodes for which to export data for.
-     * - args.resultInstanceId        - id of patient set for denoting patients for which export data for.
-     * - args.studyDir (File)         - directory where to store exported files
-     * - args.format                  - data file format (e.g. "TSV", "VCF"; see HighDimExporter.getFormat())
-     * - args.dataType                - data format (e.g. "mrna", "acgh"; see HighDimensionDataTypeModule.getName())
-     * - args.jobName                 - name of the current export job to check status whether we need to break export.
-     * - args.exportOptions           - map with boolean values. Specifies what kind of data to export.
-     *                                  Possible keys:
-     *                                  - meta - ontology tags data
-     *                                  - samples - subject sample mapping
-     *                                  - platform - platform information
-     * @return list of exported files
-     */
-    List<File> exportHighDimData(Map args) {
-        Long resultInstanceId    = args.resultInstanceId as Long
-        List<String> conceptKeys = args.conceptKeys
-        String jobName           = args.jobName
-        File studyDir            = args.studyDir
-        String format            = args.format
-        Map exportOptions        = args.exportOptions ?: [:].withDefault { true } //export everything by default
+		HighDimensionDataTypeResource dataTypeResource = highDimensionResourceService.getSubResourceForType(
+				dataType)
 
-        def files = []
+		Collection<OntologyTerm> ontologyTerms
+		if (conceptKeys) {
+			ontologyTerms = conceptKeys.collectAll { conceptsResourceService.getByKey it }
+		}
+		else {
+			QueryResult queryResult = queriesResourceService.getQueryResultFromId(resultInstanceId)
+			ontologyTerms = dataTypeResource.getAllOntologyTermsForDataTypeBy(queryResult)
+		}
 
-        log.info("Start a HD data export job: ${jobName}")
+		List<File> files = []
+		for (OntologyTerm term in ontologyTerms) {
+			logger.info '[{}] Start export for a term: {}', jobName, term.key
+			if (!jobResultsService.isJobCancelled(jobName)) {
+				files.addAll exportForSingleNode(term, resultInstanceId, studyDir,
+						format, dataTypeResource, jobName, exportOptions)
+			}
+		}
 
-        HighDimensionDataTypeResource dataTypeResource = highDimensionResourceService
-                .getSubResourceForType(args.dataType)
+		files.findAll()
+	}
 
-        def ontologyTerms
-        if (conceptKeys) {
-            ontologyTerms = conceptKeys.collectAll { conceptsResourceService.getByKey it }
-        } else {
-            def queryResult = queriesResourceService.getQueryResultFromId(resultInstanceId)
-            ontologyTerms = dataTypeResource.getAllOntologyTermsForDataTypeBy(queryResult)
-        }
+	List<File> exportForSingleNode(OntologyTerm term, Long resultInstanceId, File studyDir,
+	                               String format, HighDimensionDataTypeResource dataTypeResource,
+	                               String jobName, Map exportOptions) {
 
-        ontologyTerms.each { OntologyTerm term ->
-            log.info("[${jobName}] Start export for a term: ${term.key}")
-            if (!jobResultsService.isJobCancelled(jobName)) {
-                files.addAll(
-                        exportForSingleNode(
-                                term,
-                                resultInstanceId,
-                                studyDir,
-                                format,
-                                dataTypeResource,
-                                jobName,
-                                exportOptions))
-            }
-        }
+		if (jobResultsService.isJobCancelled(jobName)) {
+			return []
+		}
 
-        files.findAll()
-    }
+		List<File> outputFiles = []
 
-    List<File> exportForSingleNode(OntologyTerm term,
-                                   Long resultInstanceId,
-                                   File studyDir,
-                                   String format,
-                                   HighDimensionDataTypeResource dataTypeResource,
-                                   String jobName,
-                                   Map exportOptions) {
+		List<AssayConstraint> assayConstraints = [
+				dataTypeResource.createAssayConstraint(
+						AssayConstraint.PATIENT_SET_CONSTRAINT,
+						result_instance_id: resultInstanceId),
+				dataTypeResource.createAssayConstraint(
+						AssayConstraint.ONTOLOGY_TERM_CONSTRAINT,
+						concept_key: term.key)
+		]
 
-        if (jobResultsService.isJobCancelled(jobName)) {
-            return []
-        }
+		Set<HighDimExporter> exporters = highDimExporterRegistry.findExporters(
+				format, dataTypeResource.dataTypeName)
 
-        List<File> outputFiles = []
+		if (!exporters) {
+			throw new RuntimeException('No exporter was found for ' + dataTypeResource.dataTypeName +
+					' data type and ' + format + ' file format.')
+		}
 
-        def assayConstraints = [
-                dataTypeResource.createAssayConstraint(
-                        AssayConstraint.PATIENT_SET_CONSTRAINT,
-                        result_instance_id: resultInstanceId),
-                dataTypeResource.createAssayConstraint(
-                        AssayConstraint.ONTOLOGY_TERM_CONSTRAINT,
-                        concept_key: term.key)
-        ]
+		if (exporters.size() > 1) {
+			logger.warn 'There are more than one exporter for {} data type and {} file format. Using first one: {}',
+					dataTypeResource.dataTypeName, format, exporters[0]
+		}
 
-        Set<HighDimExporter> exporters = highDimExporterRegistry.findExporters(fileFormat: format,
-                dataType: dataTypeResource.dataTypeName)
+		HighDimExporter exporter = exporters[0]
 
-        if (!exporters) {
-            throw new RuntimeException("No exporter was found for ${dataTypeResource.dataTypeName} data type" +
-                    " and ${format} file format.")
-        } else if (exporters.size() > 1) {
-            log.warn("There are more than one exporter for ${dataTypeResource.dataTypeName} data type" +
-                    " and ${format} file format. Using first one: ${exporters?.getAt(0)}")
-        }
+		Projection projection = dataTypeResource.createProjection(exporter.projection)
 
-        HighDimExporter exporter = exporters.getAt(0)
+		logger.debug '[job={} key={}] Retrieving the HD data for the term and a patient set: {}.',
+				jobName, term.key, resultInstanceId
+		TabularResult<AssayColumn, DataRow> tabularResult =
+				dataTypeResource.retrieveData(assayConstraints, [], projection)
 
-        Projection projection = dataTypeResource.createProjection(exporter.projection)
+		File nodeDataFolder = new File(studyDir, getRelativeFolderPathForSingleNode(term))
+		logger.debug 'Create a node data folder: {}.', nodeDataFolder.path
+		nodeDataFolder.mkdirs()
 
-        if (log.debugEnabled) {
-            log.debug("[job=${jobName} key=${term.key}] " +
-                    "Retrieving the HD data for the term and a patient set: ${resultInstanceId}.")
-        }
-        TabularResult<AssayColumn, DataRow> tabularResult =
-                dataTypeResource.retrieveData(assayConstraints, [], projection)
+		try {
+			logger.debug '[job={} key={}] Export the HD data to the file.', jobName, term.key
+			exporter.export(tabularResult, projection,
+					{ String dataFileName, String dataFileExt ->
+						File outputFile = new File(nodeDataFolder,
+								dataFileName + '_' + dataTypeResource.dataTypeName + '.' + dataFileExt.toLowerCase())
+						if (outputFile.exists()) {
+							throw new RuntimeException(outputFile.path + ' file already exists.')
+						}
 
-        File nodeDataFolder = new File(studyDir, getRelativeFolderPathForSingleNode(term))
-        if (log.debugEnabled) {
-            log.debug("Create a node data folder: ${nodeDataFolder.path}.")
-        }
-        nodeDataFolder.mkdirs()
+						nodeDataFolder.mkdirs()
+						outputFiles << outputFile
+						logger.debug 'Inflating the data file: {}.', outputFile.path
+						outputFile.newOutputStream()
+					},
+					{ jobResultsService.isJobCancelled(jobName) })
+		}
+		catch (RuntimeException e) {
+			logger.error 'Data export to the file has thrown an exception', e
+		}
+		finally {
+			tabularResult.close()
+		}
 
-        try {
-            if (log.debugEnabled) {
-                log.debug("[job=${jobName} key=${term.key}] Export the HD data to the file.")
-            }
-            exporter.export(
-                    tabularResult,
-                    projection,
-                    { String dataFileName, String dataFileExt ->
-                        File outputFile = new File(nodeDataFolder,
-                                "${dataFileName}_${dataTypeResource.dataTypeName}.${dataFileExt.toLowerCase()}")
-                        if (outputFile.exists()) {
-                            throw new RuntimeException("${outputFile} file already exists.")
-                        }
-                        nodeDataFolder.mkdirs()
-                        outputFiles << outputFile
-                        if (log.debugEnabled) {
-                            log.debug("Inflating the data file: ${outputFile.path}.")
-                        }
-                        outputFile.newOutputStream()
-                    },
-                    { jobResultsService.isJobCancelled(jobName) })
-        } catch (RuntimeException e) {
-            log.error('Data export to the file has thrown an exception', e)
-        } finally {
-            tabularResult.close()
-        }
+		if (exportOptions.samples && !jobResultsService.isJobCancelled(jobName)) {
+			if (tabularResult.indicesList) {
+				logger.debug '[job={} key={}] Export the assays to the file.',
+						jobName, term.key
+				outputFiles << exportAssays(tabularResult.indicesList, nodeDataFolder)
+			}
+		}
 
-        if (exportOptions.samples && !jobResultsService.isJobCancelled(jobName)) {
-            if (tabularResult.indicesList) {
-                if (log.debugEnabled) {
-                    log.debug("[job=${jobName} key=${term.key}] Export the assays to the file.")
-                }
-                outputFiles << exportAssays(tabularResult.indicesList, nodeDataFolder)
-            }
-        }
+		if (exportOptions.platform && !jobResultsService.isJobCancelled(jobName)) {
+			Set<Platform> platforms = tabularResult.indicesList*.platform
+			if (platforms) {
+				logger.debug '[job={} key={}] Export the platform to the file.',
+						jobName, term.key
+				outputFiles << exportPlatform(platforms, nodeDataFolder)
+			}
+		}
 
-        if (exportOptions.platform && !jobResultsService.isJobCancelled(jobName)) {
-            Set<Platform> platforms = tabularResult.indicesList*.platform
-            if (platforms) {
-                if (log.debugEnabled) {
-                    log.debug("[job=${jobName} key=${term.key}] Export the platform to the file.")
-                }
-                outputFiles << exportPlatform(platforms, nodeDataFolder)
-            }
-        }
+		if (exportOptions.meta && !jobResultsService.isJobCancelled(jobName)) {
+			Map<OntologyTerm, List<OntologyTermTag>> tagsMap = ontologyTermTagsResourceService.getTags(
+					[term] as Set, false)
+			if (tagsMap && tagsMap[term]) {
+				logger.debug '[job={} key={}] Export the tags to the file.', jobName, term.key
+				outputFiles << exportMetaTags(tagsMap[term], nodeDataFolder)
+			}
+		}
 
-        if (exportOptions.meta && !jobResultsService.isJobCancelled(jobName)) {
-            def tagsMap = ontologyTermTagsResourceService.getTags([term] as Set, false)
-            if (tagsMap && tagsMap[term]) {
-                if (log.debugEnabled) {
-                    log.debug("[job=${jobName} key=${term.key}] Export the tags to the file.")
-                }
-                outputFiles << exportMetaTags(tagsMap[term], nodeDataFolder)
-            }
-        }
+		outputFiles
+	}
 
-        outputFiles
-    }
+	private File exportMetaTags(Collection<OntologyTermTag> tags, File parentFolder) {
+		File metaTagsFile = new File(parentFolder, META_FILE_NAME)
 
-    static File exportMetaTags(Collection<OntologyTermTag> tags, File parentFolder) {
-        def metaTagsFile = new File(parentFolder, META_FILE_NAME)
+		metaTagsFile.withWriter { Writer writer ->
+			CSVWriter csvWriter = new CSVWriter(writer, COLUMN_SEPARATOR)
+			csvWriter.writeNext META_FILE_HEADER
+			for (OntologyTermTag tag in tags) {
+				csvWriter.writeNext([tag.name, tag.description] as String[])
+			}
+		}
 
-        metaTagsFile.withWriter { Writer writer ->
-            CSVWriter csvWriter = new CSVWriter(writer, COLUMN_SEPARATOR)
-            csvWriter.writeNext(META_FILE_HEADER as String[])
-            tags.each { OntologyTermTag tag ->
-                csvWriter.writeNext([tag.name, tag.description] as String[])
-            }
-        }
+		metaTagsFile
+	}
 
-        metaTagsFile
-    }
+	private File exportAssays(Collection<Assay> assays, File parentFolder) {
+		File samplesFile = new File(parentFolder, SAMPLES_FILE_NAME)
 
-    static File exportAssays(Collection<Assay> assays, File parentFolder) {
-        def samplesFile = new File(parentFolder, SAMPLES_FILE_NAME)
+		samplesFile.withWriter { Writer writer ->
+			CSVWriter csvWriter = new CSVWriter(writer, COLUMN_SEPARATOR)
+			csvWriter.writeNext SAMPLE_FILE_HEADER as String[]
+			for (Assay assay in assays) {
+				csvWriter.writeNext([assay.id, assay.patientInTrialId, assay.sampleType.label,
+				                     assay.timepoint.label, assay.tissueType.label,
+				                     assay.platform.id, assay.sampleCode] as String[])
+			}
+		}
 
-        samplesFile.withWriter { Writer writer ->
-            CSVWriter csvWriter = new CSVWriter(writer, COLUMN_SEPARATOR)
-            csvWriter.writeNext(SAMPLE_FILE_HEADER as String[])
-            assays.each { Assay assay ->
+		samplesFile
+	}
 
-                List<String> line = [
-                        assay.id,
-                        assay.patientInTrialId,
-                        assay.sampleType.label,
-                        assay.timepoint.label,
-                        assay.tissueType.label,
-                        assay.platform.id,
-                        assay.sampleCode
-                ]
+	private File exportPlatform(Collection<Platform> platforms, File parentFolder) {
+		File platformFile = new File(parentFolder, PLATFORM_FILE_NAME)
 
-                csvWriter.writeNext(line as String[])
-            }
-        }
+		platformFile.withWriter { Writer writer ->
+			CSVWriter csvWriter = new CSVWriter(writer, COLUMN_SEPARATOR)
+			csvWriter.writeNext(PLATFORM_FILE_HEADER as String[])
+			for (Platform platform in platforms) {
+				csvWriter.writeNext([platform.id, platform.title, platform.genomeReleaseId,
+				                     platform.organism, platform.markerType, platform.annotationDate] as String[])
+			}
+		}
 
-        samplesFile
-    }
+		platformFile
+	}
 
-    static File exportPlatform(Collection<Platform> platforms, File parentFolder) {
-        def platformFile = new File(parentFolder, PLATFORM_FILE_NAME)
+	private String getRelativeFolderPathForSingleNode(OntologyTerm term) {
+		String leafConceptFullName = term.fullName
+		String resultConceptPath = leafConceptFullName
+		Study study = term.study
+		if (study) {
+			String studyConceptFullName = study.ontologyTerm.fullName
+			//use internal study folders only
+			resultConceptPath = leafConceptFullName.replace(studyConceptFullName, '')
+		}
 
-        platformFile.withWriter { Writer writer ->
-            CSVWriter csvWriter = new CSVWriter(writer, COLUMN_SEPARATOR)
-            csvWriter.writeNext(PLATFORM_FILE_HEADER as String[])
-            platforms.each { Platform platform ->
-
-                List<String> line = [
-                        platform.id,
-                        platform.title,
-                        platform.genomeReleaseId,
-                        platform.organism,
-                        platform.markerType,
-                        platform.annotationDate,
-                ]
-
-                csvWriter.writeNext(line as String[])
-            }
-        }
-
-        platformFile
-    }
-
-    static String getRelativeFolderPathForSingleNode(OntologyTerm term) {
-        def leafConceptFullName = term.fullName
-        String resultConceptPath = leafConceptFullName
-        def study = term.study
-        if (study) {
-            def studyConceptFullName = study.ontologyTerm.fullName
-            //use internal study folders only
-            resultConceptPath = leafConceptFullName.replace(studyConceptFullName, '')
-        }
-
-        resultConceptPath.split('\\\\').findAll().collect { String folderName ->
-            //Reversible way to encode a string to use as filename
-            //http://stackoverflow.com/questions/1184176/how-can-i-safely-encode-a-string-in-java-to-use-as-a-filename
-            URLEncoder.encode(folderName, 'UTF-8')
-        }.join(File.separator)
-    }
-
+		resultConceptPath.split('\\\\').findAll().collect { String folderName ->
+			//Reversible way to encode a string to use as filename
+			//http://stackoverflow.com/questions/1184176/how-can-i-safely-encode-a-string-in-java-to-use-as-a-filename
+			URLEncoder.encode(folderName, 'UTF-8')
+		}.join(File.separator)
+	}
 }

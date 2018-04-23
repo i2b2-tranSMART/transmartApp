@@ -113,8 +113,8 @@ class RWGVisualizationDAOService {
 
 		for (p in probes.split(/\|/)) {
 			def probeMap = [:]
-			def shortDisplay = ""
-			def longDisplay = ""
+			def shortDisplay = ''
+			def longDisplay = ''
 			def geneCount = 0
 			def currentId
 
@@ -226,7 +226,7 @@ class RWGVisualizationDAOService {
 		StringBuilder s = new StringBuilder()
 		s.append("""
 		 Select h.Bio_Assay_Analysis_Id, h.probe_id, h.cohort_id, h.log_intensity, h.assay_id, min(h.gene_id) as gene_id
-		 From heat_map_results h 
+		 From heat_map_results h
 	  """)
 
 		def probeMap = [:]
@@ -259,7 +259,7 @@ class RWGVisualizationDAOService {
 		}
 
 		s.append("""
-		   group by h.Bio_Assay_Analysis_Id, h.probe_id, h.cohort_id, h.log_intensity, h.assay_id 
+		   group by h.Bio_Assay_Analysis_Id, h.probe_id, h.cohort_id, h.log_intensity, h.assay_id
 	  		order by h.Bio_Assay_Analysis_Id, h.probe_id, h.cohort_id, h.log_intensity
 	  """)
 		log.info("${s}")
@@ -533,9 +533,9 @@ class RWGVisualizationDAOService {
 			cohortList.add(cohort.key)
 		}
 		// create a string containing a question mark for each placeholder for a cohort
-		def paramList = ""
+		def paramList = ''
 		cohortList.each {
-			if (paramList == "") {
+			if (!paramList) {
 				paramList = "?"
 			}
 			else {
@@ -547,7 +547,6 @@ class RWGVisualizationDAOService {
 		AND cohort_id in ( ${paramList})
 		AND bio_assay_analysis_id = ?
 		""")
-
 
 		def sqlParams = [analysisInfo.get("studyId")]
 		cohortList.each {
@@ -645,15 +644,15 @@ class RWGVisualizationDAOService {
 		def sortedValues = []
 		def probesMap = getHeatmapProbeRankings(analysisID, genes, showSigResultsOnly, pageNumber, probesPerPage.toInteger())
 
-		def probesList = ""
+		def probesList = ''
 		def probesListMap = probesMap.get("probesList")
 		def selectListMap = probesMap.get("selectList")
 
 		probesListMap.keys().each() {
-			if (probesList != "") {
-				probesList = probesList + "|"
+			if (probesList) {
+				probesList += "|"
 			}
-			probesList = probesList + probesListMap.get(it)
+			probesList += probesListMap[it]
 
 		}
 
@@ -894,7 +893,6 @@ class RWGVisualizationDAOService {
 			//out.append(cohort.key +","+cohorts.get(cohort.key).get("desc")+"\n")
 
 			out.append(cohort.key + "," + cohort.getValue().desc + "\n")
-
 		}
 
 		out.append("\n \n")
@@ -913,11 +911,8 @@ class RWGVisualizationDAOService {
 
 		s.append(" order by (cohort_id ||':' || assay_id) desc")
 
-		log.info("${s}")
-		log.info("${sqlParams}")
-
-
-
+		log.debug("${s}")
+		log.debug("${sqlParams}")
 
 		def subjects = []
 		sql.eachRow(s.toString(), sqlParams, { row ->
@@ -1043,7 +1038,7 @@ class RWGVisualizationDAOService {
 		results.each { row ->
 
 			probesList.put(row.proberank.toString(), row.probe_id)
-			def multiGeneIndicator = ""
+			def multiGeneIndicator = ''
 			if (row.gene_count > 1) {
 				multiGeneIndicator = "+"
 			}
@@ -1247,8 +1242,7 @@ class RWGVisualizationDAOService {
 	def getFirstParentId(stid) {
 		def parentid = 1;
 		def parents = getSearchTaxonomyParents(stid) //go get the parents
-		if (!(parents.size() == 0)) //if we found some parents
-		{
+		if (parents) {//if we found some parents
 			parentid = parents[0]["id"]
 		}
 		return parentid;
@@ -1256,13 +1250,11 @@ class RWGVisualizationDAOService {
 
 	/**
 	 * Get the data for home page pie charts
-	 *
-	 *
 	 */
 	def getPieChartData(categoryid, drilldownid, drillback, charttype) {
 		def querydrilldownid = drilldownid
-		def finalDrilldownAndClause = ""
-		def categoryAndClause = ""
+		def finalDrilldownAndClause = ''
+		def categoryAndClause = ''
 
 		//if we got a category id use it
 		if (categoryid) {
@@ -1279,7 +1271,7 @@ class RWGVisualizationDAOService {
 		}
 		else {
 			def children = getSearchTaxonomyChildren(drilldownid)
-			if (children.size() == 0) {
+			if (!children) {
 				finalDrilldownAndClause = " and st.term_id=${drilldownid}"
 				querydrilldownid = parentid
 			}
@@ -1292,11 +1284,11 @@ class RWGVisualizationDAOService {
 		BIOMART.bio_analysis_attribute_lineage baal2, bio_analysis_attribute baa2, search_taxonomy_rels str2, search_taxonomy st2
 		where baal.ancestor_term_id=str.child_id
 		and str.parent_id=${querydrilldownid}   -- term id for Disease
-		and baa.bio_analysis_attribute_id=baal.bio_analysis_attribute_id                              
+		and baa.bio_analysis_attribute_id=baal.bio_analysis_attribute_id
 		and str.child_id=st.term_id
 		and baal2.ancestor_term_id=str2.child_id
 		--and str2.parent_id=2   -- term id for Therapeutic Areas
-		and baa2.bio_analysis_attribute_id=baal2.bio_analysis_attribute_id                              
+		and baa2.bio_analysis_attribute_id=baal2.bio_analysis_attribute_id
 		and str2.child_id=st2.term_id
 		and baa.bio_assay_analysis_id=baa2.bio_assay_analysis_id
 		${finalDrilldownAndClause}
@@ -1342,11 +1334,11 @@ class RWGVisualizationDAOService {
 		BIOMART.bio_analysis_attribute_lineage baal2, bio_analysis_attribute baa2, search_taxonomy_rels str2, search_taxonomy st2
 		where baal.ancestor_term_id=str.child_id
 		and str.parent_id=${subcatid}   -- term id for Disease
-		and baa.bio_analysis_attribute_id=baal.bio_analysis_attribute_id                              
+		and baa.bio_analysis_attribute_id=baal.bio_analysis_attribute_id
 		and str.child_id=st.term_id
 		and baal2.ancestor_term_id=str2.child_id
 		and str2.parent_id=${catparentid}   -- term id for Therapeutic Areas
-		and baa2.bio_analysis_attribute_id=baal2.bio_analysis_attribute_id                              
+		and baa2.bio_analysis_attribute_id=baal2.bio_analysis_attribute_id
 		and str2.child_id=st2.term_id
 		and baa.bio_assay_analysis_id=baa2.bio_assay_analysis_id
 		group by st2.term_name, st2.term_id"""
@@ -1399,7 +1391,7 @@ class RWGVisualizationDAOService {
 	def getCrossTrialBioMarkerSummary(search_keyword, analysisList) {
 		Sql sql = new Sql(dataSource)
 
-		def s = "";
+		def s = ''
 
 		//convert the CSV analysisList into an array of objects
 		def analysisObj = analysisList.split(',').collect { it as int }
@@ -1407,9 +1399,9 @@ class RWGVisualizationDAOService {
 		//loop through the array and add the select statement for each analysis
 		analysisObj.each {
 
-			s = s + """
+			s += """
 			    select * from (
-			    select distinct bio_assay_analysis_id, bio_marker_id, bio_marker_name, 
+			    select distinct bio_assay_analysis_id, bio_marker_id, bio_marker_name,
 					fold_change_ratio, tea_normalized_pvalue, preferred_pvalue
 					from BIOMART.heat_map_results
 					where bio_marker_id in (select distinct bmv.asso_bio_marker_id
@@ -1421,10 +1413,8 @@ class RWGVisualizationDAOService {
 			   order by preferred_pvalue, abs(fold_change_ratio) desc)
 			    where rownum=1"""
 
-			println s
-
 			if (it != analysisObj.last()) {
-				s = s + " union ";
+				s += " union ";
 			}
 
 		}
@@ -1453,18 +1443,17 @@ class RWGVisualizationDAOService {
 
 	def getCrossTrialSummaryTableStats(analysisList) {
 		Sql sql = new Sql(dataSource)
-		println analysisList
 		String s = """
-		select  bio_assay_analysis_id, sum(upreg) count_upreg, sum(downreg) count_downreg, count(distinct  bio_marker_id) total from (         
-		select distinct  bio_assay_analysis_id, bio_marker_id, 
-		       case when (fold_change_ratio>0 and significant=1) then 1 else 0 end upreg, 
+		select  bio_assay_analysis_id, sum(upreg) count_upreg, sum(downreg) count_downreg, count(distinct  bio_marker_id) total from (
+		select distinct  bio_assay_analysis_id, bio_marker_id,
+		       case when (fold_change_ratio>0 and significant=1) then 1 else 0 end upreg,
 		       case when (fold_change_ratio<0 and significant=1) then 1 else 0 end downreg
 		from (
 		select distinct bio_assay_analysis_id, bio_marker_id, significant, fold_change_ratio
 				    from biomart.heat_map_results
 				    where  bio_assay_analysis_id in (${analysisList})
-		) 
-		)        	
+		)
+		)
 		group by bio_assay_analysis_id
 	   """
 
@@ -1497,29 +1486,20 @@ class RWGVisualizationDAOService {
 		String s = """
 		select search_keyword_id
 		from searchapp.search_keyword where bio_data_id = (
-		select bio_marker_id 
-		from biomart.bio_marker 
+		select bio_marker_id
+		from biomart.bio_marker
 		where primary_external_id = '${externalBiomarkerID}')
 			   """
 
 		log.debug("${s}")
 
-		println s
-
 		def rows = sql.rows(s)
 
 		def skw
 
-		println rows
-
 		rows.each { row ->
-
-			println "row.skid = " + row.search_keyword_id
-
 			skw = row.search_keyword_id
 		}
-
-		println "skw = " + skw
 
 		return skw
 	}
@@ -1597,7 +1577,7 @@ class RWGVisualizationDAOService {
  *
  * */
 	def getCTAResultsSQL = { analysisIds, category, keywordId ->
-		String s = ""
+		String s = ''
 		// determine which view we will join to for the list of genes
 		def viewName;
 		def viewGeneColName;
@@ -1722,6 +1702,4 @@ class RWGVisualizationDAOService {
 		}
 		return ['lastUpdateTime': lastUpdateTime, 'currentDbTime': currentDbTime]
 	}
-
-
 }

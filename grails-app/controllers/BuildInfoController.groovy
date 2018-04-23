@@ -14,10 +14,10 @@ class BuildInfoController {
 	def index() {
 		List<String> customProperties = [] + buildInfoProperties
 		if (grailsApplication.config.buildInfo.exclude) {
-			customProperties -= grailsApplication.config.buildInfo.exclude
+			customProperties.removeAll grailsApplication.config.buildInfo.exclude
 		}
 		if (grailsApplication.config.buildInfo.include) {
-			customProperties += grailsApplication.config.buildInfo.include
+			customProperties.addAll grailsApplication.config.buildInfo.include
 		}
 
 		[buildInfoProperties: customProperties.sort()]

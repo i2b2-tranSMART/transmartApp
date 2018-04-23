@@ -4,102 +4,110 @@ import org.transmart.searchapp.GeneSignature
 import org.transmart.searchapp.SearchKeyword
 
 /**
- * $Id: SearchHelpController.groovy 9178 2011-08-24 13:50:06Z mmcduffie $
- * @author $Author: mmcduffie $
- * $Revision: 9178 $
+ * @author mmcduffie
  */
+class SearchHelpController {
 
-public class SearchHelpController {
+	GeneSignatureService geneSignatureService
+	@Autowired
+	private SecurityService securityService
 
-    // service injections
-    def springSecurityService
-    def geneSignatureService
-    @Autowired private SecurityService securityService
+	def list() {}
 
-    def list = {}
+	def loadPathways(String step, String datasource) {
+		doPathways step, datasource, true
+	}
 
-    def loadPathways = {
+	def listAllPathways(String step, String datasource) {
+		doPathways step, datasource, false
+	}
 
-        def step = params.step ? params.step : "A-C"
-        def datasources = SearchKeyword.executeQuery("select distinct k.dataSource from org.transmart.searchapp.SearchKeyword k where k.dataCategory='PATHWAY' order by upper(k.dataSource)", [], [cache: 'read-only']);
-        def defaultsource = datasources.size() > 0 ? datasources[0] : 'GeneGo'
-        def dataSource = params.datasource ? params.datasource : defaultsource;
-        def sql = "select k from org.transmart.searchapp.SearchKeyword k where dataSource='" + dataSource + "' "
-        if ("Other".equals(step)) {
-            sql += "and upper(substr(k.keyword, 1, 1)) not between 'A' and 'Z' "
-        } else {
-            sql += "and upper(substr(k.keyword, 1, 1)) between '" + step.substring(0, 1) + "' and '" + step.substring(step.length() - 1) + "' "
-        }
-        sql += "order by upper(k.keyword)"
-        def pathways = SearchKeyword.executeQuery(sql, [], [cache: 'read-only'])
-        render(view: 'pathwayhelp', model: [pathways: pathways, datasources: datasources, selecteddatasource: dataSource])
-    }
+	private doPathways(String step, String datasource, boolean cache) {
+		Map cacheArgs = cache ? [cache: 'read-only'] : [:]
 
-    def listAllPathways = {
-        //	def dataSource = params.datasource ? params.datasource : "GeneGO"
-        def step = params.step ? params.step : "A-C"
-        //def datasources = SearchKeyword.executeQuery("select distinct k.dataSource from org.transmart.searchapp.SearchKeyword k where k.dataCategory='PATHWAY' order by upper(k.dataSource)", [], [cache:'read-only']);
-        def datasources = SearchKeyword.executeQuery("select distinct k.dataSource from org.transmart.searchapp.SearchKeyword k where k.dataCategory='PATHWAY' order by upper(k.dataSource)");
-        def defaultsource = datasources.size() > 0 ? datasources[0] : 'GeneGo'
-        def dataSource = params.datasource ? params.datasource : defaultsource;
+		step = step ?: 'A-C'
+		List<String> datasources = SearchKeyword.executeQuery('''
+				select distinct k.dataSource
+				from org.transmart.searchapp.SearchKeyword k
+				where k.dataCategory='PATHWAY'
+				order by upper(k.dataSource)''',
+				cacheArgs)
+		String defaultsource = datasources[0] ?: 'GeneGo'
+		datasource = datasource ?: defaultsource
 
-        def sql = "select k from org.transmart.searchapp.SearchKeyword k where dataSource='" + dataSource + "' "
-        if ("Other".equals(step)) {
-            sql += "and upper(substr(k.keyword, 1, 1)) not between 'A' and 'Z' "
-        } else {
-            sql += "and upper(substr(k.keyword, 1, 1)) between '" + step.substring(0, 1) + "' and '" + step.substring(step.length() - 1) + "' "
-        }
-        sql += "order by upper(k.keyword)"
-        //def pathways = SearchKeyword.executeQuery(sql, [], [cache:'read-only'])
-        def pathways = SearchKeyword.executeQuery(sql)
-        render(view: 'pathwayhelp', model: [pathways: pathways, datasources: datasources, selecteddatasource: dataSource])
-    }
+		Map queryArgs = [datasource: datasource]
+		String hql = 'select k from org.transmart.searchapp.SearchKeyword k where dataSource=:datasource'
+		if ('Other' == step) {
+			hql += ''' and upper(substr(k.keyword, 1, 1)) not between 'A' and 'Z' '''
+		}
+		else {
+			hql += ' and upper(substr(k.keyword, 1, 1)) between :between1 and :between2'
+			queryArgs.between1 = step.substring(0, 1)
+			queryArgs.between2 = step.substring(step.length() - 1)
+		}
+		hql += 'order by upper(k.keyword)'
 
-    def listAllTrials = {
-        def all = SearchKeyword.executeQuery("SELECT s, e FROM SearchKeyword s, Experiment e WHERE s.dataCategory='TRIAL' AND s.bioDataId=e.id ORDER BY s.keyword")
-        render(view: 'trialhelp', model: [trials: all])
-    }
+		List<SearchKeyword> pathways = SearchKeyword.executeQuery(
+				hql, queryArgs, cacheArgs)
 
-    def listAllDiseases = {
-        //def all = SearchKeyword.executeQuery("SELECT s, d FROM SearchKeyword s, bio.Disease d WHERE s.dataCategory='DISEASE' AND s.bioDataId=d.id ORDER BY s.keyword")
+		render view: 'pathwayhelp', model: [
+				pathways          : pathways,
+				datasources       : datasources,
+				selecteddatasource: datasource]
+	}
 
-        def all = SearchKeyword.findAllByDataCategory("DISEASE", [sort: "keyword", cache: 'read-only'])
-        //SearchKeyword.executeQuery("SELECT s FROM SearchKeyword s WHERE s.dataCategory='DISEASE' ORDER BY s.keyword")
-        render(view: 'diseasehelp', model: [diseases: all])
-    }
+	def listAllTrials() {
+		List<Object[]> all = SearchKeyword.executeQuery('''
+				SELECT s, e
+				FROM SearchKeyword s, Experiment e
+				WHERE s.dataCategory='TRIAL'
+				  AND s.bioDataId=e.id
+				ORDER BY s.keyword''')
+		render view: 'trialhelp', model: [trials: all]
+	}
 
-    def listAllCompounds = {
-        def all = SearchKeyword.executeQuery("SELECT s, c FROM SearchKeyword s, Compound c WHERE s.dataCategory='COMPOUND' AND s.bioDataId=c.id ORDER BY s.keyword")
-        render(view: 'compoundhelp', model: [compounds: all])
-    }
+	def listAllDiseases() {
+		List<SearchKeyword> all = SearchKeyword.findAllByDataCategory(
+				'DISEASE', [sort: 'keyword', cache: 'read-only'])
+		render view: 'diseasehelp', model: [diseases: all]
+	}
 
-    /**
-     * list all gene signatures and gene list versions user has permission to use in search
-     */
-    def listAllGeneSignatures = {
+	def listAllCompounds() {
+		List<Object[]> all = SearchKeyword.executeQuery('''
+				SELECT s, c
+				FROM SearchKeyword s, Compound c
+				WHERE s.dataCategory='COMPOUND'
+				  AND s.bioDataId=c.id
+				ORDER BY s.keyword''')
+		render view: 'compoundhelp', model: [compounds: all]
+	}
 
-        // signatures user has search access
-        def signatures = geneSignatureService.listPermissionedGeneSignatures(
-		        securityService.currentUserId(), securityService.principal().isAdmin())
+	/**
+	 * list all gene signatures and gene list versions user has permission to use in search
+	 */
+	def listAllGeneSignatures() {
 
-        def mapKeywordsGS = new HashMap()
-        def mapKeywordsGL = new HashMap()
-        def keyword
+		// signatures user has search access
+		List<GeneSignature> signatures = geneSignatureService.listPermissionedGeneSignatures(
+				securityService.currentUserId(), securityService.principal().isAdmin())
 
-        // keyword maps
-        signatures.each {
-            // gene sig keyword map
-            keyword = SearchKeyword.findByUniqueId(it.uniqueId)
-            mapKeywordsGS.putAt(it.id, keyword)
+		Map<Long, SearchKeyword> mapKeywordsGS = [:]
+		Map<Long, SearchKeyword> mapKeywordsGL = [:]
+		SearchKeyword keyword
 
-            // gene list keyword map
-            if (it.foldChgMetricConceptCode != GeneSignatureService.METRIC_CODE_GENE_LIST) {
-                keyword = SearchKeyword.findByUniqueId(GeneSignature.DOMAIN_KEY_GL + ":" + it.id)
-                mapKeywordsGL.putAt(it.id, keyword)
-            }
-        }
+		for (GeneSignature gs in signatures) {
+			keyword = SearchKeyword.findByUniqueId(gs.uniqueId)
+			mapKeywordsGS[gs.id] = keyword
 
-        render(view: 'geneSigHelp', model: [signatures: signatures, gsMap: mapKeywordsGS, glMap: mapKeywordsGL])
-    }
+			if (gs.foldChgMetricConceptCode != GeneSignatureService.METRIC_CODE_GENE_LIST) {
+				keyword = SearchKeyword.findByUniqueId(GeneSignature.DOMAIN_KEY_GL + ':' + gs.id)
+				mapKeywordsGL[gs.id] = keyword
+			}
+		}
 
+		render view: 'geneSigHelp', model: [
+				signatures: signatures,
+				gsMap     : mapKeywordsGS,
+				glMap     : mapKeywordsGL]
+	}
 }

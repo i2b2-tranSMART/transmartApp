@@ -217,7 +217,7 @@ class GenericJobExecutor implements Job {
 						File outputFile = new File(zipFileLoc, finalOutputFile)
 						if (outputFile.isFile()) {
 							String remoteFilePath = FTPUtil.uploadFile(true, outputFile)
-							if (StringUtils.isNotEmpty(remoteFilePath)) {
+							if (remoteFilePath) {
 								//Since File has been uploaded to the FTP server, we can delete the
 								//ZIP file and the folder which has been zipped
 

@@ -227,7 +227,7 @@ class ExportMetadataService implements InitializingBean {
 			// Determine the types of files that can be exported for this
 			// datatype
 			List<HighDimExporter> exporters = highDimExporterRegistry
-					.findExporters(dataType: highDimRow.datatype.dataTypeName)
+					.findExporters(null, highDimRow.datatype.dataTypeName)
 					.sort { it.format }
 
 			[subsetId1        : 'subset1',

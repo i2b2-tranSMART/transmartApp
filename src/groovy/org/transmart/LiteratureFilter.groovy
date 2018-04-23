@@ -1,8 +1,11 @@
 package org.transmart
 
+import groovy.transform.CompileStatic
+
 /**
  * @author mmcduffie
  */
+@CompileStatic
 class LiteratureFilter {
 
 	String dataType
@@ -20,7 +23,7 @@ class LiteratureFilter {
 	String epigeneticType
 	String epigeneticRegion
 	Map<String, Boolean> alterationTypes = ['Epigenetic Event'    : true,
-	                                        'Expression'          : true,
+	                                        Expression            : true,
 	                                        'Gene Amplification'  : true,
 	                                        'Genomic Level Change': true,
 	                                        LOH                   : true,
@@ -44,15 +47,15 @@ class LiteratureFilter {
 	String trialExperimentalModel
 
 	boolean hasDisease() {
-		bioDiseaseId != null && bioDiseaseId > 0
+		bioDiseaseId > 0
 	}
 
 	boolean hasDiseaseSite() {
-		diseaseSite && diseaseSite.iterator().next() != ''
+		diseaseSite && diseaseSite.iterator().next()
 	}
 
 	boolean hasComponent() {
-		componentList && componentList.iterator().next() != ''
+		componentList && componentList.iterator().next()
 	}
 
 	boolean hasMutationType() {
@@ -136,7 +139,7 @@ class LiteratureFilter {
 	 * @return alteration types that the user has selected
 	 */
 	Set<String> getSelectedAlterationTypes() {
-		Set<String> types = new HashSet()
+		Set<String> types = []
 		for (String key in alterationTypes.keySet()) {
 			if (alterationTypes[key]) {
 				types << key.toUpperCase().replace('_', ' ')
@@ -160,7 +163,7 @@ class LiteratureFilter {
 		pairCompList.clear()
 		pairGeneList.clear()
 		componentList.clear()
-		if (list != null) {
+		if (list) {
 			if (list instanceof String && list.trim()) {
 				componentList << list
 				String[] compArray = list.split(',')
@@ -168,7 +171,7 @@ class LiteratureFilter {
 				pairGeneList << compArray[1].replace(']', '').trim()
 			}
 			else {
-				for (item in list) {
+				for (String item in list) {
 					componentList << item
 					String[] compArray = item.split(',')
 					pairCompList << compArray[0].replace('[', '').trim()

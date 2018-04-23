@@ -61,7 +61,6 @@ class OntologyService {
 					[max: 100])
 		}
 		else {
-
 			List<String> allSystemCds = OntNode.executeQuery('''
 					SELECT DISTINCT o.sourcesystemcd
 					FROM OntNode o JOIN o.tags t
@@ -93,7 +92,7 @@ class OntologyService {
 			logger.trace '{} security token: {}', node.id, node.securitytoken
 		}
 
-		def access = i2b2HelperService.getAccess(keys)
+		Map access = i2b2HelperService.getAccess(keys)
 
 		if (returnType == 'JSON') {
 			//build the JSON for the client

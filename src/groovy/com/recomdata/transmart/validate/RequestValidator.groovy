@@ -1,6 +1,3 @@
-/**
- *
- */
 package com.recomdata.transmart.validate
 
 import groovy.util.logging.Slf4j

@@ -207,8 +207,7 @@ class SnpAnnotLoading {
 					lineBuf << "\t"
 				}
 				if (value?.length() > 255) {
-					value = value.substring(0, 255 - 4)
-					value += "..."
+					value = value.substring(0, 255 - 4) + "..."
 					isException = true
 				}
 				lineBuf << value

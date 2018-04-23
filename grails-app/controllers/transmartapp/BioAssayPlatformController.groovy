@@ -5,97 +5,102 @@ import org.transmart.biomart.BioAssayPlatform
 
 class BioAssayPlatformController {
 
-//	measurements  = org.transmart.biomart.BioAssayPlatform.executeQuery("SELECT DISTINCT platformType FROM BioAssayPlatform as p ORDER BY p.platformType")
-//	vendors = org.transmart.biomart.BioAssayPlatform.executeQuery("SELECT DISTINCT vendor FROM BioAssayPlatform as p ORDER BY p.vendor")
-//	technologies = org.transmart.biomart.BioAssayPlatform.executeQuery("SELECT DISTINCT platformTechnology FROM BioAssayPlatform as p ORDER BY p.platformTechnology")
-//	platforms = org.transmart.biomart.BioAssayPlatform.executeQuery("SELECT DISTINCT name FROM BioAssayPlatform as p ORDER BY p.name")
+	def platformsForVendor() {
 
+		List<Object[]> platforms
+		if (params.type) {
+			platforms = BioAssayPlatform.executeQuery('''
+					SELECT bd.uniqueId, p.name
+					FROM BioAssayPlatform p, BioData bd
+					WHERE p.id=bd.id
+					and bd.type='BIO_ASSAY_PLATFORM'
+					and p.vendor = :term
+					AND p.platformType = :type''',
+					[term: params.vendor, type: params.type])
+		}
+		else {
+			platforms = BioAssayPlatform.executeQuery('''
+					SELECT id, name, accession
+					FROM BioAssayPlatform p
+					WHERE p.vendor = :term''',
+					[term: params.vendor])
+		}
 
-    def platformsForVendor = {
+		List<Map> itemlist = []
+		for (Object[] platform in platforms) {
+			itemlist << [id: platform[0], title: platform[1], accession: platform[2]]
+		}
 
-        def platforms;
-        if (params.type) {
-            platforms = BioAssayPlatform.executeQuery("SELECT bd.uniqueId, p.name FROM BioAssayPlatform p, BioData bd WHERE p.id=bd.id and bd.type='BIO_ASSAY_PLATFORM' and p.vendor = :term AND p.platformType = :type", [term: params.vendor, type: params.type]);
-        } else {
-            platforms = BioAssayPlatform.executeQuery("SELECT id, name, accession FROM BioAssayPlatform p WHERE p.vendor = :term", [term: params.vendor]);
-        }
+		render([rows: itemlist] as JSON)
+	}
 
-        def itemlist = [];
-        for (platform in platforms) {
-            itemlist.add([id: platform[0], title: platform[1], accession: platform[2]])
-        }
+	def getSelections(String name, String vendor, String platformTechnology,
+	                  String platformType, String platformName) {
 
-        def result = [rows: itemlist]
-        render result as JSON;
+		Map<String, Object> paramMap = [:]
 
-    }
+		StringBuilder sb = new StringBuilder()
+		sb << 'SELECT bd.unique_id, p.' << name
+		sb << ''' FROM BioAssayPlatform p, BioData bd  WHERE p.id=bd.id and bd.bioDataType='BIO_ASSAY_PLATFORM' '''
 
-    def getSelections = {
+		if (vendor) {
+			sb << ' and p.vendor = :vendor'
+			paramMap.vendor = vendor
+		}
 
-        Map<String, Object> paramMap = new HashMap<Long, Object>();
+		if (platformTechnology) {
+			sb << ' and p.platformTechnology = :platformTechnology'
+			paramMap.platformTechnology = platformTechnology
+		}
 
-        // construct query
-        StringBuffer sb = new StringBuffer();
-        sb.append("SELECT bd.unique_id, p." + param.name + " FROM BioAssayPlatform p, BioData bd  WHERE p.id=bd.id and bd.bioDataType='BIO_ASSAY_PLATFORM' ");
+		if (platformType) {
+			sb << ' and p.platformType = :platformType'
+			paramMap.platformType = platformType
+		}
 
-        if (params.vendor != null && params.vendor != "") {
-            sb.append(" and p.vendor = :vendor");
-            paramMap.put("vendor", params.vendor);
-        }
+		if (platformName) {
+			sb << ' and p.name = :platformName'
+			paramMap.platformName = platformName
+		}
 
-        if (params.platformTechnology != null && params.platformTechnology != "") {
-            sb.append(" and p.platformTechnology = :platformTechnology");
-            paramMap.put("platformTechnology", params.platformTechnology);
-        }
+		// sort
+		sb << ' order by ' << param.sort
 
-        if (params.platformType != null && params.platformType != "") {
-            sb.append(" and p.platformType = :platformType");
-            paramMap.put("platformType", params.platformType);
-        }
+		List<Object[]> platforms = BioAssayPlatform.executeQuery(sb.toString(), paramMap)
+	}
 
-        if (params.platformName != null && params.platformName != "") {
-            sb.append(" and p.name = :platformName");
-            paramMap.put("platformName", params.platformName);
-        }
+	def getPlatforms(String vendor, String platformTechnology, String platformType,
+	                 String platformName) {
 
-        // sort
-        sb.append(" order by ").append(param.sort);
+		Map<String, Object> paramMap = [:]
 
-        List<BioAssayPlatform> platforms = BioAssayPlatform.executeQuery(sb.toString(), paramMap);
-    }
+		// construct query
+		StringBuilder sb = new StringBuilder()
+		sb << '''SELECT bd.unique_id, p.name FROM BioAssayPlatform p, BioData bd  WHERE p.id=bd.id and bd.bioDataType='BIO_ASSAY_PLATFORM' '''
 
-    def getPlatforms = {
+		if (vendor) {
+			sb << ' and p.vendor = :vendor'
+			paramMap.vendor = vendor
+		}
 
-        Map<String, Object> paramMap = new HashMap<Long, Object>();
+		if (platformTechnology) {
+			sb << ' and p.platformTechnology = :platformTechnology'
+			paramMap.platformTechnology = platformTechnology
+		}
 
-        // construct query
-        StringBuffer sb = new StringBuffer();
-        sb.append("SELECT bd.unique_id, p.name FROM BioAssayPlatform p, BioData bd  WHERE p.id=bd.id and bd.bioDataType='BIO_ASSAY_PLATFORM' ");
+		if (platformType) {
+			sb << ' and p.platformType = :platformType'
+			paramMap.platformType = platformType
+		}
 
-        if (params.vendor != null && params.vendor != "") {
-            sb.append(" and p.vendor = :vendor");
-            paramMap.put("vendor", params.vendor);
-        }
+		if (platformName) {
+			sb << ' and p.name = :platformName'
+			paramMap.platformName = platformName
+		}
 
-        if (params.platformTechnology != null && params.platformTechnology != "") {
-            sb.append(" and p.platformTechnology = :platformTechnology");
-            paramMap.put("platformTechnology", params.platformTechnology);
-        }
+		// sort
+		sb << ' order by name'
 
-        if (params.platformType != null && params.platformType != "") {
-            sb.append(" and p.platformType = :platformType");
-            paramMap.put("platformType", params.platformType);
-        }
-
-        if (params.platformName != null && params.platformName != "") {
-            sb.append(" and p.name = :platformName");
-            paramMap.put("platformName", params.platformName);
-        }
-
-        // sort
-        sb.append(" order by name");
-
-        List<BioAssayPlatform> platforms = BioAssayPlatform.executeQuery(sb.toString(), paramMap);
-
-    }
+		List<Object[]> platforms = BioAssayPlatform.executeQuery(sb.toString(), paramMap)
+	}
 }

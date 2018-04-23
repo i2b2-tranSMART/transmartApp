@@ -198,18 +198,18 @@ class RemotePagingTagLib {
             }
 
             for (i in 1..31) {
-                out.println "<option value=\"${i}\""
+                out.println '<option value="' + i + '"'
                 if (i == day) {
-                    out.println " selected=\"selected\""
+                    out.println ' selected="selected"'
                 }
-                out.println ">${i}</option>"
+                out.println '>' + i + '</option>'
             }
             out.println '</select>'
         }
 
         // create month select
         if (precision >= PRECISION_RANKINGS["month"]) {
-            out.println "<select name=\"${name}_month\" id=\"${id}_month\">"
+            out.println '<select name="' + name + '_month" id="' + id + '_month">'
 
             if (noSelection) {
                 renderNoSelectionOption(noSelection.key, noSelection.value, '')
@@ -219,8 +219,8 @@ class RemotePagingTagLib {
             dfs.months.eachWithIndex { m, i ->
                 if (m) {
                     def monthIndex = i + 1
-                    out << "<option value=\"${monthIndex}\""
-                    if (month == i) out << " selected=\"selected\""
+                    out << '<option value="' + monthIndex + '"'
+                    if (month == i) out << ' selected="selected"'
                     out << '>'
                     out << m
                     out.println '</option>'
@@ -231,7 +231,7 @@ class RemotePagingTagLib {
 
         // create year select
         if (precision >= PRECISION_RANKINGS["year"]) {
-            out.println "<select name=\"${name}_year\" id=\"${id}_year\">"
+            out.println '<select name="' + name + '_year" id="' + id + '_year">'
 
             if (noSelection) {
                 renderNoSelectionOption(noSelection.key, noSelection.value, '')
@@ -239,18 +239,18 @@ class RemotePagingTagLib {
             }
 
             for (i in years) {
-                out.println "<option value=\"${i}\""
+                out.println '<option value="' + i + '"'
                 if (i == year) {
-                    out.println " selected=\"selected\""
+                    out.println ' selected="selected"'
                 }
-                out.println ">${i}</option>"
+                out.println '>' + i + '</option>'
             }
             out.println '</select>'
         }
 
         // do hour select
         if (precision >= PRECISION_RANKINGS["hour"]) {
-            out.println "<select name=\"${name}_hour\" id=\"${id}_hour\">"
+            out.println '<select name="' + name + '_hour" id="' + id + '_hour">'
 
             if (noSelection) {
                 renderNoSelectionOption(noSelection.key, noSelection.value, '')
@@ -258,10 +258,10 @@ class RemotePagingTagLib {
             }
 
             for (i in 0..23) {
-                def h = '' + i
+                String h = i
                 if (i < 10) h = '0' + h
                 out << "<option value=\"${h}\" "
-                if (hour == h.toInteger()) out << "selected=\"selected\""
+                if (hour == h.toInteger()) out << 'selected="selected"'
                 out << '>' << h << '</option>'
                 out.println()
             }
@@ -283,10 +283,10 @@ class RemotePagingTagLib {
             }
 
             for (i in [0, 15, 30, 45]) {
-                def m = '' + i
+                String m = i
                 if (i < 10) m = '0' + m
                 out << "<option value=\"${m}\" "
-                if (minute == m.toInteger()) out << "selected=\"selected\""
+                if (minute == m.toInteger()) out << 'selected="selected"'
                 out << '>' << m << '</option>'
                 out.println()
             }
@@ -369,9 +369,6 @@ class RemotePagingTagLib {
 
         if (!attrs.title && !attrs.titleKey)
             throwTagError("Tag [sortableColumn] is missing required attribute [title] or [titleKey]")
-
-        //println "sortable - > " + attrs
-        //println "params - > " + params
 
         def property = attrs.remove("property")
         def action = attrs.action ? attrs.remove("action") : (params.action ? params.action : "list")

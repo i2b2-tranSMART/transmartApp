@@ -98,11 +98,8 @@ class DataExportService {
 						def retVal
 						switch (selectedFile) {
 							case 'CLINICAL':
-								clinicalExportService.exportClinicalData(jobName: jobName,
-										resultInstanceId: resultInstanceIdMap[subset],
-										conceptKeys: selection[subset][selectedFile.toLowerCase()].selector,
-										studyDir: studyDir
-								)
+								clinicalExportService.exportClinicalData(jobName, resultInstanceIdMap[subset] as Long,
+										selection[subset][selectedFile.toLowerCase()].selector, studyDir)
 								break
 							case highDimensionResourceService.knownTypes:
 								logger.info 'Exporting {} using core api', selectedFile
@@ -112,13 +109,9 @@ class DataExportService {
 								// is exported
 								for (format in highDimDataTypes[subset][selectedFile].keySet()) {
 									logger.info '  Using format {}', format
-									retVal = highDimExportService.exportHighDimData(jobName: jobName,
-											resultInstanceId: resultInstanceIdMap[subset],
-											conceptKeys: selection[subset][selectedFile].selector,
-											dataType: selectedFile,
-											format: format,
-											studyDir: studyDir
-									)
+									retVal = highDimExportService.exportHighDimData(jobName,
+											resultInstanceIdMap[subset], selection[subset][selectedFile].selector,
+											selectedFile, format, studyDir)
 								}
 								logger.info 'Exported {} using core api', selectedFile
 

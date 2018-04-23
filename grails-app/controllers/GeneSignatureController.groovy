@@ -134,10 +134,10 @@ class GeneSignatureController {
 
 		// initialize new gs inst
 		def geneSigInst = new GeneSignature()
-		geneSigInst.properties.createdByAuthUser = user
-		geneSigInst.properties.publicFlag = false
-		geneSigInst.properties.deletedFlag = false
-		geneSigInst.properties.list = true
+		geneSigInst.createdByAuthUser = user
+		geneSigInst.publicFlag = false
+		geneSigInst.deletedFlag = false
+		geneSigInst.list = true
 
 		// initialize session
 		def newWizard = new WizardModelDetails(loggedInUser: user, geneSigInst: geneSigInst)
@@ -372,7 +372,7 @@ class GeneSignatureController {
 	def save = {
 		def wizard = session.getAttribute(WIZ_DETAILS_ATTRIBUTE)
 		def gs = wizard.geneSigInst
-		assert null == gs.properties.id
+		assert null == gs.id
 
 		// bind params
 		bindGeneSigData(params, gs)
@@ -381,16 +381,16 @@ class GeneSignatureController {
 		def file = request.getFile('uploadFile')
 
 		// load file contents, if clone check for file presence
-		boolean bLoadFile = (wizard.wizardType == WizardModelDetails.WIZ_TYPE_CREATE) || (wizard.wizardType == WizardModelDetails.WIZ_TYPE_CLONE && file != null && file.getOriginalFilename() != "")
+		boolean bLoadFile = (wizard.wizardType == WizardModelDetails.WIZ_TYPE_CREATE) || (wizard.wizardType == WizardModelDetails.WIZ_TYPE_CLONE && file?.originalFilename)
 		if (!bLoadFile) {
 			file = null
 		}
 		if (bLoadFile) {
-			gs.properties.uploadFile = file.getOriginalFilename()
+			gs.uploadFile = file.getOriginalFilename()
 
 			// check for empty file
 			if (file.empty) {
-				flash.message = "The file:'${gs.properties.uploadFile}' you uploaded is empty"
+				flash.message = "The file:'${gs.uploadFile}' you uploaded is empty"
 				def existingValues = createExistingValues(3, wizard.geneSigInst)
 				return render(view: "wizard3", model: [wizard: wizard, existingValues: existingValues])
 			}
@@ -412,7 +412,7 @@ class GeneSignatureController {
 		else {
 			// load items from cloned object
 			GeneSignature parentGS = GeneSignature.get(wizard.cloneId)
-			gs.properties.uploadFile = parentGS.uploadFile
+			gs.uploadFile = parentGS.uploadFile
 			log.info "INFO: loading parent of clone '" + parentGS.name + "'"
 			geneSignatureService.cloneGeneSigItems(parentGS, gs)
 		}
@@ -460,9 +460,9 @@ class GeneSignatureController {
 	def saveList = {
 		def wizard = session.getAttribute(WIZ_DETAILS_ATTRIBUTE)
 		def gs = wizard.geneSigInst
-		gs.properties.list = true
+		gs.list = true
 		if (!params.boolean('isEdit')) {
-			assert null == gs.properties.id
+			assert null == gs.id
 		}
 		else {
 			def currentListItems = GeneSignatureItem.createCriteria().list {
@@ -493,19 +493,19 @@ class GeneSignatureController {
 
 		// get file
 		def file = request.getFile('uploadFile')
-		gs.properties.name = request.getParameter('name')
+		gs.name = request.getParameter('name')
 
 		// load file contents, if clone check for file presence
-		boolean bLoadFile = (file != null && file.getOriginalFilename().trim() != "")
+		boolean bLoadFile = file?.originalFilename?.trim()
 		if (!bLoadFile) {
 			file = null
 		}
 		if (bLoadFile) {
-			gs.properties.uploadFile = file.getOriginalFilename()
+			gs.uploadFile = file.getOriginalFilename()
 
 			// check for empty file
 			if (file.empty) {
-				flash.message = "The file:'${gs.properties.uploadFile}' you uploaded is empty"
+				flash.message = "The file:'${gs.uploadFile}' you uploaded is empty"
 				return render(view: "wizard_list", model: [wizard: wizard])
 			}
 
@@ -523,7 +523,7 @@ class GeneSignatureController {
 
 		}
 		else {
-			gs.properties.uploadFile = "Manual Item Entry"
+			gs.uploadFile = "Manual Item Entry"
 			// load items from list rather than file
 			Iterator iter = params.entrySet().iterator()
 			SortedSet invalidSymbols = new TreeSet()
@@ -532,9 +532,8 @@ class GeneSignatureController {
 				def key = param.getKey().trim()
 				def val = param.getValue()
 				List<String> markers = []
-				if (key.startsWith("biomarker_") && val != null && val != "") {
+				if (key.startsWith("biomarker_") && val) {
 					markers.add(val.trim())
-
 				}
 				def gsItems = geneSignatureService.loadGeneSigItemsFromList(markers)
 				def geneSigUniqueIds = gs.geneSigItems*.bioDataUniqueId
@@ -601,7 +600,7 @@ class GeneSignatureController {
 		log.debug " update wizard file:'" + file?.getOriginalFilename() + "'"
 
 		// file validation
-		if (file != null && file.getOriginalFilename() != "") {
+		if (file?.originalFilename) {
 			// empty?
 			if (file.empty) {
 				flash.message = flash.message = "The file:'${file.getOriginalFilename()}' you uploaded is empty"
@@ -670,7 +669,7 @@ class GeneSignatureController {
 		def delParam = params.delete
 		def gs = GeneSignature.get(params.id)
 
-		if (delParam == null || delParam == "") {
+		if (!delParam) {
 			flash.message = "<div class='warning'>You did not select any item(s) to delete</div>"
 			return render(view: 'edit_items', model: [gs: gs, errorFlag: true])
 		}
@@ -704,9 +703,9 @@ class GeneSignatureController {
 		flash.message = null
 
 		// extract symbols and value metrics
-		List<String> geneSymbols = new ArrayList()
-		List<Double> valueMetrics = new ArrayList()
-		List<String> probes = new ArrayList()
+		List<String> geneSymbols = []
+		List<Double> valueMetrics = []
+		List<String> probes = []
 
 		boolean bError = false
 		def key
@@ -720,22 +719,19 @@ class GeneSignatureController {
 		Iterator iter = params.entrySet().iterator()
 		while (iter.hasNext()) {
 			param = iter.next()
-			//log.info " eval param: "+param
-			//println "PARAM: " + param
 
 			key = param.getKey().trim()
 			symbol = param.getValue().trim()
 
 			// parse gene symbols
-			if (key.startsWith("biomarker_") && symbol.length() > 0) {
+			if (key.startsWith("biomarker_") && symbol) {
 				itemNum = key.substring(10, key.length())
 				valueMetric = params.get("foldChgMetric_" + itemNum)
 				geneSymbols.add(symbol)
-				println "Gene: " + symbol + "   FC: " + valueMetric
 
 				log.debug " parsing symbol: '" + symbol + "' with valueMetric: " + valueMetric
 				// parse fold chg metric
-				if (valueMetric != null && valueMetric.trim().length() > 0) {
+				if (valueMetric?.trim()) {
 					try {
 						valueMetrics.add(Double.valueOf(valueMetric))
 					}
@@ -748,14 +744,14 @@ class GeneSignatureController {
 			}
 
 			// parse probeset
-			if (key.startsWith("probeset_") && symbol.length() > 0) {
+			if (key.startsWith("probeset_") && symbol) {
 				itemNum = key.substring(9, key.length())
 				valueMetric = params.get("foldChgMetric_" + itemNum)
 				probes.add(symbol)
 
 				log.debug " parsing symbol: '" + symbol + "' with valueMetric: " + valueMetric
 				// parse fold chg metric
-				if (valueMetric != null && valueMetric.trim().length() > 0) {
+				if (valueMetric?.trim()) {
 					try {
 						valueMetrics.add(Double.valueOf(valueMetric))
 					}
@@ -769,7 +765,7 @@ class GeneSignatureController {
 		}
 
 		// any symbols to add?
-		if (!bError && (geneSymbols.size() == 0) && (probes.size() == 0)) {
+		if (!bError && (!geneSymbols && !probes)) {
 			flash.message = "<div class='warning'>You did not enter any new item(s) to add</div>"
 			bError = true
 		}
@@ -788,7 +784,7 @@ class GeneSignatureController {
 		}
 
 		// add indicated items
-		if (valueMetrics.size() == 0) {
+		if (!valueMetrics) {
 			valueMetrics = null
 		}
 
@@ -814,7 +810,7 @@ class GeneSignatureController {
 		// handle error
 		if (bError) {
 			// build params map from current params for redirect
-			Map newParams = new HashMap()
+			Map newParams = [:]
 			newParams.putAt("id", gs.id)
 			newParams.putAt("errorFlag", true)
 
@@ -864,8 +860,8 @@ class GeneSignatureController {
 			fileName = 'gene_sig_' + content?.substring(0, content?.indexOf('\t'))?.replace('-', '') + '.gmt'
 			// setup headers for download
 			response.setContentType("application/vnd.gmt")
-			response.setCharacterEncoding("charset=utf-8")
-			response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
+			response.setCharacterEncoding("utf-8")
+			response.setHeader("Content-Disposition", 'attachment; filename="' + fileName + '"')
 			response.setHeader("Cache-Control", "must-revalidate, post-check=0, pre-check=0")
 			response.setHeader("Pragma", "public")
 			response.setHeader("Expires", "0")
@@ -886,7 +882,7 @@ class GeneSignatureController {
 		response.reset()
 		response.setContentType("text/plain")
 		response.setCharacterEncoding("utf-8")
-		response.setHeader("Content-Disposition", "attachment; filename=\"gene_sig_samples.txt\"")
+		response.setHeader("Content-Disposition", 'attachment; filename="gene_sig_samples.txt"')
 		response.setHeader("Cache-Control", "must-revalidate, post-check=0, pre-check=0")
 		response.setHeader("Pragma", "public")
 		response.setHeader("Expires", "0")
@@ -894,7 +890,7 @@ class GeneSignatureController {
 		// send workbook to response
 		ServletOutputStream os = response.outputStream
 		os.println("1) Gene List Example (no tab character, exclude fold change metric):")
-		os.println("")
+		os.println('')
 		os.println("TCN1")
 		os.println("IL1RN")
 		os.println("KIAA1199")
@@ -905,10 +901,10 @@ class GeneSignatureController {
 		os.println("APOBEC3A")
 		os.println("VNN3")
 		os.println("DSG3")
-		os.println("")
-		os.println("")
+		os.println('')
+		os.println('')
 		os.println("2) Gene Signature Example with actual fold change (separate columns with a tab):")
-		os.println("")
+		os.println('')
 		os.println("CXCL5\t-19.19385797")
 		os.println("IL8RB\t-18.21493625")
 		os.println("FPR1\t-17.6056338")
@@ -919,10 +915,10 @@ class GeneSignatureController {
 		os.println("CXCL2\t-12.300123")
 		os.println("SERPINB3\t-12.22493888")
 		os.println("KYNU\t-10.76426265")
-		os.println("")
-		os.println("")
+		os.println('')
+		os.println('')
 		os.println("3) Gene Signature Example for composite lists (separate columns with a tab):")
-		os.println("")
+		os.println('')
 		os.println("CXCL5\t-1")
 		os.println("IL8RB\t-1")
 		os.println("MMP3\t-1")
@@ -943,16 +939,16 @@ class GeneSignatureController {
 		def speciesId = params.id
 
 		def cellLines = []
-		if (speciesId == null || speciesId == "") {
+		if (!speciesId) {
 			cellLines = CellLine.list([sort: "cellLineName"])
 		}
 		else {
 			def species = ConceptCode.get(speciesId)
 			def speciesFilter = species.codeName
-			if (speciesFilter.indexOf("Mouse") != -1) {
+			if (speciesFilter.contains("Mouse")) {
 				speciesFilter = "Mouse"
 			}
-			if (speciesFilter.indexOf("monkey") != -1) {
+			if (speciesFilter.contains("monkey")) {
 				speciesFilter = "Monkey"
 			}
 
@@ -984,7 +980,7 @@ class GeneSignatureController {
 
 			case 3:
 				if (params.multipleTestingCorrection == null) {
-					params.multipleTestingCorrection = ""
+					params.multipleTestingCorrection = ''
 				}
 				break
 		}
@@ -1086,7 +1082,7 @@ class GeneSignatureController {
 	}
 
 	def createExistingValues(int pageNum, GeneSignature gs) {
-		Map existingValues = new HashMap()
+		Map existingValues = [:]
 		switch (pageNum) {
 			case 1:
 				break

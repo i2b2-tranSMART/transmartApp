@@ -1,8 +1,11 @@
 package org.transmart
 
+import groovy.transform.CompileStatic
+
 /**
  * @author mmcduffie
  */
+@CompileStatic
 class DocumentFilter {
 	Map<String, Boolean> repositories = [Biomarker: true, Conferences: true, DIP: true, 'Jubilant Oncology': true]
 	String path = ''

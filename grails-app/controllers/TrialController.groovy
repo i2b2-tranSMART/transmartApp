@@ -1,9 +1,3 @@
-/**
- * $Id: TrialController.groovy 10280 2011-10-29 03:00:52Z jliu $
- * @author $Author: jliu $
- * @version $Revision: 10280 $
- */
-
 import com.recomdata.util.DomainObjectExcelHelper
 import grails.converters.JSON
 import groovy.util.logging.Slf4j
@@ -23,6 +17,9 @@ import org.transmart.biomart.Experiment
 import org.transmart.plugin.shared.UtilService
 import org.transmart.searchapp.SearchKeyword
 
+/**
+ * @author jliu
+ */
 @Slf4j('logger')
 class TrialController {
 

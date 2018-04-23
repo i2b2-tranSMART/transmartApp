@@ -142,7 +142,7 @@ class TrialQueryService {
 		createTrialFilterCriteria filter.trialFilter, query
 
 		TrialAnalysisResult tResult = new TrialAnalysisResult(trial: ClinicalTrial.get(clinicalTrialId))
-		if (!gfilter.getBioMarkerFilters().isEmpty()) {
+		if (gfilter.bioMarkerFilters) {
 			List<Object[]> result = BioAssayAnalysisData.executeQuery(query.generateSQL()) as List<Object[]>
 			processAnalysisResult result, tResult
 		}
@@ -218,12 +218,11 @@ class TrialQueryService {
 			aresult.assayAnalysisValueList << new AssayAnalysisValue(analysisData: analysisData, bioMarker: biomarker)
 		}
 
-		Comparator mc = [compare: { AnalysisResult a, AnalysisResult b ->
-			a == b ? 0 : (((double) a.size()) / ((double) a.analysis.dataCount)) > (((double) b.size()) / ((double) b.analysis.dataCount)) ? -1 : 1 }
-		] as Comparator
-
-
-		tar.analysisResultList.addAll analysisResultMap.values().sort(mc)
+		tar.analysisResultList.addAll analysisResultMap.values().sort { AnalysisResult a, AnalysisResult b ->
+			a == b ? 0 :
+					(((double) a.size()) / ((double) a.analysis.dataCount)) > (((double) b.size()) / ((double) b.analysis.dataCount)) ?
+							-1 : 1
+		}
 	}
 
 	/**
@@ -233,7 +232,7 @@ class TrialQueryService {
 
 		// disease
 		if (trialfilter.hasDisease()) {
-			def alias = query.mainTableAlias + '_dis'
+			String alias = query.mainTableAlias + '_dis'
 			query.addTable 'JOIN ' + query.mainTableAlias + '.experiment.diseases ' + alias
 			query.addCondition alias + '.id = ' + trialfilter.bioDiseaseId
 		}
@@ -287,10 +286,14 @@ class TrialQueryService {
 		//		 rvalue on BioAssayAnalysisData
 		if (trialfilter.hasRValue()) {
 			if (firstWhereItem) {
-				s << ' ((baad.rvalue >= abs(' << trialfilter.rvalue << ')) OR (baad.rhoValue>=abs(' << trialfilter.rvalue << ')) OR baad.rhoValue IS NULL)'
+				s << ' ((baad.rvalue >= abs(' << trialfilter.rvalue <<
+						')) OR (baad.rhoValue>=abs(' << trialfilter.rvalue <<
+						')) OR baad.rhoValue IS NULL)'
 			}
 			else {
-				s << ' AND (baad.rvalue >= abs(' << trialfilter.rvalue << ')) OR (baad.rhoValue>=abs(' << trialfilter.rvalue << ')) OR baad.rhoValue IS NULL)'
+				s << ' AND (baad.rvalue >= abs(' << trialfilter.rvalue <<
+						')) OR (baad.rhoValue>=abs(' << trialfilter.rvalue <<
+						')) OR baad.rhoValue IS NULL)'
 			}
 		}
 

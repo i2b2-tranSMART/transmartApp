@@ -35,7 +35,7 @@ class HeatmapController {
 
 	def showheatmap() {
 
-		def dataResult = generateHeatmaps()
+		Map dataResult = generateHeatmaps()
 
 		int hmapcount = 1
 
@@ -82,7 +82,7 @@ class HeatmapController {
 
 	def downloadheatmapexcel() {
 
-		def dataResult = generateHeatmaps()
+		Map dataResult = generateHeatmaps()
 
 		List<ExcelSheet> sheets = []
 
@@ -106,7 +106,7 @@ class HeatmapController {
 				new ExcelGenerator().generateExcel(sheets)
 	}
 
-	private generateHeatmaps() {
+	private Map generateHeatmaps() {
 
 		// need to decide which algorithm to run
 		// we have 3 algorithms
@@ -118,7 +118,7 @@ class HeatmapController {
 		boolean searchHeatmapFilter = false
 
 		// for genes to be displayed in the heatmap - this is used for searchHeatmapFilter and search global filter
-		Set<SearchKeyword> orderedGenes = new LinkedHashSet<>()
+		Set<SearchKeyword> orderedGenes = []
 		List<Long> searchGeneIds = []
 		List<Long> searchAnalysisIds = BioAssayAnalysisData.executeQuery(
 				trialQueryService.createAnalysisIDSelectQuery(sessionSearchFilter()), [max: 100])
@@ -126,7 +126,6 @@ class HeatmapController {
 
 		if ('topgene'.equalsIgnoreCase(sessionSearchFilter().heatmapFilter.heatmapfiltertype)) {
 			searchTopGene = true
-
 		}
 		else {
 			SearchKeyword keyword = sessionSearchFilter().heatmapFilter.searchTerm
@@ -187,10 +186,12 @@ class HeatmapController {
 				searchAnalysisIds, searchGeneIds, orderedGenes, maxshortdescr + 2)
 
 		// rbm comparison
-		dataList.rbmresult = createHeatmapData('comparison', 'RBM', searchTopGene, searchAnalysisIds, searchGeneIds, orderedGenes, maxshortdescr)
+		dataList.rbmresult = createHeatmapData('comparison', 'RBM', searchTopGene,
+				searchAnalysisIds, searchGeneIds, orderedGenes, maxshortdescr)
 
 		// rbm spearman
-		dataList.rhoresult = createHeatmapData('spearman correlation', 'RBM', searchTopGene, searchAnalysisIds, searchGeneIds, orderedGenes, maxshortdescr)
+		dataList.rhoresult = createHeatmapData('spearman correlation', 'RBM', searchTopGene,
+				searchAnalysisIds, searchGeneIds, orderedGenes, maxshortdescr)
 
 		dataList
 	}
@@ -213,13 +214,11 @@ class HeatmapController {
 			List<Map> columnList = [[type: 'n', label: 'Gene Name', pattern: '', id: 0]]
 			int ccount = 0
 			Map columnPosMap = [:]
-			def analysisId = null
-			def analysisName = null
-			def analysisNameMap = [:]
-			def assayAnalysisList = []
+			Map analysisNameMap = [:]
+			List<BioAssayAnalysis> assayAnalysisList = []
 
 			for (data in dataList) {
-				analysisName = analysisNameMap[data.assayAnalysisId]
+				String analysisName = analysisNameMap[data.assayAnalysisId]
 				// reformat & shorten analysis name
 				if (analysisName == null) {
 					BioAssayAnalysis analysis = BioAssayAnalysis.get(data.assayAnalysisId)
@@ -235,14 +234,14 @@ class HeatmapController {
 						analysisName = analysisName.substring(0, maxcolLength - 3) + '...'
 					}
 					else {
-						def paddingnum = maxcolLength - analysisName.length()
-						def sp = new StringBuilder(maxcolLength).append(analysisName)
+						int paddingnum = maxcolLength - analysisName.length()
+						StringBuilder sb = new StringBuilder(maxcolLength).append(analysisName)
 						for (pi in 0..paddingnum - 1) {
-							sp.append(' ')
+							sb << ' '
 						}
-						analysisName = sp.toString()
+						analysisName = sb.toString()
 					}
-					analysisNameMap.put(data.assayAnalysisId, analysisName)
+					analysisNameMap[data.assayAnalysisId] = analysisName
 					assayAnalysisList << analysis
 
 					// add into column list
@@ -269,10 +268,10 @@ class HeatmapController {
 				}
 
 				// find column index by analysis id
-				def columnIndex = columnPosMap.get(data.assayAnalysisId)
+				int columnIndex = columnPosMap[data.assayAnalysisId]
 
 				if (rowArray != null) {
-					def datavalue = null
+					def datavalue
 					if ('correlation' == method) {
 						datavalue = data.rvalue
 					}
@@ -302,7 +301,6 @@ class HeatmapController {
 
 				// this is an array
 				def rvalues = entry.value
-				//log.info rvalues
 				// handle null value rows
 				boolean hasRowValue = false
 				// if not RBM

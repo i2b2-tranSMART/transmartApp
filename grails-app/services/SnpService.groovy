@@ -68,7 +68,7 @@ class SnpService {
 			throw new Exception('Error: The selected cohorts do not have SNP data.')
 		}
 
-		StringBuffer sampleInfoBuf = new StringBuffer()
+		StringBuilder sampleInfoBuf = new StringBuilder()
 		List<SnpDataset> datasetList = []
 		List<String> datasetNameForSNPViewerList = []
 		getSnpSampleInfo(datasetList, datasetNameForSNPViewerList, patientNumListArray, snpDatasetBySubjectMap, sampleInfoBuf)
@@ -148,7 +148,7 @@ class SnpService {
 	 * For now the patients have to be in the same trial, for the sake of simplicity.
 	 */
 	void getSNPViewerDataByProbe(List<Long>[] patientNumListArray, List<Long> geneSearchIdList, List<String> geneNameList,
-	                             List<String> snpNameList, SnpViewerFiles snpFiles, StringBuffer geneSnpPageBuf) {
+	                             List<String> snpNameList, SnpViewerFiles snpFiles, StringBuilder geneSnpPageBuf) {
 		Assert.notNull snpFiles, 'The SNPViewerFiles object is not instantiated'
 		Assert.notNull geneSnpPageBuf, 'The geneSnpPageBuf object is not instantiated'
 
@@ -159,7 +159,7 @@ class SnpService {
 
 		for (int i = 0; i < patientNumListArray.length; i++) {
 			if (sb) {
-				sb += ','
+				sb << ','
 			}
 
 			//This is a list of patients, add it to our string.
@@ -194,7 +194,7 @@ class SnpService {
 		//Fill the SnpDatasets. We use the map to keep track of the patients.
 		getSnpDatasetBySubjectMap(snpDatasetBySubjectMap, subjectListStr)
 
-		StringBuffer sampleInfoBuf = new StringBuffer()
+		StringBuilder sampleInfoBuf = new StringBuilder()
 		List<SnpDataset> datasetList = allDataByProbe.datasetList
 		List<String> datasetNameForSNPViewerList = allDataByProbe.datasetNameForSNPViewerList
 		getSnpSampleInfo(datasetList, datasetNameForSNPViewerList, patientNumListArray, snpDatasetBySubjectMap, sampleInfoBuf)
@@ -331,11 +331,11 @@ class SnpService {
 
 	void getSnpSampleInfo(List<SnpDataset> datasetList, List<String> datasetNameForSNPViewerList,
 	                      List<Long>[] patientNumListArray, Map<Long, SnpDataset[]> snpDatasetBySubjectMap,
-	                      StringBuffer sampleInfoBuf) {
+	                      StringBuilder sampleInfoBuf) {
 
 		Assert.notNull datasetList, 'The datasetList is null'
 		Assert.notNull patientNumListArray, 'The patient number list for two subsets cannot be null'
-		Assert.notNull sampleInfoBuf, 'The StringBuffer for sample info text needs to instantiated'
+		Assert.notNull sampleInfoBuf, 'The StringBuilder for sample info text needs to instantiated'
 
 		// Organize the datasetList and SNPViewer dataset name List, also generate the SNPViewer sample info text in this pass
 		sampleInfoBuf << 'Array\tSample\tType\tPloidy(numeric)\tGender\tPaired'
@@ -343,7 +343,6 @@ class SnpService {
 			if (patientNumListArray[idxSubset] != null) {
 				for (Long patientNum in patientNumListArray[idxSubset]) {
 					SnpDataset[] snpDatasetPair = snpDatasetBySubjectMap[patientNum.longValue()]
-					println(snpDatasetPair)
 					if (snpDatasetPair != null) {
 						String datasetNameForSNPViewer_1 = null
 						String datasetNameForSNPViewer_2
@@ -670,7 +669,7 @@ class SnpService {
 		mergedMap
 	}
 
-	void getSnpGeneAnnotationPage(StringBuffer geneSnpPageBuf, Map<String, SortedMap<Long, Map<Long, GeneWithSnp>>> allGeneSnpMap,
+	void getSnpGeneAnnotationPage(StringBuilder geneSnpPageBuf, Map<String, SortedMap<Long, Map<Long, GeneWithSnp>>> allGeneSnpMap,
 	                              Map<Long, GeneWithSnp> geneEntrezIdMap, Map<String, GeneWithSnp> geneNameToGeneWithSnpMap,
 	                              List<String> geneNameList, List<String> snpNameList) {
 		geneSnpPageBuf << '<html><header></hearder><body><p>Selected Genes and SNPs</p>'
@@ -880,7 +879,7 @@ class SnpService {
 		}
 
 		String[] values = chroms.split(',')
-		StringBuffer buf = new StringBuffer()
+		StringBuilder buf = new StringBuilder()
 		for (int i = 0; i < values.length; i++) {
 			if (i) {
 				buf << ','
@@ -903,7 +902,7 @@ class SnpService {
 		for (String chrom in chromSet) {
 			for (int i = 0; i < allChroms.length; i++) {
 				if (chrom == allChroms[i]) {
-					chromIndexMap[Integer.valueOf(i)] = chrom
+					chromIndexMap[i] = chrom
 				}
 			}
 		}
@@ -917,10 +916,10 @@ class SnpService {
 
 		for (int i = 0; i < datasetList.size(); i++) {
 			SnpDataset snpDataset = datasetList[i]
-			Integer location = datasetCompactLocationMap[snpDataset.id]
+			int location = datasetCompactLocationMap[snpDataset.id]
 			// The snp data is compacted in the format of [##.##][AB] for copy number and genotype
-			String copyNumber = dataByProbe.substring(location.intValue() * 7, location.intValue() * 7 + 5)
-			String genotype = dataByProbe.substring(location.intValue() * 7 + 5, location.intValue() * 7 + 7)
+			String copyNumber = dataByProbe.substring(location * 7, location * 7 + 5)
+			String genotype = dataByProbe.substring(location * 7 + 5, location * 7 + 7)
 			dataArray[i][0] = copyNumber
 			dataArray[i][1] = genotype
 		}

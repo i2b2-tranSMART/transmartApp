@@ -96,7 +96,7 @@
                                                 <img src="${resource(dir: 'images', file: 'folder-plus.gif')}"
                                                      style="vertical-align:middle;"/>
                                             </div>
-                                            <g:if test="${jubData.reference.referenceTitle?.length() > 0}">
+                                            <g:if test="${jubData.reference.referenceTitle}">
                                                 <g:set var="descr"
                                                        value="${jubData.reference.referenceTitle}"/>
                                                 <b>${(descr?.length() > 180) ? descr.substring(0, 180) + "..." : descr}</b>

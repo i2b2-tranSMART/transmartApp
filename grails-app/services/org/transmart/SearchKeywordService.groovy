@@ -6,6 +6,7 @@ import org.transmart.biomart.BioAssayPlatform
 import org.transmart.biomart.BioDataExternalCode
 import org.transmart.biomart.ConceptCode
 import org.transmart.plugin.shared.SecurityService
+import org.transmart.plugin.shared.UtilService
 import org.transmart.searchapp.GeneSignature
 import org.transmart.searchapp.SearchKeyword
 import org.transmart.searchapp.SearchKeywordTerm
@@ -19,6 +20,7 @@ class SearchKeywordService {
 	static transactional = false
 
 	@Autowired private SecurityService securityService
+	@Autowired private UtilService utilService
 
 	//Hard-coded list of items that we consider filter categories... configure in Config/database?
 	private static final List<Map> filtercats = [
@@ -338,11 +340,9 @@ class SearchKeywordService {
 				}
 			}
 
-			keyword.validate()
-			if (keyword.hasErrors()) {
-//				keyword.errors.each { println it }
+			if (!keyword.save(flush: flush)) {
+				logger.error '{}', utilService.errorStrings(keyword)
 			}
-			keyword.save(flush: flush)
 		}
 	}
 

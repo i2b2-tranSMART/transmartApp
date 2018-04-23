@@ -41,7 +41,7 @@ class SampleInfoService {
 	String quoteCSV(String val) {
 		StringBuilder s = new StringBuilder()
 
-		if (val != null && val.length() > 0) {
+		if (val) {
 			String[] split = val.split(',')
 			s << "'" << split[0] << "'"
 			for (int i = 1; i < split.length; i++) {

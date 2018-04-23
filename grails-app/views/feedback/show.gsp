@@ -22,26 +22,26 @@
     <div class="dialog">
         <table>
             <tbody>
-            <g:if test="${feedback.searchUserId != null && feedback.searchUserId.toString().length() > 0}">
+            <g:if test="${feedback.searchUserId}">
                 <tr class="prop">
                     <td valign="top" class="name"><g:message code="feedback.searchUserId" default="User"/>:</td>
                     <td valign="top" class="value">${fieldValue(bean: feedback, field: 'searchUserId')}</td>
                 </tr>
             </g:if>
-            <g:if test="${feedback.createDate != null && feedback.createDate.toString().length() > 0}">
+            <g:if test="${feedback.createDate}">
                 <tr class="prop">
                     <td valign="top" class="name"><g:message code="feedback.createDate" default="Created"/>:</td>
                     <td valign="top" class="value"><g:formatDate format="yyyy-MM-dd"
                                                                  date="${feedback.createDate}"/></td>
                 </tr>
             </g:if>
-            <g:if test="${feedback.appVersion != null && feedback.appVersion.toString().length() > 0}">
+            <g:if test="${feedback.appVersion}">
                 <tr class="prop">
                     <td valign="top" class="name"><g:message code="feedback.appVersion" default="Version"/>:</td>
                     <td valign="top" class="value">${fieldValue(bean: feedback, field: 'appVersion')}</td>
                 </tr>
             </g:if>
-            <g:if test="${feedback.feedbackText != null && feedback.feedbackText.toString().length() > 0}">
+            <g:if test="${feedback.feedbackText}">
                 <tr class="prop">
                     <td valign="top" class="name"><g:message code="feedback.feedbackText" default="Feedback"/>:</td>
                     <td valign="top" class="value">${fieldValue(bean: feedback, field: 'feedbackText')}</td>

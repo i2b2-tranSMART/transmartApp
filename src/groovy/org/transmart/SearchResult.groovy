@@ -30,7 +30,7 @@ class SearchResult {
 	int resultCount = 0
 	int profileCount = 0
 	def summary
-	ExpAnalysisResultSet result
+	def result
 	String resultType
 
 	int totalCount() {

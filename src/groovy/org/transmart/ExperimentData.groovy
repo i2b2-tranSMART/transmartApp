@@ -35,7 +35,7 @@ class ExperimentData {
 
 	private Map<Long, SampleInfo> sampleInfoMap = [:]
 
-	//This is passed to the create header method of the GCT files.
+	// passed to the create header method of the GCT files
 	private String[] subjectNameArray
 
 	ExperimentData(DataSource dataSource, SessionFactory sessionFactory, sampleInfoService) {
@@ -49,8 +49,7 @@ class ExperimentData {
 	String pathwayName = ''
 	String whiteString = ''
 
-	//This is a JSON Object representing the selected subsets.
-	//{"SampleIdList":{"1":["Sample1"],"2":[],"3":[]}}
+	// a JSON Object representing the selected subsets: {"SampleIdList":{"1":["Sample1"],"2":[],"3":[]}}
 	def sampleIdList
 
 	GenePatternFiles gpf
@@ -66,7 +65,7 @@ class ExperimentData {
 			intensityType = 'RAW'
 		}
 
-		//This method will fill in some properties.
+		// fill in some properties
 		gatherSampleData()
 		dataType = 'MRNA_AFFYMETRIX'
 
@@ -85,7 +84,7 @@ class ExperimentData {
 	}
 
 	/**
-	 * This will build the query as a string that will retrieve our sample data.
+	 * build the query as a string to retrieve sample data.
 	 */
 	private void gatherSampleData() {
 		//First, create a string that has all the sample ID's. We will use this to get the distinct Trials.
@@ -140,13 +139,15 @@ class ExperimentData {
 
 	private String buildQuerySampleMRNA(String intensityType) {
 		//This is the list of columns in our select statement.
-		//We need to get the list of columns. The list of columns is based on what we name them in the subquery creation methods below. Which is subject ID.
+		//We need to get the list of columns. The list of columns is based on what
+		// we name them in the subquery creation methods below. Which is subject ID.
 		String columns = listHeatmapColumnsFromMap('probeset', 'S', true) + ', star'
 
 		//For each of the susbsets we need to build a query which we union together with the other subsets.
 		List<String> subsetQueries = []
 
-		//We need to pass the ordered list of AssayIds to this function. The Assay ID is stored in the map of sampleInfo objects.
+		// We need to pass the ordered list of AssayIds to this function.
+		// The Assay ID is stored in the map of sampleInfo objects.
 
 		for (subsetItem in sampleIdList) {
 			def subsetSampleList = subsetItem.value
@@ -154,7 +155,8 @@ class ExperimentData {
 			//Don't add a subset if there are no items in the subset.
 			if (subsetSampleList) {
 				String currentAssayIds = buildAssayIdsFromSampleIds(subsetSampleList)
-				String currentSubsetQuery = createMRNAHeatmapPathwayQuery('S' + subsetItem.key + '_', currentAssayIds, intensityType)
+				String currentSubsetQuery = createMRNAHeatmapPathwayQuery(
+						'S' + subsetItem.key + '_', currentAssayIds, intensityType)
 
 				subsetQueries << currentSubsetQuery
 			}
@@ -214,12 +216,11 @@ class ExperimentData {
 		}
 	}
 
-	//****************************************************************
-	//File Creation Methods.
-	//****************************************************************
+	// File Creation Methods
+
 	private void writeMrnaDataToFiles() {
 		//Write the file that has our group information.
-		gpf.writeClsFileManySubsets(sampleIdList)
+		gpf.writeClsFileManySubsets sampleIdList
 
 		gpf.openGctFile()
 		gpf.openCSVFile()
@@ -255,7 +256,7 @@ class ExperimentData {
 			int totalCol = rs.metaData.columnCount
 
 			while (rs.next()) {
-				cs.setLength 0
+				cs.length = 0
 
 				for (int count = 1; count < totalCol; count++) {
 					if (count > 1) {
@@ -290,7 +291,7 @@ class ExperimentData {
 
 				s << '\n'
 
-				gpf.writeToCSVFile(cs.toString())
+				gpf.writeToCSVFile cs.toString()
 			}
 		}
 		finally {
@@ -300,8 +301,8 @@ class ExperimentData {
 		}
 
 		//Write the gct header and gct file contents.
-		gpf.createGctHeader(rows, subjectNameArray, '\t')
-		gpf.writeToGctFile(s.toString())
+		gpf.createGctHeader rows, subjectNameArray, '\t'
+		gpf.writeToGctFile s.toString()
 
 		gpf.closeGctFile()
 		gpf.closeCSVFile()
@@ -311,7 +312,7 @@ class ExperimentData {
 		gpf.openGctFile()
 		gpf.openCSVFile()
 
-		gpf.writeClsFile(distinctSubjectIds1, distinctSubjectIds2)
+		gpf.writeClsFile distinctSubjectIds1, distinctSubjectIds2
 
 		StringBuilder s = new StringBuilder()
 
@@ -320,25 +321,25 @@ class ExperimentData {
 		def rows = sql.rows(experimentDataQuery, { meta -> numCols = meta.columnCount })
 
 		// create header
-		gpf.createGctHeader(rows.size(), subjectNameArray, '\t')
+		gpf.createGctHeader rows.size(), subjectNameArray, '\t'
 
 		for (row in rows) {
 
-			s.setLength(0)
+			s.length = 0
 
 			if (dataType.toUpperCase() == 'PROTEIN') {
-				if (row.getAt('component') == null) {
-					s << row.getAt('GENE_SYMBOL')
+				if (row.component == null) {
+					s << row.GENE_SYMBOL
 				}
 				else {
-					s << row.getAt('component')
+					s << row.component
 				}
 
-				s << '\t' << row.getAt('GENE_SYMBOL')
+				s << '\t' << row.GENE_SYMBOL
 			}
 
-			for (int count : startingOutputColumn..<numCols - 1) {
-				String val = row.getAt(count)
+			for (int count in startingOutputColumn..<numCols - 1) {
+				String val = row[count]
 				if (val == 'null' || val == null) {
 					val = whiteString
 				}
@@ -348,17 +349,15 @@ class ExperimentData {
 				s << val
 			}
 
-			gpf.writeToGctFile(s.toString())
-			gpf.writeToCSVFile(s.toString().replaceAll('\t', ','))
+			gpf.writeToGctFile s.toString()
+			gpf.writeToCSVFile s.toString().replaceAll('\t', ',')
 		}
 
 		gpf.closeGctFile()
 		gpf.closeCSVFile()
 	}
 
-	//****************************************************************
-	//Query Creation Methods.
-	//****************************************************************
+	// Query Creation Methods
 
 	private String createMRNAHeatmapPathwayQuery(String prefix, String assayIds, String intensityType) {
 
@@ -406,7 +405,8 @@ class ExperimentData {
 		s
 	}
 
-	private String createRBMHeatmapQuery(String prefix, String ids, String concepts, String pathwayName, String timepoint, String rbmPanels) {
+	private String createRBMHeatmapQuery(String prefix, String ids, String concepts,
+	                                     String pathwayName, String timepoint, String rbmPanels) {
 		StringBuilder s = new StringBuilder()
 
 		String genes
@@ -441,21 +441,24 @@ class ExperimentData {
 		s
 	}
 
-	private String createProteinHeatmapQuery(String prefix, String pathwayName, String ids, String concepts, String timepoint) {
+	private String createProteinHeatmapQuery(String prefix, String pathwayName,
+	                                         String ids, String concepts, String timepoint) {
 
 		Sql sql = new Sql(dataSource)
 
 		String cntQuery = 'SELECT COUNT(*) as N FROM DE_SUBJECT_SAMPLE_MAPPING WHERE concept_code IN (' + quoteCSV(concepts) + ')'
 
-		Integer cnt
+		Integer count
 
 		sql.query(cntQuery) { ResultSet rs ->
-			while (rs.next()) cnt = rs.toRowResult().N
+			while (rs.next()) {
+				count = rs.toRowResult().N
+			}
 		}
 
 		StringBuilder s = new StringBuilder()
 
-		if (cnt == 0) {
+		if (count == 0) {
 			if (timepoint) {
 				s << "SELECT distinct a.component, a.GENE_SYMBOL, a.zscore, '"
 				s << prefix << "' || a.patient_ID as subject_id "
@@ -490,7 +493,7 @@ class ExperimentData {
 				s << "FROM DE_SUBJECT_PROTEIN_DATA a, DE_pathway_gene c, de_pathway p, "
 				s << "DE_subject_sample_mapping b "
 				s << "WHERE c.pathway_id= p.id and "
-				if (pathwayName != null) {
+				if (pathwayName) {
 					s << " p.pathway_uid='" << pathwayName << "' and "
 				}
 				s << "a.gene_symbol = c.gene_symbol and "
@@ -519,8 +522,9 @@ class ExperimentData {
 		s
 	}
 
-	private String createProteinHeatmapQuery(String pathwayName, String ids1, String ids2, String concepts1,
-	                                         String concepts2, String timepoint1, String timepoint2) {
+	private String createProteinHeatmapQuery(String pathwayName, String ids1, String ids2,
+	                                         String concepts1, String concepts2,
+	                                         String timepoint1, String timepoint2) {
 
 		String columns = listHeatmapColumns('component', ids1, ids2, 'S1_', 'S2_') + ', star'
 
@@ -538,19 +542,31 @@ class ExperimentData {
 
 		if (s1) {
 			if (s2) {
-				"SELECT " + columns + " FROM (" + s1.replace("distinct ", " ") + " UNION " + s2.replace("distinct ", " ") + ") PIVOT (avg(zscore) for subject_id IN (" + subjects + ")) ORDER BY component, GENE_SYMBOL"
+				"SELECT " + columns +
+						" FROM (" + s1.replace("distinct ", " ") +
+						" UNION " + s2.replace("distinct ", " ") + ")" +
+						" PIVOT (avg(zscore) for subject_id IN (" + subjects + "))" +
+						" ORDER BY component, GENE_SYMBOL"
 			}
 			else {
-				"SELECT " + columns + " FROM (" + s1 + ") PIVOT (avg(zscore) for subject_id IN (" + subjects + ")) ORDER BY component, GENE_SYMBOL"
+				"SELECT " + columns +
+						" FROM (" + s1 + ")" +
+						" PIVOT (avg(zscore) for subject_id IN (" + subjects + "))" +
+						" ORDER BY component, GENE_SYMBOL"
 			}
 		}
 		else {
-			"SELECT " + columns + " FROM (" + s2 + ") PIVOT (avg(zscore) for subject_id IN (" + subjects + ")) ORDER BY component, GENE_SYMBOL"
+			"SELECT " + columns +
+					" FROM (" + s2 + ")" +
+					" PIVOT (avg(zscore) for subject_id IN (" + subjects + "))" +
+					" ORDER BY component, GENE_SYMBOL"
 		}
 	}
 
-	private String createRBMHeatmapQuery(String pathwayName, String ids1, String ids2, String concepts1, String concepts2,
-	                                     String timepoint1, String timepoint2, String rbmPanels1, String rbmPanels2) {
+	private String createRBMHeatmapQuery(String pathwayName, String ids1, String ids2,
+	                                     String concepts1, String concepts2,
+	                                     String timepoint1, String timepoint2,
+	                                     String rbmPanels1, String rbmPanels2) {
 
 		String columns = listHeatmapColumns('antigen_name', ids1, ids2, 'S1_', 'S2_') + ', star'
 
@@ -568,20 +584,27 @@ class ExperimentData {
 
 		if (s1) {
 			if (s2) {
-				"SELECT " + columns + " FROM (" + s1.replace("distinct ", " ") + " UNION " + s2.replace("distinct ", " ") + ") PIVOT (avg(value) for subject_id IN (" + subjects + ")) ORDER BY ANTIGEN_NAME, GENE_SYMBOL"
+				"SELECT " + columns + " FROM (" + s1.replace("distinct ", " ") +
+						" UNION " + s2.replace("distinct ", " ") +
+						") PIVOT (avg(value) for subject_id IN (" + subjects + ")) " +
+						"ORDER BY ANTIGEN_NAME, GENE_SYMBOL"
 			}
 			else {
-				"SELECT " + columns + " FROM (" + s1 + ") PIVOT (avg(value) for subject_id IN (" + subjects + ")) ORDER BY ANTIGEN_NAME, GENE_SYMBOL"
+				"SELECT " + columns +
+						" FROM (" + s1 + ")" +
+						" PIVOT (avg(value) for subject_id IN (" + subjects + "))" +
+						" ORDER BY ANTIGEN_NAME, GENE_SYMBOL"
 			}
 		}
 		else {
-			"SELECT " + columns + " FROM (" + s2 + ") PIVOT (avg(value) for subject_id IN (" + subjects + ")) ORDER BY ANTIGEN_NAME, GENE_SYMBOL"
+			"SELECT " + columns +
+					" FROM (" + s2 + ")" +
+					" PIVOT (avg(value) for subject_id IN (" + subjects + "))" +
+					" ORDER BY ANTIGEN_NAME, GENE_SYMBOL"
 		}
 	}
 
-	//****************************************************************
-	//Helper functions.
-	//****************************************************************
+	// Helper methods
 
 	/**
 	 *  Compose a list of columns used by Heatmap and then trim average value
@@ -590,7 +613,8 @@ class ExperimentData {
 	 * @param prefix1 usually use 'S1_'
 	 * @param prefix2 usually use 'S2_'
 	 */
-	private String listHeatmapColumns(String biomarker, String ids1, String ids2, String prefix1, String prefix2) {
+	private String listHeatmapColumns(String biomarker, String ids1, String ids2,
+	                                  String prefix1, String prefix2) {
 
 		StringBuilder s = new StringBuilder()
 		s << ' ' << biomarker << ', gene_symbol '
@@ -630,10 +654,12 @@ class ExperimentData {
 				SampleInfo sampleInfo = sampleInfoMap[item]
 
 				if (roundColumn) {
-					s << 'round(' << prefix << subsetItem.key << '_' << sampleInfo.patientId << ', 4) as ' << prefix << subsetItem.key << '_' << sampleInfo.patientId << ','
+					s << 'round(' << prefix << subsetItem.key << '_' << sampleInfo.patientId << ', 4) as '
+					s << prefix << subsetItem.key << '_' << sampleInfo.patientId << ','
 				}
 				else {
-					s << QUOTE << prefix << subsetItem.key << '_' << sampleInfo.patientId << "' as " << prefix << subsetItem.key << '_' << sampleInfo.patientId << ','
+					s << QUOTE << prefix << subsetItem.key << '_' << sampleInfo.patientId << "' as "
+					s << prefix << subsetItem.key << '_' << sampleInfo.patientId << ','
 				}
 			}
 		}
