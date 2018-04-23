@@ -2,6 +2,7 @@ package org.transmart.authorization
 
 import com.google.common.collect.Sets
 import grails.util.Holders
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -84,6 +85,7 @@ class QueriesResourceAuthorizationDecorator implements QueriesResource, Authoriz
 	 * @throws AccessDeniedException if access is denied
 	 * @param arguments zero or more result instance ids to check
 	 */
+	@CompileDynamic
 	@Deprecated
 	static void checkQueryResultAccess(Object... arguments) {
 		List<Long> ids = arguments.findAll().collect { it as long }

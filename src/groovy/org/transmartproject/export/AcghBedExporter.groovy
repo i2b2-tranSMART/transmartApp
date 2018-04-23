@@ -36,7 +36,7 @@ class AcghBedExporter extends AbstractChromosomalRegionBedExporter {
 		for (CopyNumberState cpNState in CopyNumberState.values()) {
 			List<Integer> rgbValues = FLAG_TO_RGB_DEFAULT_MAP[cpNState]
 			if (acghBedExporterRgbColorScheme && acghBedExporterRgbColorScheme[cpNState.name().toLowerCase()]) {
-				rgbValues = acghBedExporterRgbColorScheme[cpNState.name().toLowerCase()]
+				rgbValues = (List<Integer>) acghBedExporterRgbColorScheme[cpNState.name().toLowerCase()]
 			}
 			result[cpNState.intValue] = rgbValues.join(',')
 		}

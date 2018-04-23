@@ -15,7 +15,7 @@ import javax.annotation.PostConstruct
 @Slf4j('logger')
 class ProteomicsBedExporter extends AbstractChromosomalRegionBedExporter {
 
-	static final BigDecimal HIGH_ZSCORE_THRESHOLD = new BigDecimal(1.5)
+	static final BigDecimal HIGH_ZSCORE_THRESHOLD = new BigDecimal(1.5d)
 	static final BigDecimal LOW_ZSCORE_THRESHOLD = HIGH_ZSCORE_THRESHOLD.negate()
 
 	static final String LOW_VALUE_RGB = '0,0,205'

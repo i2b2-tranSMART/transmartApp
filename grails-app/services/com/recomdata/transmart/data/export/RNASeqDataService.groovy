@@ -80,7 +80,7 @@ class RNASeqDataService {
 
 			int j = 7
 			for (AssayColumn assay in assays) {
-				line[j++] = getReadcount(row[assay]) as String
+				line[j++] = getReadcount(row.getAt(assay)) as String
 			}
 
 			writerUtil.writeLine line

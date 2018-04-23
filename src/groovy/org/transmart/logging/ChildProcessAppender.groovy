@@ -20,6 +20,7 @@
 package org.transmart.logging
 
 import com.google.common.base.Charsets
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.transform.InheritConstructors
 import groovy.util.logging.Slf4j
@@ -78,9 +79,7 @@ class ChildProcessAppender extends AppenderSkeleton {
 	// The appender being broken should be unlikely. It indicates a misconfiguration or an error in the child program.
 	protected boolean broken = false
 
-	private ThreadLocal<int[]> recursionCount = new ThreadLocal<int[]>() {
-		protected int[] initialValue() { [0] as int[] }
-	}
+	private ThreadLocal<int[]> recursionCount = createRecursionCount()
 
 	ChildProcessAppender() {
 		layout = new JsonLayout(singleLine: true)
@@ -92,7 +91,7 @@ class ChildProcessAppender extends AppenderSkeleton {
 	}
 
 	void setRestartWindow(int w) {
-		Assert.isTrue l > 0, "restartWindow must be larger than 0"
+		Assert.isTrue w > 0, "restartWindow must be larger than 0"
 		restartWindow = w
 	}
 
@@ -219,6 +218,13 @@ class ChildProcessAppender extends AppenderSkeleton {
 	synchronized void close() {
 		closed = true
 		input?.close()
+	}
+
+	@CompileDynamic
+	private static ThreadLocal<int[]> createRecursionCount() {
+		new ThreadLocal<int[]>() {
+			protected int[] initialValue() { [0] as int[] }
+		}
 	}
 
 	@CompileStatic
