@@ -170,7 +170,7 @@ class AuthUserController implements InitializingBean {
 
 		AuthUser.withTransaction { TransactionStatus tx -> // TODO move to tx service
 			manageRoles authUser
-			if (authUser.save()) {
+			if (authUser.save(flush: true)) {
 				accessLogService.report "User ${create ? 'Created' : 'Updated'}", msg.toString()
 				redirect action: 'show', id: authUser.id
 			}
