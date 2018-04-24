@@ -1,9 +1,7 @@
 import grails.plugin.springsecurity.SpringSecurityUtils
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
-import org.transmart.plugin.auth0.Auth0Config
 import org.transmart.plugin.auth0.Auth0Service
-import org.transmart.plugin.auth0.AuthService
 import org.transmart.plugin.auth0.UserService
 import org.transmart.plugin.custom.CustomizationConfig
 import org.transmart.plugin.custom.CustomizationService
@@ -19,9 +17,7 @@ class UserProfileController {
 	private static final String severeMessage = 'Unable to update user information. Contact administrator.'
 
 	@Autowired private AccessLogService accessLogService
-	@Autowired private Auth0Config auth0Config
 	@Autowired private Auth0Service auth0Service
-	@Autowired private AuthService authService
 	@Autowired private CustomizationConfig customizationConfig
 	@Autowired private CustomizationService customizationService
 	@Autowired private SecurityService securityService
