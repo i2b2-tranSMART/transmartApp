@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value
  */
 class GlobalFilterService {
 
+	static transactional = false
+
 	@Value('${com.recomdata.search.paginate.max:0}')
 	private int paginateMax
 

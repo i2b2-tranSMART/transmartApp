@@ -1,8 +1,3 @@
-/**
- * @author $Author: mmcduffie $
- * $Id: HeatmapService.groovy 9178 2011-08-24 13:50:06Z mmcduffie $
- * @version $Revision: 9178 $
- */
 import com.recomdata.search.query.AssayAnalysisDataQuery
 import com.recomdata.search.query.Query
 import groovy.util.logging.Slf4j
@@ -11,8 +6,13 @@ import org.transmart.HeatmapDataValue
 import org.transmart.SearchFilter
 import org.transmart.biomart.BioAssayAnalysisData
 
+/**
+ * @author mmcduffie
+ */
 @Slf4j('logger')
 class HeatmapService {
+
+	static transactional = false
 
 	@Autowired private TrialQueryService trialQueryService
 

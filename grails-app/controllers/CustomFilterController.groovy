@@ -25,7 +25,7 @@ class CustomFilterController {
 		for (CustomFilter customFilter in customFilters) {
 			customFilter.summary = createSummaryWithLinks(createKeywordMap(customFilter))
 		}
-		[customFilterInstanceList: customFilters]
+		[customFilters: customFilters]
 	}
 
 	def delete(CustomFilter customFilter) {
@@ -60,7 +60,7 @@ class CustomFilterController {
 		}
 
 		customFilter.summary = createSummaryWithLinks(createKeywordMap(customFilter))
-		[customFilterInstance: customFilter]
+		[customFilter: customFilter]
 	}
 
 	def update(CustomFilter customFilter) {
@@ -72,7 +72,7 @@ class CustomFilterController {
 				redirect action: 'list', params: [ts: System.currentTimeMillis(), lastFilterID: params.id]
 			}
 			else {
-				render view: 'edit', model: [customFilterInstance: customFilter]
+				render view: 'edit', model: [customFilter: customFilter]
 			}
 		}
 		else {
@@ -83,7 +83,7 @@ class CustomFilterController {
 
 	def create() {
 		Map<String, Collection<SearchKeyword>> map = createKeywordMap(sessionSearchFilter().globalFilter)
-		[customFilterInstance: new CustomFilter(
+		[customFilter: new CustomFilter(
 				searchUserId: securityService.currentUserId(),
 				privateFlag: 'N',
 				summary: createSummaryWithLinks(map))]
@@ -104,7 +104,7 @@ class CustomFilterController {
 			redirect action: 'list', params: [ts: System.currentTimeMillis(), lastFilterID: filter.id]
 		}
 		else {
-			render view: 'create', model: [customFilterInstance: filter]
+			render view: 'create', model: [customFilter: filter]
 		}
 	}
 

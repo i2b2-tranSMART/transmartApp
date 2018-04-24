@@ -14,6 +14,8 @@ import java.sql.Clob
 
 class SnpService {
 
+	static transactional = false
+
 	DataSource dataSource
 
 	private static final char QUOTE = "'"

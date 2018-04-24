@@ -10,6 +10,8 @@ import javax.sql.DataSource
  */
 class RWGVisualizationDAOService {
 
+	static transactional = false
+
 	DatabasePortabilityService databasePortabilityService
 	DataSource dataSource
 
@@ -1691,15 +1693,13 @@ class RWGVisualizationDAOService {
 		s.append("""select max(analysis_update_date) last_update_time, now() AS current_time
              from biomart.bio_assay_analysis where analysis_update_date is not null""")
 
-		// retrieve results
-		def results = sql.rows(s.toString())
-		def lastUpdateTime, currentDbTime
-		results.each { row ->
-
-			// add to info map
+		def lastUpdateTime
+		def currentDbTime
+		for (row in sql.rows(s.toString())) {
 			lastUpdateTime = row.last_update_time
 			currentDbTime = row.current_time
 		}
-		return ['lastUpdateTime': lastUpdateTime, 'currentDbTime': currentDbTime]
+
+		[lastUpdateTime: lastUpdateTime, currentDbTime: currentDbTime]
 	}
 }

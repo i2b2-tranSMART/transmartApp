@@ -2,7 +2,6 @@ package com.recomdata.transmart.data.export
 
 import com.recomdata.transmart.data.export.util.FileWriterUtil
 import com.recomdata.transmart.util.FileDownloadService
-import com.recomdata.transmart.util.UtilService
 import grails.plugin.springsecurity.SpringSecurityService
 import groovy.sql.Sql
 import groovy.util.logging.Slf4j
@@ -22,6 +21,8 @@ import static org.transmart.authorization.QueriesResourceAuthorizationDecorator.
 @Slf4j('logger')
 class GeneExpressionDataService {
 
+	static transactional = false
+
 	private static final List<String> controlSampleList = ['Unknown_GPL96', 'Unknown_GPL97'].asImmutable()
 
 	private static final char separator = '\t'
@@ -33,7 +34,6 @@ class GeneExpressionDataService {
 	SpringSecurityService springSecurityService
 	GrailsApplication grailsApplication
 	FileDownloadService fileDownloadService
-	UtilService utilService
 
 	@Value('${com.recomdata.search.genepathway:}')
 	private String genepathway
@@ -116,7 +116,7 @@ class GeneExpressionDataService {
 		}
 
 		if (gplIds) {
-			sql << ' AND ssm.GPL_ID IN (' << utilService.toListString(gplIds) << ')'
+			sql << ' AND ssm.GPL_ID IN (' << toListString(gplIds) << ')'
 		}
 
 		sql
@@ -202,7 +202,7 @@ class GeneExpressionDataService {
 		}
 
 		if (gplIds) {
-			sTables << ' AND ssm.GPL_ID IN (' << utilService.toListString(gplIds) << ')'
+			sTables << ' AND ssm.GPL_ID IN (' << toListString(gplIds) << ')'
 		}
 
 		sTables << ' ORDER BY probe_id, patient_id, gpl_id'
@@ -221,7 +221,7 @@ class GeneExpressionDataService {
 
 		'''
 		SELECT DISTINCT a.PATIENT_ID, a.sample_type, a.timepoint, a.tissue_type, a.sample_cd, a.trial_name, pd.sourcesystem_cd
-		FROM DEAPP.de_subject_sample_mapping a 
+		FROM DEAPP.de_subject_sample_mapping a
 		INNER JOIN I2B2DEMODATA.PATIENT_DIMENSION pd on a.patient_id = pd.patient_num
 		WHERE a.trial_name in (''' + convertList(studyList, true, 1000) + ')' + '''
 		  AND a.assay_id IN (''' + assayIds + ')' + '''
@@ -465,7 +465,7 @@ class GeneExpressionDataService {
 					}
 				}
 
-				writeNotEmptyString output, utilService.getActualPatientId(sourceSystemCode)
+				writeNotEmptyString output, getActualPatientId(sourceSystemCode)
 				output.write valueDelimiter
 				// sample attribute, time point, tissue type
 				output.write determineSampleAttribute(sttMap[assayID])
@@ -615,7 +615,7 @@ class GeneExpressionDataService {
 						(row.TISSUE_TYPE ? '_' + row.TISSUE_TYPE : '')
 
 				String mapKey = (row.TRIAL_NAME?.toString() ?: '') + (row.SAMPLE_CD?.toString() ? '/' + row.SAMPLE_CD : '')
-				String mapValue = utilService.getActualPatientId(row.sourcesystem_cd?.toString()) +
+				String mapValue = getActualPatientId(row.sourcesystem_cd?.toString()) +
 						(sample.toString() ? '_' + sample : '')
 				if (null == sampleCdsMap[mapKey]) {
 					sampleCdsMap[mapKey] = mapValue
@@ -758,7 +758,7 @@ class GeneExpressionDataService {
 		            WHERE result_instance_id IN (''' + resultInstanceIds + ')' + '''
 		           ) sc ON ssm.patient_id = sc.patient_num
 		WHERE ssm.trial_name IN (''' + convertList(studyList, true, 100) + ')' + '''
-		  AND ssm.gpl_id IN (''' + utilService.toListString(platformsList) + ')' + '''
+		  AND ssm.gpl_id IN (''' + toListString(platformsList) + ')' + '''
 		ORDER BY sc.result_instance_id desc'''
 	}
 
@@ -778,8 +778,8 @@ class GeneExpressionDataService {
 		            FROM qt_patient_set_collection
 		            WHERE result_instance_id IN (''' + resultInstanceIds + ')' + '''
 		           ) sc ON ssm.patient_id = sc.patient_num
-		WHERE ssm.trial_name IN (''' + utilService.toListString(studyList) + ')' + '''
-		  AND ssm.gpl_id IN (''' + utilService.toListString(platformsList) + ')' + '''
+		WHERE ssm.trial_name IN (''' + toListString(studyList) + ')' + '''
+		  AND ssm.gpl_id IN (''' + toListString(platformsList) + ')' + '''
 		ORDER BY probe_id, patient_id, gpl_id'''
 	}
 
@@ -793,8 +793,8 @@ class GeneExpressionDataService {
                   FROM qt_patient_set_collection
                   WHERE result_instance_id IN (''' + resultInstanceIds + ')' + '''
 		           ) sc ON ssm.patient_id = sc.patient_num
-		WHERE ssm.trial_name IN (''' + utilService.toListString(studyList) + ')' + '''
-		  AND ssm.gpl_id IN (''' + utilService.toListString(platformsList) + ')'
+		WHERE ssm.trial_name IN (''' + toListString(studyList) + ')' + '''
+		  AND ssm.gpl_id IN (''' + toListString(platformsList) + ')'
 	}
 
 	private String getResultInstanceIdsAsStr(Map resultInstanceIdMap) {
@@ -979,7 +979,7 @@ class GeneExpressionDataService {
 					}
 				}
 
-				writeNotEmptyString(output, utilService.getActualPatientId(sourceSystemCode))
+				writeNotEmptyString(output, getActualPatientId(sourceSystemCode))
 				output.write(valueDelimiter)
 
 				// Row description
@@ -1062,5 +1062,28 @@ class GeneExpressionDataService {
 		c.eval pivotDataCommand
 
 		c.close()
+	}
+
+	String toListString(List objList) {
+		StringBuilder objToString = new StringBuilder()
+		for (obj in objList) {
+			if (obj && obj?.toString()?.trim()) {
+				if (obj instanceof String) {
+					objToString << "'" << obj << "'"
+				}
+				else {
+					objToString << obj
+				}
+				if (objToString) {
+					objToString << ','
+				}
+			}
+		}
+
+		objToString
+	}
+
+	String getActualPatientId(String sourceSystemCode) {
+		sourceSystemCode.split(':')[-1]
 	}
 }

@@ -9,7 +9,7 @@ class FeedbackController {
 		if (!params.max) {
 			params.max = 10
 		}
-		[feedbackList: Feedback.list(params)]
+		[feedbackList: Feedback.list(params), feedbackCount: Feedback.count()]
 	}
 
 	def show(Feedback feedback) {

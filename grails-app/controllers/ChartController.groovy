@@ -74,10 +74,10 @@ class ChartController {
 
 		// We need to force computation for an empty instance ID
 		Map analysis = chartService.getConceptAnalysis(
-				concept: i2b2HelperService.getConceptKeyForAnalysis(concept_key ?: null),
-				omics_params: omicsParams,
-				subsets: [1: [exists: true, instance: ''], 2: [exists: false], commons: [:]],
-				chartSize: [width: 245, height: 180])
+				i2b2HelperService.getConceptKeyForAnalysis(concept_key ?: null),
+				omicsParams,
+				[1: [exists: true, instance: ''], 2: [exists: false], commons: [:]],
+				[width: 245, height: 180])
 
 		render analysis.commons.conceptHisto.toString()
 	}
@@ -88,10 +88,10 @@ class ChartController {
 				'Concept:' + params.concept_key
 
 		Map analysis = chartService.getConceptAnalysis(
-				concept: i2b2HelperService.getConceptKeyForAnalysis(concept_key ?: null),
-				omics_params: omicsParams,
-				subsets: chartService.getSubsetsFromRequest(params),
-				chartSize: [width: 245, height: 180])
+				i2b2HelperService.getConceptKeyForAnalysis(concept_key ?: null),
+				omicsParams,
+				chartService.getSubsetsFromRequest(params),
+				[width: 245, height: 180])
 
 		render analysis.commons.conceptHisto.toString()
 	}
@@ -101,10 +101,10 @@ class ChartController {
 				'Concept:' + concept_key
 
 		Map analysis = chartService.getConceptAnalysis(
-				concept: i2b2HelperService.getConceptKeyForAnalysis(concept_key ?: null),
-				omics_params: omicsParams,
-				subsets: [1: [exists: true, instance: ''], 2: [exists: false], commons: [:]],
-				chartSize: [width: 245, height: 180])
+				i2b2HelperService.getConceptKeyForAnalysis(concept_key ?: null),
+				omicsParams,
+				[1: [exists: true, instance: ''], 2: [exists: false], commons: [:]],
+				[width: 245, height: 180])
 		render(analysis as JSON)
 	}
 
@@ -124,9 +124,9 @@ class ChartController {
 
 		Map concepts = [:]
 		concepts[concept_key] = chartService.getConceptAnalysis(
-				concept: i2b2HelperService.getConceptKeyForAnalysis(concept_key),
-				omics_params: omicsParams,
-				subsets: chartService.getSubsetsFromRequest(params))
+				i2b2HelperService.getConceptKeyForAnalysis(concept_key),
+				omicsParams,
+				chartService.getSubsetsFromRequest(params), null)
 
 		render template: 'conceptsAnalysis', model: [concepts: concepts]
 	}
@@ -143,9 +143,10 @@ class ChartController {
 
 		session.removeAttribute 'gridtable'
 
-		def subsets = chartService.computeChartsForSubsets(chartService.getSubsetsFromRequest(params))
+		Map<Object, Map> subsets = chartService.computeChartsForSubsets(
+				chartService.getSubsetsFromRequest(params))
 		def concepts = chartService.getConceptsForSubsets(subsets)
-		concepts.putAll(chartService.getHighDimensionalConceptsForSubsets(subsets))
+		concepts.putAll chartService.getHighDimensionalConceptsForSubsets(subsets)
 
 		render template: 'summaryStatistics', model: [
 				subsets: subsets,

@@ -1,5 +1,6 @@
 package org.transmart
 
+import grails.transaction.Transactional
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.transmart.biomart.BioAssayPlatform
@@ -16,8 +17,6 @@ import org.transmart.searchapp.SearchKeywordTerm
  */
 @Slf4j('logger')
 class SearchKeywordService {
-
-	static transactional = false
 
 	@Autowired private SecurityService securityService
 	@Autowired private UtilService utilService
@@ -315,6 +314,7 @@ class SearchKeywordService {
 	/**
 	 * update GeneSignature/List link to search
 	 */
+	@Transactional
 	void updateGeneSignatureLink(GeneSignature gs, String domainKey, boolean flush) {
 		// find keyword record
 		SearchKeyword keyword = SearchKeyword.findByBioDataIdAndDataCategory(gs.id, domainKey)

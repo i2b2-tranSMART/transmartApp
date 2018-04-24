@@ -6,6 +6,7 @@ package com.recomdata.genesignature
 import com.recomdata.util.ModelDetails
 import groovy.transform.CompileStatic
 import org.transmart.biomart.ConceptCode
+import org.transmart.searchapp.GeneSignature
 
 /**
  * @author jspencer
@@ -37,8 +38,7 @@ class WizardModelDetails extends ModelDetails {
 	def species
 	def tissueTypes
 
-	// domain class
-	def geneSigInst
+	GeneSignature geneSigInst
 
 	// id of domain being edited
 	def editId

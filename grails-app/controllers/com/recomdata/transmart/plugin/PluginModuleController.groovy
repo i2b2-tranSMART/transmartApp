@@ -17,13 +17,12 @@ class PluginModuleController {
 		if (null == params.order) {
 			params.order = 'asc'
 		}
-		[pluginModuleInstanceList: PluginModule.list(params), pluginModuleInstanceTotal: PluginModule.count()]
+		[pms: PluginModule.list(params), pmCount: PluginModule.count()]
 	}
 
 	def show(PluginModule pluginModule) {
 		if (pluginModule) {
-			[pluginModuleInstance: pluginModule,
-			 paramsStr: pluginModule.getParamsStr()]
+			[pm: pluginModule, paramsStr: pluginModule.paramsStr]
 		}
 		else {
 			flash.message = "PluginModule not found with id ${params.id}"
@@ -51,8 +50,7 @@ class PluginModuleController {
 
 	def edit(PluginModule pluginModule) {
 		if (pluginModule) {
-			[pluginModuleInstance: pluginModule,
-			 paramsStr: pluginModule.getParamsStr()]
+			createOrEditModel pluginModule
 		}
 		else {
 			flash.message = "PluginModule not found with id ${params.id}"
@@ -82,7 +80,8 @@ class PluginModuleController {
 					pluginModule.errors.rejectValue  'version',
 							'pluginModule.optimistic.locking.failure',
 							'Another user has updated this PluginModule while you were editing.'
-					render view: 'edit', model: [pluginModuleInstance: pluginModule]
+					render view: 'edit', model: createOrEditModel(pluginModule)
+
 					return
 				}
 			}
@@ -101,7 +100,7 @@ class PluginModuleController {
 				redirect action: 'show', id: pluginModule.id
 			}
 			else {
-				render view: 'edit', model: [pluginModuleInstance: pluginModule, paramsStr: params.paramsStr]
+				render view: 'edit', model: createOrEditModel(pluginModule)
 			}
 		}
 		else {
@@ -112,8 +111,7 @@ class PluginModuleController {
 
 	def create() {
 		PluginModule pluginModule = new PluginModule(params)
-		[pluginModuleInstance: pluginModule,
-		 paramsStr: pluginModule.getParamsStr()]
+		createOrEditModel pluginModule
 	}
 
 	def save() {
@@ -124,7 +122,14 @@ class PluginModuleController {
 			redirect action: 'show', id: pluginModule.id
 		}
 		else {
-			render view: 'create', model: [pluginModuleInstance: pluginModule]
+			render view: 'create', model: createOrEditModel(pluginModule)
 		}
+	}
+
+	private Map createOrEditModel(PluginModule pm) {
+		[pm: pm,
+		 paramsStr: pm.paramsStr,
+		 categories: PluginModuleCategory.values(),
+		 plugins: Plugin.list()]
 	}
 }

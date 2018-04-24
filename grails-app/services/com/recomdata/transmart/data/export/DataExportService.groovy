@@ -2,15 +2,16 @@ package com.recomdata.transmart.data.export
 
 import com.recomdata.snp.SnpData
 import com.recomdata.transmart.data.export.exception.DataNotFoundException
+import grails.transaction.Transactional
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.codehaus.groovy.grails.commons.GrailsApplication
 import org.quartz.JobDataMap
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.transaction.annotation.Transactional
 import org.springframework.util.Assert
 import org.transmart.authorization.QueriesResourceAuthorizationDecorator
+import org.transmartproject.core.dataquery.Patient
 import org.transmartproject.core.ontology.Study
 import org.transmartproject.core.users.User
 import org.transmartproject.db.dataquery.highdim.HighDimensionResourceService
@@ -110,7 +111,7 @@ class DataExportService {
 								for (format in highDimDataTypes[subset][selectedFile].keySet()) {
 									logger.info '  Using format {}', format
 									retVal = highDimExportService.exportHighDimData(jobName,
-											resultInstanceIdMap[subset], selection[subset][selectedFile].selector,
+											resultInstanceIdMap[subset] as long, selection[subset][selectedFile].selector,
 											selectedFile, format, studyDir)
 								}
 								logger.info 'Exported {} using core api', selectedFile
@@ -119,8 +120,7 @@ class DataExportService {
 								filesDoneMap['MRNA.TXT'] = true
 								break
 							case 'MRNA_DETAILED.TXT':
-								//We need to grab some inputs from the jobs data map.
-								def pathway = jobDataMap.gexpathway
+								String pathway = jobDataMap.gexpathway
 								String timepoint = jobDataMap.gextime
 								String sampleType = jobDataMap.gexsample
 								String tissueType = jobDataMap.gextissue
@@ -145,52 +145,40 @@ class DataExportService {
 
 								//adding String to a List to make it compatible to the type expected
 								//if gexgpl contains multiple gpl(s) as single string we need to convert that to a list
-
 								retVal = geneExpressionDataService.getData(studyList, studyDir, 'mRNA.trans',
 										jobName, resultInstanceIdMap[subset], pivotData, gplIds, pathway,
 										timepoint, sampleType, tissueType, true)
 								if (jobDataMap.analysis != 'DataExport') {
 									//if geneExpressionDataService was not able to find data throw an exception.
 									if (!retVal) {
-										throw new DataNotFoundException('There are no patients that meet the criteria selected therefore no gene expression data was returned.')
+										throw new DataNotFoundException('There are no patients that meet the ' +
+												'criteria selected therefore no gene expression data was returned.')
 									}
 								}
 								break
 							case 'ACGH_REGIONS.TXT':
 								if (studyList.size() != 1) {
-									throw new Exception('Only one study ' +
-											'allowed per analysis; list given' +
-											' was : ' + studyList)
+									throw new Exception('Only one study allowed per analysis; list given was : ' + studyList)
 								}
-								ACGHDataService.writeRegions(
-										studyList[0],
-										studyDir,
-										'regions.txt',
-										jobName,
-										resultInstanceIdMap[subset]
+								ACGHDataService.writeRegions studyList[0], studyDir, 'regions.txt',
+										jobName, resultInstanceIdMap[subset]
 										// currently the interface does not allow filtering, so don't implement it here was well
-								)
 								break
 							case 'RNASEQ.TXT':
 								if (studyList.size() != 1) {
-									throw new Exception('Only one study ' +
-											'allowed per analysis; list given' +
-											' was : ' + studyList)
+									throw new Exception('Only one study allowed per analysis; list given was : ' + studyList)
 								}
-								RNASeqDataService.writeRegions(
-										studyList[0],
-										studyDir,
-										'RNASeq.txt',
-										jobName,
-										resultInstanceIdMap[subset]
+								RNASeqDataService.writeRegions studyList[0], studyDir, 'RNASeq.txt',
+										jobName, resultInstanceIdMap[subset]
 										// currently the interface does not allow filtering, so don't implement it here was well
-								)
 								break
 							case 'MRNA.CEL':
-								geneExpressionDataService.downloadCELFiles(resultInstanceIdMap[subset], studyList, studyDir, jobName, null, null, null, null)
+								geneExpressionDataService.downloadCELFiles resultInstanceIdMap[subset], studyList,
+										studyDir, jobName, null, null, null, null
 								break
 							case 'GSEA.GCT & .CLS':
-								geneExpressionDataService.getGCTAndCLSData(studyList, studyDir, 'mRNA.GCT', jobName, resultInstanceIdMap, pivotData, gplIds)
+								geneExpressionDataService.getGCTAndCLSData studyList, studyDir, 'mRNA.GCT',
+										jobName, resultInstanceIdMap, pivotData, gplIds
 								break
 							case 'SNP.PED, .MAP & .CNV':
 								retVal = snpDataService.getData(studyDir, 'snp.trans', jobName, resultInstanceIdMap[subset])
@@ -202,21 +190,17 @@ class DataExportService {
 							case 'SNP.TXT':
 								//In this case we need to get a file with Patient ID, Probe ID, Gene, Genotype, Copy Number
 								//We need to grab some inputs from the jobs data map.
-								def pathway = jobDataMap.snppathway
-								def sampleType = jobDataMap.snpsample
-								def timepoint = jobDataMap.snptime
-								def tissueType = jobDataMap.snptissue
+								String pathway = jobDataMap.snppathway
+								String sampleType = jobDataMap.snpsample
+								String timepoint = jobDataMap.snptime
+								String tissueType = jobDataMap.snptissue
 
-								//This object will be our row processor which handles the writing to the SNP text file.
+								// row processor which handles the writing to the SNP text file.
 								SnpData snpData = new SnpData()
-								//Construct the path that we create the SNP file on.
-								String snpFolderLocation = jobTmpDirectory + File.separator + "subset1_${study}" +
-										File.separator + 'SNP' + File.separator
 								//Make sure the directory we want to write the file to is created.
-								new File(snpFolderLocation).mkdir()
+								new File(jobTmpDirectory, 'subset1_' + study + '/SNP').mkdir()
 								//This is the exact path of the file to write.
-								String fileLocation = jobTmpDirectory + File.separator + "subset1_${study}" +
-										File.separator + 'SNP' + File.separator + 'snp.trans'
+								String fileLocation = jobTmpDirectory + '/subset1_' + study + '/SNP/snp.trans'
 								//Call our service which writes the SNP data to a file.
 								boolean gotData = snpDataService.getSnpDataByResultInstanceAndGene(
 										resultInstanceIdMap[subset], study, pathway, sampleType, timepoint,
@@ -224,7 +208,8 @@ class DataExportService {
 								if (jobDataMap.analysis != 'DataExport') {
 									//if SNPDataService was not able to find data throw an exception.
 									if (!gotData) {
-										throw new DataNotFoundException('There are no patients that meet the criteria selected therefore no SNP data was returned.')
+										throw new DataNotFoundException('There are no patients that meet the ' +
+												'criteria selected therefore no SNP data was returned.')
 									}
 								}
 								break
@@ -233,9 +218,9 @@ class DataExportService {
 								break
 							case 'IGV.VCF':
 
-								def selectedGenes = jobDataMap.selectedGenes
-								def chromosomes = jobDataMap.chroms
-								def selectedSNPs = jobDataMap.selectedSNPs
+								String selectedGenes = jobDataMap.selectedGenes
+								String chromosomes = jobDataMap.chroms
+								String selectedSNPs = jobDataMap.selectedSNPs
 
 								logger.trace 'VCF Parameters; selectedGenes:{}, chromosomes:{}, selectedSNPs:{}',
 										selectedGenes, chromosomes, selectedSNPs
@@ -262,18 +247,14 @@ class DataExportService {
 		assert user
 		assert resultInstanceIds
 		// check that the user has export access in the studies of patients
-		Set<Study> studies = resultInstanceIds.findAll().collect {
-			queriesResourceAuthorizationDecorator.getQueryResultFromId it
+		Set<Study> studies = resultInstanceIds.findAll().collect { long id ->
+			queriesResourceAuthorizationDecorator.getQueryResultFromId id
 		}*.patients.
-				inject { a, b -> a + b }. // merge two patient sets into one
-				inject([] as Set, { a, b -> a + b.trial }).
-				collect { studiesResourceService.getStudyById it }
+				inject { Set<Patient> a, Set<Patient> b -> a + b }. // merge two patient sets into one
+				inject([] as Set, { Set<String> trials, Patient p -> trials + p.trial }).
+				collect { String trial -> studiesResourceService.getStudyById trial }
 
-		Study forbiddenExportStudy = studies.find { Study study ->
-			if (!user.canPerform(EXPORT, study)) {
-				return true
-			}
-		}
+		Study forbiddenExportStudy = studies.find { Study study -> !user.canPerform(EXPORT, study) }
 		!forbiddenExportStudy
 	}
 }

@@ -22,7 +22,7 @@ class DataExportController {
 	@Autowired private SecurityService securityService
 	@Autowired private UtilService utilService
 
-	def index = {}
+	def index() {}
 
 	//We need to gather a JSON Object to represent the different data types.
 	def getMetaData() {

@@ -91,6 +91,7 @@ class AsyncJobService {
 	 * Method that will create the new asynchronous job name
 	 * Current methodology is username-jobtype-ID from sequence generator
 	 */
+	@Transactional
 	JSONObject createnewjob(Map params) {
 		String userName = securityService.currentUsername()
 		String jobStatus = 'Started'

@@ -2,6 +2,7 @@ import command.SecureObjectAccessCommand
 import grails.plugin.springsecurity.SpringSecurityService
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.util.JavaScriptUtils
 import org.transmart.plugin.shared.security.Roles
 import org.transmart.searchapp.AuthUser
 import org.transmart.searchapp.Principal
@@ -23,12 +24,12 @@ class SecureObjectAccessController {
 		if (!max) {
 			params.max = 10
 		}
-		[secureObjectAccessInstanceList: SecureObjectAccess.list(params)]
+		[soas: SecureObjectAccess.list(params), soaCount: SecureObjectAccess.count()]
 	}
 
 	def show(SecureObjectAccess secureObjectAccess) {
 		if (secureObjectAccess) {
-			[secureObjectAccessInstance: secureObjectAccess]
+			[soa: secureObjectAccess]
 		}
 		else {
 			flash.message = "SecureObjectAccess not found with id ${params.id}"
@@ -49,7 +50,7 @@ class SecureObjectAccessController {
 
 	def edit(SecureObjectAccess secureObjectAccess) {
 		if (secureObjectAccess) {
-			[secureObjectAccessInstance: secureObjectAccess]
+			[soa: secureObjectAccess]
 		}
 		else {
 			flash.message = "SecureObjectAccess not found with id ${params.id}"
@@ -65,7 +66,7 @@ class SecureObjectAccessController {
 				redirect action: 'show', id: secureObjectAccess.id
 			}
 			else {
-				render view: 'edit', model: [secureObjectAccessInstance: secureObjectAccess]
+				render view: 'edit', model: [soa: secureObjectAccess]
 			}
 		}
 		else {
@@ -75,7 +76,7 @@ class SecureObjectAccessController {
 	}
 
 	def create() {
-		[secureObjectAccessInstance: new SecureObjectAccess(params)]
+		createModel new SecureObjectAccess(params)
 	}
 
 	def save() {
@@ -85,13 +86,13 @@ class SecureObjectAccessController {
 			redirect action: 'show', id: secureObjectAccess.id
 		}
 		else {
-			render view: 'create', model: [secureObjectAccessInstance: secureObjectAccess]
+			render view: 'create', createModel(secureObjectAccess)
 		}
 	}
 
 	def manageAccessBySecObj(String accesslevelid) {
 		SecureObject secureObj
-		if (params.secureobjectid != null) {
+		if (params.secureobjectid) {
 			secureObj = SecureObject.get(params.secureobjectid)
 		}
 		if (secureObj == null) {
@@ -111,10 +112,12 @@ class SecureObjectAccessController {
 				secureObjectAccessList, userwithoutaccess, secureObj
 
 		render view: 'managePrincipalAccess', model: [
-				secureObjectInstance  : secureObj,
-				secureObjectAccessList: secureObjectAccessList,
-				userwithoutaccess     : userwithoutaccess,
-				accesslevelid         : access?.id]
+				soa               : secureObj,
+				soas              : secureObjectAccessList,
+				userwithoutaccess : userwithoutaccess,
+				accesslevelid     : access?.id,
+				secureObjects     : SecureObject.listOrderByDisplayName(),
+				secureAccessLevels: SecureAccessLevel.list()]
 	}
 
 	def addPrincipalToAccessList(SecureObjectAccessCommand fl) {
@@ -199,36 +202,38 @@ class SecureObjectAccessController {
 		List<SecureObjectAccess> secureObjectAccessList = getSecureObjAccessListForPrincipal(principal, access)
 		List<SecureObject> objectswithoutaccess = getObjsWithoutAccessForPrincipal(principal, '')
 
-		render view: 'manageAccess', model: [principalInstance     : principal,
-		                                     accessLevelList       : SecureAccessLevel.listOrderByAccessLevelValue(),
-		                                     secureObjectAccessList: secureObjectAccessList,
-		                                     objectswithoutaccess  : objectswithoutaccess,
-		                                     accesslevelid         : access?.id]
+		[principal             : principal,
+		 accessLevelList       : SecureAccessLevel.listOrderByAccessLevelValue(),
+		 secureObjectAccessList: secureObjectAccessList,
+		 objectswithoutaccess  : objectswithoutaccess,
+		 accesslevelid         : access?.id,
+		 jsContextPath         : JavaScriptUtils.javaScriptEscape(request.contextPath),
+		 jsPrincipalName       : JavaScriptUtils.javaScriptEscape(principal?.name)]
 	}
 
 	def accessLevelChange() {}
 
 	def listAccessForPrincipal() {
-		Principal principalInstance = Principal.get(params.currentprincipalid)
+		Principal principal = Principal.get(params.currentprincipalid)
 		def accesslevelid = params.accesslevelid
 		SecureAccessLevel access = SecureAccessLevel.findByAccessLevelName('VIEW')
 		if (accesslevelid != null) {
 			access = SecureAccessLevel.get(accesslevelid)
 		}
 		accesslevelid = access.id
-		if (!principalInstance) {
+		if (!principal) {
 			flash.message = 'Please select a user/group.'
 			render template: 'addremoveAccess', model: [
-					principalInstance     : principalInstance,
+					principal             : principal,
 					secureObjectAccessList: [],
 					objectswithoutaccess  : []]
 			return
 		}
 
 		String searchtext = params.searchtext
-		List<SecureObjectAccess> secureObjectAccessList = getSecureObjAccessListForPrincipal(principalInstance, access)
-		List<SecureObject> objectswithoutaccess = getObjsWithoutAccessForPrincipal(principalInstance, searchtext)
-		render template: 'addremoveAccess', model: [principalInstance     : principalInstance,
+		List<SecureObjectAccess> secureObjectAccessList = getSecureObjAccessListForPrincipal(principal, access)
+		List<SecureObject> objectswithoutaccess = getObjsWithoutAccessForPrincipal(principal, searchtext)
+		render template: 'addremoveAccess', model: [principal             : principal,
 		                                            secureObjectAccessList: secureObjectAccessList,
 		                                            objectswithoutaccess  : objectswithoutaccess,
 		                                            accesslevelid         : accesslevelid]
@@ -253,7 +258,7 @@ class SecureObjectAccessController {
 		List<SecureObjectAccess> secureObjAccessList = getSecureObjAccessListForPrincipal(principal, access)
 		List<SecureObject> objectswithoutaccess = getObjsWithoutAccessForPrincipal(principal, searchtext)
 		render template: 'addremoveAccess', model: [
-				principalInstance     : principal,
+				principal             : principal,
 				secureObjectAccessList: secureObjAccessList,
 				objectswithoutaccess  : objectswithoutaccess]
 	}
@@ -279,7 +284,7 @@ class SecureObjectAccessController {
 		List<SecureObject> objectswithoutaccess = getObjsWithoutAccessForPrincipal(principal, searchtext)
 
 		render template: 'addremoveAccess', model: [
-				principalInstance     : principal,
+				principal             : principal,
 				secureObjectAccessList: secureObjAccessList,
 				objectswithoutaccess  : objectswithoutaccess]
 	}
@@ -375,5 +380,12 @@ class SecureObjectAccessController {
 				AND upper(g.name) like :st
 				ORDER BY g.name''',
 				[secObj: secureObj, al: access, st: '%' + insearchtext.toUpperCase() + '%']
+	}
+
+	private Map createModel(SecureObjectAccess soa) {
+		[soa: soa,
+		 principals: Principal.list(),
+		 secureAccessLevels: SecureAccessLevel.list(),
+		 secureObjects: SecureObject.list()]
 	}
 }

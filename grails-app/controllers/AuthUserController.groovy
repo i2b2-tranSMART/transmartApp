@@ -11,6 +11,7 @@ import org.transmart.searchapp.AuthUser
 import org.transmart.searchapp.AuthUserSecureAccess
 import org.transmart.searchapp.GeneSignature
 import org.transmart.searchapp.Role
+import org.transmart.searchapp.SecureObjectAccess
 import org.transmartproject.db.log.AccessLogService
 
 import java.util.regex.Pattern
@@ -40,12 +41,15 @@ class AuthUserController implements InitializingBean {
 		if (!params.max) {
 			params.max = 999999
 		}
-		[personList: AuthUser.list(params)]
+		[personList: AuthUser.list(params), personCount: AuthUser.count()]
 	}
 
 	def show(AuthUser authUser) {
 		if (authUser) {
-			[person: authUser, roleNames: authUser.authorities*.authority.sort()]
+			[person: authUser,
+			 roleNames: authUser.authorities*.authority.sort(),
+			 soas: SecureObjectAccess.findAllByPrincipal(authUser, [sort: 'accessLevel']),
+			 ausas: AuthUserSecureAccess.findAllByAuthUser(authUser, [sort: 'accessLevel'])]
 		}
 		else {
 			flash.message = "AuthUser not found with id $params.id"

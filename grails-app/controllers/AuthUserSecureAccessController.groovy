@@ -4,6 +4,7 @@ import org.transmart.plugin.shared.security.Roles
 import org.transmart.searchapp.AuthUser
 import org.transmart.searchapp.AuthUserSecureAccess
 import org.transmart.searchapp.SecureAccessLevel
+import org.transmart.searchapp.SecureObject
 
 class AuthUserSecureAccessController {
 
@@ -45,12 +46,12 @@ class AuthUserSecureAccessController {
 				order sort, order
 			}
 		}
-		[authUserSecureAccessInstanceList: list, authUserSecureAccessInstanceTotal: AuthUserSecureAccess.count()]
+		[instances: list, totalCount: AuthUserSecureAccess.count()]
 	}
 
 	def show(AuthUserSecureAccess authUserSecureAccess) {
 		if (authUserSecureAccess) {
-			[authUserSecureAccessInstance: authUserSecureAccess]
+			[ausa: authUserSecureAccess]
 		}
 		else {
 			flash.message = "AuthUserSecureAccess not found with id ${params.id}"
@@ -78,8 +79,7 @@ class AuthUserSecureAccessController {
 
 	def edit(AuthUserSecureAccess authUserSecureAccess) {
 		if (authUserSecureAccess) {
-			[authUserSecureAccessInstance: authUserSecureAccess,
-			 accessLevelList: getAccessLevelList(authUserSecureAccess.authUserId)]
+			editModel ausa
 		}
 		else {
 			flash.message = "AuthUserSecureAccess not found with id ${params.id}"
@@ -95,7 +95,7 @@ class AuthUserSecureAccessController {
 					authUserSecureAccess.errors.rejectValue 'version',
 							'authUserSecureAccess.optimistic.locking.failure',
 							'Another user has updated this AuthUserSecureAccess while you were editing.'
-					render view: 'edit', model: [authUserSecureAccessInstance: authUserSecureAccess]
+					render view: 'edit', model: editModel(authUserSecureAccess)
 					return
 				}
 			}
@@ -105,7 +105,7 @@ class AuthUserSecureAccessController {
 				redirect action: 'show', id: authUserSecureAccess.id
 			}
 			else {
-				render view: 'edit', model: [authUserSecureAccessInstance: authUserSecureAccess]
+				render view: 'edit', model: editModel(authUserSecureAccess)
 			}
 		}
 		else {
@@ -115,7 +115,7 @@ class AuthUserSecureAccessController {
 	}
 
 	def create() {
-		[authUserSecureAccessInstance: new AuthUserSecureAccess(params)]
+		createModel new AuthUserSecureAccess(params)
 	}
 
 	def save() {
@@ -125,7 +125,7 @@ class AuthUserSecureAccessController {
 			redirect action: 'show', id: authUserSecureAccess.id
 		}
 		else {
-			render view: 'create', model: [authUserSecureAccessInstance: authUserSecureAccess]
+			render view: 'create', model: createModel(authUserSecureAccess)
 		}
 	}
 
@@ -153,5 +153,18 @@ class AuthUserSecureAccessController {
 
 	def listAccessLevel() {
 		render template: 'accessLevelList', model: [accessLevelList: getAccessLevelList(params.id)]
+	}
+
+	private Map createModel(AuthUserSecureAccess ausa) {
+		[ausa: ausa,
+		 authUsers: AuthUser.listOrderByUsername(),
+		 secureAccessLevels: SecureAccessLevel.listOrderByAccessLevelValue(),
+		 secureObjects: SecureObject.listOrderByDisplayName()]
+	}
+
+	private Map editModel(AuthUserSecureAccess ausa) {
+		Map model = createModel(ausa)
+		model.accessLevels = getAccessLevelList(ausa.authUserId)
+		model
 	}
 }

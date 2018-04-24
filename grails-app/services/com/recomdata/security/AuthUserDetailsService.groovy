@@ -3,6 +3,7 @@ package com.recomdata.security
 import grails.plugin.springsecurity.SpringSecurityUtils
 import grails.plugin.springsecurity.userdetails.GormUserDetailsService
 import grails.plugin.springsecurity.userdetails.GrailsUserDetailsService
+import grails.transaction.Transactional
 import groovy.util.logging.Slf4j
 import org.codehaus.groovy.grails.commons.GrailsApplication
 import org.hibernate.criterion.CriteriaSpecification
@@ -32,6 +33,7 @@ class AuthUserDetailsService implements GrailsUserDetailsService, InitializingBe
 	private String usernamePropertyName
 	private Class<?> userClass
 
+	@Transactional(readOnly=true, noRollbackFor=[IllegalArgumentException, UsernameNotFoundException])
 	UserDetails loadUserByUsername(String username, boolean loadRoles = true) throws UsernameNotFoundException {
 		try {
 			loadUserByProperty usernamePropertyName, username, loadRoles, true
@@ -46,6 +48,7 @@ class AuthUserDetailsService implements GrailsUserDetailsService, InitializingBe
 		}
 	}
 
+	@Transactional(readOnly=true, noRollbackFor=[IllegalArgumentException, UsernameNotFoundException])
 	UserDetails loadUserByProperty(String property, String value, boolean loadRoles,
 	                               boolean ignoreCase = false) throws UsernameNotFoundException {
 

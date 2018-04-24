@@ -1,5 +1,6 @@
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DataIntegrityViolationException
+import org.transmart.searchapp.SecureObject
 import org.transmart.searchapp.SecureObjectPath
 
 class SecureObjectPathController {
@@ -12,12 +13,12 @@ class SecureObjectPathController {
 
 	def list() {
 		params.max = Math.min(params.int('max', paginateMax), 100)
-		[secureObjectPathInstanceList: SecureObjectPath.list(params), secureObjectPathInstanceTotal: SecureObjectPath.count()]
+		[sops: SecureObjectPath.list(params), sopCount: SecureObjectPath.count()]
 	}
 
 	def show(SecureObjectPath secureObjectPath) {
 		if (secureObjectPath) {
-			[secureObjectPathInstance: secureObjectPath]
+			[sop: secureObjectPath]
 		}
 		else {
 			flash.message = "SecureObjectPath not found with id ${params.id}"
@@ -45,7 +46,7 @@ class SecureObjectPathController {
 
 	def edit(SecureObjectPath secureObjectPath) {
 		if (secureObjectPath) {
-			[secureObjectPathInstance: secureObjectPath]
+			createOrEditModel secureObjectPath
 		}
 		else {
 			flash.message = "SecureObjectPath not found with id ${params.id}"
@@ -61,7 +62,7 @@ class SecureObjectPathController {
 					secureObjectPath.errors.rejectValue 'version',
 							'secureObjectPath.optimistic.locking.failure',
 							'Another user has updated this SecureObjectPath while you were editing.'
-					render view: 'edit', model: [secureObjectPathInstance: secureObjectPath]
+					render view: 'edit', createOrEditModel(secureObjectPath)
 					return
 				}
 			}
@@ -72,7 +73,7 @@ class SecureObjectPathController {
 				redirect action: 'show', id: secureObjectPath.id
 			}
 			else {
-				render view: 'edit', model: [secureObjectPathInstance: secureObjectPath]
+				render view: 'edit', model: createOrEditModel(secureObjectPath)
 			}
 		}
 		else {
@@ -82,7 +83,7 @@ class SecureObjectPathController {
 	}
 
 	def create() {
-		[secureObjectPathInstance: new SecureObjectPath(params)]
+		createOrEditModel new SecureObjectPath(params)
 	}
 
 	def save() {
@@ -92,7 +93,12 @@ class SecureObjectPathController {
 			redirect action: 'show', id: secureObjectPath.id
 		}
 		else {
-			render view: 'create', model: [secureObjectPathInstance: secureObjectPath]
+			render view: 'create', model: createOrEditModel(secureObjectPath)
 		}
+	}
+
+	private Map createOrEditModel(SecureObjectPath sop) {
+		[sop          : sop,
+		 secureObjects: SecureObject.list()]
 	}
 }

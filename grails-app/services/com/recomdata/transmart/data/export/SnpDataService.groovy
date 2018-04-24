@@ -1,7 +1,7 @@
 package com.recomdata.transmart.data.export
 
+import com.recomdata.dataexport.util.BiomarkerDataRowProcessor
 import com.recomdata.transmart.data.export.util.FileWriterUtil
-import com.recomdata.transmart.util.UtilService
 import grails.plugin.springsecurity.SpringSecurityService
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
@@ -29,10 +29,10 @@ class SnpDataService {
 
 	DatabasePortabilityService databasePortabilityService
 	DataSource dataSource
+	GeneExpressionDataService geneExpressionDataService
 	def i2b2HelperService
 	def plinkService
 	SpringSecurityService springSecurityService
-	UtilService utilService
 
 	@Value('${com.recomdata.search.genepathway:}')
 	private String genepathway
@@ -55,8 +55,9 @@ class SnpDataService {
 	}
 
 	private String getPatientId(subjectId) {
-		def firstRow = new Sql(dataSource).firstRow('SELECT SOURCESYSTEM_CD FROM I2B2DEMODATA.PATIENT_DIMENSION WHERE PATIENT_NUM = ?', [subjectId])
-		utilService.getActualPatientId(firstRow?.SOURCESYSTEM_CD)
+		def firstRow = new Sql(dataSource).firstRow(
+				'SELECT SOURCESYSTEM_CD FROM I2B2DEMODATA.PATIENT_DIMENSION WHERE PATIENT_NUM = ?', [subjectId])
+		geneExpressionDataService.getActualPatientId firstRow?.SOURCESYSTEM_CD
 	}
 
 	private Map<Long, PatientData> getPatientData(resultInstanceId) {
@@ -321,8 +322,10 @@ class SnpDataService {
 		patientConceptCdPEDFileMap
 	}
 
-	boolean getSnpDataByResultInstanceAndGene(resultInstanceId, study, String pathway, sampleType, timepoint, tissueType,
-	                                          rowProcessor, fileLocation, boolean genotype, boolean copyNumber) {
+	boolean getSnpDataByResultInstanceAndGene(resultInstanceId, String study, String pathway,
+	                                          String sampleType, String timepoint, String tissueType,
+	                                          BiomarkerDataRowProcessor rowProcessor, String fileLocation,
+	                                          boolean genotype, boolean copyNumber) {
 
 		boolean includePathwayInfo = false
 		boolean retrievedData = false
