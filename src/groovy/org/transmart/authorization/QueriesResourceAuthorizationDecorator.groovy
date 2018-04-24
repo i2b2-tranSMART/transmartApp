@@ -103,7 +103,7 @@ class QueriesResourceAuthorizationDecorator implements QueriesResource, Authoriz
 		}
 
 		for (long id in ids) {
-			if (cache?.resultInstanceIdsAllowed.contains(id)) {
+			if (cache?.resultInstanceIdsAllowed?.contains(id)) {
 				logger.debug 'Request cache for legacy access to result instance ids includes entry for rid {}', id
 				return
 			}

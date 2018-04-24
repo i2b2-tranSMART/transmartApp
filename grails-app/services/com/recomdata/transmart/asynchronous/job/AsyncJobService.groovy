@@ -160,18 +160,20 @@ class AsyncJobService {
 			jobType = jobName.split('-')[1]
 		}
 
-		String jobStatus = jobResultsService[jobName]['Status']
+		Map jobData = jobResultsService[jobName]
+
+		String jobStatus = jobData.Status
 		def statusIndex = null
-		if (jobResultsService[jobName]['StatusList'] != null) {
-			statusIndex = jobResultsService[jobName]['StatusList'].indexOf(jobStatus)
+		if (jobData.StatusList != null) {
+			statusIndex = jobData.StatusList.indexOf(jobStatus)
 		}
-		Exception jobException = jobResultsService[jobName]['Exception']
-		String viewerUrl = jobResultsService[jobName]['ViewerURL']
-		String altViewerUrl = jobResultsService[jobName]['AltViewerURL']
-		String jobResults = jobResultsService[jobName]['Results']
+		String jobException = jobData.Exception
+		String viewerUrl = jobData.ViewerURL
+		String altViewerUrl = jobData.AltViewerURL
+		String jobResults = jobData.Results
 		String errorType = ''
 		if (viewerUrl != null) {
-			def jobResultType = jobResultsService[jobName]['resultType']
+			def jobResultType = jobData.resultType
 			if (jobResultType != null) {
 				result.put 'resultType', jobResultType
 			}
@@ -188,7 +190,7 @@ class AsyncJobService {
 			result.put 'resultType', jobType
 			jobStatus = 'Completed'
 		}
-		else if (jobException != null) {
+		else if (jobException) {
 			logger.warn 'An exception was thrown, passing this back to the user', jobException
 			result.put 'jobException', jobException
 			jobStatus = 'Error'
@@ -228,12 +230,13 @@ class AsyncJobService {
 		boolean cancelled = false
 		String jobId = jobName.split('-')[-1]
 
-		if (jobResultsService[jobName]['Status'] == 'Cancelled') {
+		Map jobData = jobResultsService[jobName]
+		if (jobData.Status == 'Cancelled') {
 			logger.warn '{} has been cancelled', jobName
 			cancelled = true
 		}
 		else {
-			jobResultsService[jobName]['Status'] = status
+			jobData.Status = status
 		}
 		//If the job isn't already cancelled, update the job info.
 		if (!cancelled) {
@@ -248,7 +251,7 @@ class AsyncJobService {
 			if (results) {
 				asyncJob.results = results
 			}
-			jobResultsService[jobName]['ViewerURL'] = viewerUrl
+			jobData.ViewerURL = viewerUrl
 			//We need to flush so that the value doesn't overwrite cancelled when the controller finishes.
 			asyncJob.save(flush: true)
 		}
