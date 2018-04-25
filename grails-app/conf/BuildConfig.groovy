@@ -55,6 +55,8 @@ grails.project.dependency.resolution = {
 		compile 'org.apache.lucene:lucene-highlighter:2.4.0'
 		compile 'org.apache.solr:solr-core:5.4.1'
 		compile 'org.apache.solr:solr-solrj:5.4.1'
+		compile 'org.jfree:jfreechart:1.0.19'
+		compile 'org.jfree:jfreesvg:2.1'
 		compile 'org.codehaus.groovy.modules.http-builder:http-builder:0.5.2', {
 			excludes 'groovy', 'nekohtml', 'httpclient', 'httpcore'
 		}
@@ -63,6 +65,16 @@ grails.project.dependency.resolution = {
 			excludes 'bcprov-jdk15', 'spring-security-config', 'spring-security-core', 'spring-security-web', 'xercesImpl'
 		}
 		compile 'org.transmartproject:transmart-core-api:18.1-SNAPSHOT'
+
+		runtime 'com.jcraft:jsch:0.1.42'
+		runtime 'com.lowagie:itext:2.0.8', { transitive = false }
+		runtime 'gov.nist.math:jama:1.0.1'
+		runtime 'oauth.signpost:signpost-commonshttp4:1.2.1.1'
+		runtime 'oauth.signpost:signpost-core:1.2.1.1'
+		runtime 'org.apache.poi:poi-contrib:3.1-FINAL'
+		runtime 'org.apache.poi:poi-scratchpad:3.1-FINAL'
+		runtime 'org.apache.poi:poi:3.1-FINAL'
+		runtime 'xerces:xercesImpl:2.9.1'
 
 		// you can remove whichever you're not using
 		runtime 'org.postgresql:postgresql:9.3-1100-jdbc4'
