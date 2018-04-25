@@ -12,7 +12,7 @@ class PluginController {
 
 	def list() {
 		params.max = Math.min(params.int('max', 10), 100)
-		[pluginInstanceList: Plugin.list(params), pluginInstanceTotal: Plugin.count()]
+		[plugins: Plugin.list(params), pluginCount: Plugin.count()]
 	}
 
 	def modules(String pluginName) {
@@ -23,7 +23,7 @@ class PluginController {
 
 	def show(Plugin plugin) {
 		if (plugin) {
-			[pluginInstance: plugin]
+			[plugin: plugin]
 		}
 		else {
 			flash.message = "Plugin not found with id ${params.id}"
@@ -51,7 +51,7 @@ class PluginController {
 
 	def edit(Plugin plugin) {
 		if (plugin) {
-			[pluginInstance: plugin]
+			[plugin: plugin]
 		}
 		else {
 			flash.message = "Plugin not found with id ${params.id}"
@@ -72,7 +72,7 @@ class PluginController {
 				plugin.errors.rejectValue 'version',
 						'plugin.optimistic.locking.failure',
 						'Another user has updated this Plugin while you were editing.'
-				render view: 'edit', model: [pluginInstance: plugin]
+				render view: 'edit', model: [plugin: plugin]
 				return
 			}
 		}
@@ -83,12 +83,12 @@ class PluginController {
 			redirect action: 'show', id: plugin.id
 		}
 		else {
-			render view: 'edit', model: [pluginInstance: plugin]
+			render view: 'edit', model: [plugin: plugin]
 		}
 	}
 
 	def create() {
-		[pluginInstance: new Plugin(params)]
+		[plugin: new Plugin(params)]
 	}
 
 	def save() {
@@ -98,7 +98,7 @@ class PluginController {
 			redirect action: 'show', id: plugin.id
 		}
 		else {
-			render view: 'create', model: [pluginInstance: plugin]
+			render view: 'create', model: [plugin: plugin]
 		}
 	}
 }

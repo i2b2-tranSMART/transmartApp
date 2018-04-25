@@ -1,5 +1,4 @@
 import grails.converters.JSON
-import grails.plugin.springsecurity.SpringSecurityService
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.beans.factory.annotation.Value
 import org.transmartproject.db.log.AccessLogService
@@ -10,10 +9,8 @@ import org.transmartproject.db.log.AccessLogService
 class SampleExplorerController implements InitializingBean {
 
 	AccessLogService accessLogService
-	I2b2HelperService i2b2HelperService
 	SampleService sampleService
 	SolrService solrService
-	SpringSecurityService springSecurityService
 
 	@Value('${sampleExplorer.idfield:}')
 	private String idfield

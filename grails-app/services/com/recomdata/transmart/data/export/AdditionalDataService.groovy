@@ -17,7 +17,6 @@ class AdditionalDataService {
 
 	DataSource dataSource
 	GeneExpressionDataService geneExpressionDataService
-	def i2b2HelperService
 
 	List findAdditionalDataFiles(String resultInstanceId, studyList) {
 		checkQueryResultAccess resultInstanceId

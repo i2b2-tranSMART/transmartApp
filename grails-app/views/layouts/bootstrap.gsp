@@ -7,21 +7,23 @@
 %{-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --}%
 <meta name="description" content="">
 <meta name="author" content="">
-<title><g:layoutTitle default='i2b2 tranSMART' /></title>
-<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:400,100,300,500" />
-<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<title><g:layoutTitle default='i2b2 tranSMART'/></title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:400,100,300,500"/>
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"
+      integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"
-	integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
-	crossorigin="anonymous"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+        crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+        integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs/dt-1.10.16/datatables.min.css"/>
 <script src="https://cdn.datatables.net/v/bs/dt-1.10.16/datatables.min.js"></script>
 <script src="${resource(dir: '/assets/js', file: 'jquery.backstretch.min.js')}"></script>
 <script src="${resource(dir: '/assets/js', file: 'retina-1.1.0.min.js')}"></script>
 <style>
 body {
-	/*min-height: 2000px;*/
 	padding-top: 70px;
 	font-size: 150%;
 }
@@ -35,19 +37,19 @@ body {
 	background-color: #A41034;
 	border-color: #A41034;
 }
-.navbar-default .navbar-nav>li>a {
+.navbar-default .navbar-nav > li > a {
 	color: white;
 }
 </style>
-<g:layoutHead />
+<g:layoutHead/>
 </head>
 <body>
-<g:layoutBody />
+<g:layoutBody/>
 <script>
-$(document).ready(function() {
+$(document).ready(function () {
 	$.backstretch('${resource(dir: '/assets/img/backgrounds', file: '1.jpg')}');
 });
 </script>
-<g:pageProperty name='page.javascript' />
+<g:pageProperty name='page.javascript'/>
 </body>
 </html>

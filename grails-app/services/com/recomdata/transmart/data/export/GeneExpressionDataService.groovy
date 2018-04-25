@@ -2,10 +2,8 @@ package com.recomdata.transmart.data.export
 
 import com.recomdata.transmart.data.export.util.FileWriterUtil
 import com.recomdata.transmart.util.FileDownloadService
-import grails.plugin.springsecurity.SpringSecurityService
 import groovy.sql.Sql
 import groovy.util.logging.Slf4j
-import org.codehaus.groovy.grails.commons.GrailsApplication
 import org.rosuda.REngine.Rserve.RConnection
 import org.springframework.beans.factory.annotation.Value
 import org.transmart.searchapp.SearchKeyword
@@ -30,9 +28,6 @@ class GeneExpressionDataService {
 	private int flushInterval = 5000
 
 	DataSource dataSource
-	def i2b2HelperService
-	SpringSecurityService springSecurityService
-	GrailsApplication grailsApplication
 	FileDownloadService fileDownloadService
 
 	@Value('${com.recomdata.search.genepathway:}')

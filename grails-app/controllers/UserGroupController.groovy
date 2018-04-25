@@ -24,14 +24,15 @@ class UserGroupController {
 		if (!params.max) {
 			params.max = 10
 		}
-		[userGroupInstanceList: UserGroup.findAllByIdGreaterThanEquals(0, params)]
+		[ugs: UserGroup.findAllByIdGreaterThanEquals(0, params),
+		 ugCount: UserGroup.count()]
 	}
 
 	def membership() {}
 
 	def show(UserGroup userGroup) {
 		if (userGroup) {
-			[userGroupInstance: userGroup]
+			[ug: userGroup, soas: SecureObjectAccess.findAllByPrincipal(userGroup, [sort: 'accessLevel'])]
 		}
 		else {
 			flash.message = "UserGroup not found with id ${params.id}"
@@ -57,7 +58,7 @@ class UserGroupController {
 
 	def edit(UserGroup userGroup) {
 		if (userGroup) {
-			[userGroupInstance: userGroup]
+			[ug: userGroup]
 		}
 		else {
 			flash.message = "UserGroup not found with id ${params.id}"
@@ -73,7 +74,7 @@ class UserGroupController {
 				redirect action: 'show', id: userGroup.id
 			}
 			else {
-				render view: 'edit', model: [userGroupInstance: userGroup]
+				render view: 'edit', model: [ug: userGroup]
 			}
 		}
 		else {
@@ -83,7 +84,7 @@ class UserGroupController {
 	}
 
 	def create() {
-		[userGroupInstance: new UserGroup(params)]
+		[ug: new UserGroup(params)]
 	}
 
 	def save() {
@@ -96,7 +97,7 @@ class UserGroupController {
 		}
 		catch (ValidationException e) {
 			logger.error e.localizedMessage, e
-			render view: 'create', model: [userGroupInstance: userGroup]
+			render view: 'create', model: [ug: userGroup]
 		}
 	}
 
@@ -120,7 +121,7 @@ class UserGroupController {
 
 	def searchUsersNotInGroup(UserGroup userGroup, Long id, String searchtext) {
 		render template: 'addremove', model: [
-				userGroupInstance: userGroup,
+				ug: userGroup,
 				usersToAdd: searchForUsersNotInGroup(id, searchtext)]
 	}
 
@@ -173,7 +174,7 @@ class UserGroupController {
 					userGroup.errors.rejectValue 'version',
 							'userGroup.optimistic.locking.failure',
 							'Another user has updated this UserGroup while you were editing.'
-					render template: 'addremove', model: [userGroupInstance: userGroup]
+					render template: 'addremove', model: [ug: userGroup]
 					return
 				}
 			}
@@ -191,7 +192,7 @@ class UserGroupController {
 		}
 
 		render template: 'addremove', model: [
-				userGroupInstance: userGroup,
+				ug: userGroup,
 				usersToAdd: searchForUsersNotInGroup(id, fl.searchtext)]
 	}
 
@@ -206,7 +207,7 @@ class UserGroupController {
 					userGroup.errors.rejectValue 'version',
 							'userGroup.optimistic.locking.failure',
 							'Another user has updated this userGroup while you were editing.'
-					render template: 'addremove', model: [userGroupInstance: userGroup]
+					render template: 'addremove', model: [ug: userGroup]
 					return
 				}
 			}
@@ -221,7 +222,7 @@ class UserGroupController {
 		}
 
 		render template: 'addremove', model: [
-				userGroupInstance: userGroup,
+				ug: userGroup,
 				usersToAdd: searchForUsersNotInGroup(id, fl.searchtext)]
 	}
 

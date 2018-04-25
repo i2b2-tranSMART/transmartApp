@@ -27,7 +27,7 @@ class QueryResultConverter {
 
 		superType.metaClass.properties.findAll {
 			MetaProperty it -> !(it.name in excludes)
-		}.collectEntries { MetaBeanProperty prop ->
+		}.collectEntries { MetaProperty prop ->
 			[prop.name, prop.getProperty(o)]
 		}
 	}

@@ -299,11 +299,9 @@ class ExperimentAnalysisQueryService {
 			aresult.assayAnalysisValueList << new AssayAnalysisValue(analysisData: analysisData, bioMarker: biomarker)
 		}
 
-		Comparator mc = [compare: { AnalysisResult a, AnalysisResult b ->
+		tar.analysisResultList.addAll analysisResultMap.values().sort { AnalysisResult a, AnalysisResult b ->
 			a == b ? 0 : (((double) a.size()) / ((double) a.analysis.dataCount)) > (((double) b.size()) / ((double) b.analysis.dataCount)) ? -1 : 1
-		}] as Comparator
-
-		tar.analysisResultList.addAll analysisResultMap.values().sort(mc)
+		}
 	}
 
 	/**

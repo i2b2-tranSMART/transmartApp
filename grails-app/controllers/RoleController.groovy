@@ -18,7 +18,7 @@ class RoleController {
 		if (!max) {
 			params.max = paginateMax
 		}
-		[authorityList: Role.list(params)]
+		[roles: Role.list(params), roleCount: Role.count()]
 	}
 
 	/**

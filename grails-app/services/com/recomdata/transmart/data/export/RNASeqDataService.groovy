@@ -68,7 +68,7 @@ class RNASeqDataService {
 		for (Iterator<RegionRow> iterator = rnaseqRegionResult.rows; iterator.hasNext();) {
 			RegionRow row = iterator.next()
 
-			String[] line = templateArray.clone()
+			String[] line = (String[]) templateArray.clone()
 
 			line[0] = i++ as String
 			line[1] = row.name as String

@@ -69,7 +69,7 @@ class ACGHDataService {
 		for (Iterator<RegionRow> iterator = regionResult.rows; iterator.hasNext();) {
 			RegionRow row = iterator.next()
 
-			String[] line = templateArray.clone()
+			String[] line = (String[]) templateArray.clone()
 
 			line[0] = i++ as String
 			line[1] = row.chromosome as String
@@ -91,7 +91,7 @@ class ACGHDataService {
 
 	private static final List<String> HEADER = ['chromosome', 'start', 'end', 'num.probes', 'cytoband'].asImmutable()
 
-	private static final Map PER_ASSAY_COLUMNS = [
+	private static final Map<String, Closure<AcghValues>> PER_ASSAY_COLUMNS = [
 			chip    : { AcghValues v -> v.getChipCopyNumberValue() },
 			flag    : { AcghValues v -> v.getCopyNumberState().getIntValue() },
 			probloss: { AcghValues v -> v.getProbabilityOfLoss() },

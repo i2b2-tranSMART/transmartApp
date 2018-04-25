@@ -30,7 +30,7 @@
 					<label for="accesslevelid"><b>Access Level</b></label>
 					<g:select optionKey='id' optionValue='accessLevelName' name='accesslevelid'
 					          onchange='document.accessform.submit();'
-					          from="${accessLevelList}" value="${accesslevelid}" />
+					          from="${accessLevelList}" value="${accesslevelid}"/>
 					<input type="hidden" name="currentprincipalid" id="currentprincipalid" value="${principal?.id}"/>
 				</td>
 				<td>&nbsp;</td>
@@ -45,9 +45,9 @@
 				<td>Available studies:</td>
 			</tr>
 			<tr id="permissions">
-				<g:render template='addremoveAccess' model="[secureObject          : secureObject,
-				                                             secureObjectAccessList: secureObjectAccessList,
-				                                             objectswithoutaccess  : objectswithoutaccess]"/>
+				<g:render template='addremoveAccess' model="[secureObject        : secureObject,
+				                                             soas                : soas,
+				                                             objectswithoutaccess: objectswithoutaccess]"/>
 			</tr>
 		</table>
 	</g:form>

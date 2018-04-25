@@ -1,6 +1,7 @@
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DataIntegrityViolationException
-import org.transmart.searchapp.SecureObject;
+import org.transmart.searchapp.SecureObject
+import org.transmart.searchapp.SecureObjectAccess
 
 class SecureObjectController {
 
@@ -12,12 +13,13 @@ class SecureObjectController {
 
 	def list() {
 		params.max = Math.min(params.int('max', paginateMax), 100)
-		[secureObjectInstanceList: SecureObject.list(params), secureObjectInstanceTotal: SecureObject.count()]
+		[secureObjects: SecureObject.list(params), secureObjectCount: SecureObject.count()]
 	}
 
 	def show(SecureObject secureObject) {
 		if (secureObject) {
-			[secureObjectInstance: secureObject]
+			[so: secureObject,
+			 soas: SecureObjectAccess.findAllBySecureObject(secureObject, [sort: 'accessLevel'])]
 		}
 		else {
 			flash.message = "SecureObject not found with id ${params.id}"
@@ -45,7 +47,7 @@ class SecureObjectController {
 
 	def edit(SecureObject secureObject) {
 		if (secureObject) {
-			[secureObjectInstance: secureObject]
+			[so: secureObject]
 		}
 		else {
 			flash.message = "SecureObject not found with id ${params.id}"
@@ -61,7 +63,7 @@ class SecureObjectController {
 					secureObject.errors.rejectValue 'version',
 							'secureObject.optimistic.locking.failure',
 							'Another user has updated this SecureObject while you were editing.'
-					render view: 'edit', model: [secureObjectInstance: secureObject]
+					render view: 'edit', model: [so: secureObject]
 					return
 				}
 			}
@@ -72,7 +74,7 @@ class SecureObjectController {
 				redirect action: 'show', id: secureObject.id
 			}
 			else {
-				render view: 'edit', model: [secureObjectInstance: secureObject]
+				render view: 'edit', model: [so: secureObject]
 			}
 		}
 		else {
@@ -82,7 +84,7 @@ class SecureObjectController {
 	}
 
 	def create() {
-		[secureObjectInstance: new SecureObject(params)]
+		[so: new SecureObject(params)]
 	}
 
 	def save() {
@@ -92,7 +94,7 @@ class SecureObjectController {
 			redirect action: 'show', id: secureObject.id
 		}
 		else {
-			render view: 'create', model: [secureObjectInstance: secureObject]
+			render view: 'create', model: [so: secureObject]
 		}
 	}
 }

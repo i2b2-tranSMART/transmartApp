@@ -31,7 +31,6 @@ class ExportService {
 	User currentUserBean
 	HighDimensionResourceService highDimensionResourceService
 	I2b2ExportHelperService i2b2ExportHelperService
-	def i2b2HelperService
 	JobResultsService jobResultsService
 	Scheduler quartzScheduler
 	SecurityService securityService

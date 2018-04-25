@@ -44,31 +44,31 @@
 							<table width="100%">
 								<tr style="padding-bottom: 5px">
 									<td style="padding: 5px 0px 10px 5px; margin-top: 5px;"><div
-											id="TrialDet_${expAnalysisResult.experiment.id}_anchor">
-										<a onclick="javascript:if (divIsEmpty('${expAnalysisResult.experiment.id}_detail')) {
-											var ldiv = '${expAnalysisResult.experiment.id}_detail_loading';
-											${remoteFunction(action:'getAnalysis',controller:'experimentAnalysis', id:expAnalysisResult.experiment.id, before:'toggleVisible(ldiv)',onComplete:'toggleVisible(ldiv)', update:expAnalysisResult.experiment.id+'_detail')}
+											id="TrialDet_${expAnalysisResult.experimentId}_anchor">
+										<a onclick="javascript:if (divIsEmpty('${expAnalysisResult.experimentId}_detail')) {
+											var ldiv = '${expAnalysisResult.experimentId}_detail_loading';
+											${remoteFunction(action:'getAnalysis',controller:'experimentAnalysis', id:expAnalysisResult.experimentId, before:'toggleVisible(ldiv)',onComplete:'toggleVisible(ldiv)', update:expAnalysisResult.experimentId + '_detail')}
 										};
-										toggleDetail('${expAnalysisResult.experiment.id}')">
-											<div id="${expAnalysisResult.experiment.id}_fclose"
+										toggleDetail('${expAnalysisResult.experimentId}')">
+											<div id="${expAnalysisResult.experimentId}_fclose"
 											     style="visibility: hidden; display: none; width: 16px;">
 												<img alt="" src="${resource(dir: 'images', file: 'folder-minus.gif')}"
 												     style="vertical-align: middle;"/>
 											</div>
 
-											<div id="${expAnalysisResult.experiment.id}_fopen"
+											<div id="${expAnalysisResult.experimentId}_fopen"
 											     style="display: inline; width: 16px;">
 												<img alt="" src="${resource(dir: 'images', file: 'folder-plus.gif')}"
 												     style="vertical-align: middle;"/>
 											</div>
 										</a>
-										<a onclick="showDialog('TrialDet_${expAnalysisResult.experiment.id}', {
+										<a onclick="showDialog('TrialDet_${expAnalysisResult.experimentId}', {
 											title: '${expAnalysisResult.experiment.accession}',
-											url: '${createLink(action:'expDetail', id:expAnalysisResult.experiment.id)}'
+											url: '${createLink(action:'expDetail', id:expAnalysisResult.experimentId)}'
 										});"
-										   onmouseover="delayedTask.delay(2000, showDialog, this, ['TrialDet_${expAnalysisResult.experiment.id}', {
-											   title: '${expAnalysisResult.experiment.id}',
-											   url: '${createLink(action:'expDetail', id:expAnalysisResult.experiment.id)}'
+										   onmouseover="delayedTask.delay(2000, showDialog, this, ['TrialDet_${expAnalysisResult.experimentId}', {
+											   title: '${expAnalysisResult.experimentId}',
+											   url: '${createLink(action:'expDetail', id:expAnalysisResult.experimentId)}'
 										   }]);"
 										   onmouseout="delayedTask.cancel();">
 											<img alt="" src="${resource(dir: 'images', file: 'view_detailed.png')}"
@@ -97,8 +97,8 @@
 								<tr>
 									<td style="padding-left: 20px;">
 										<g:waitIndicator
-												divId="${expAnalysisResult.experiment.id}_detail_loading"/>
-										<div id="${expAnalysisResult.experiment.id}_detail"
+												divId="${expAnalysisResult.experimentId}_detail_loading"/>
+										<div id="${expAnalysisResult.experimentId}_detail"
 										     class="gtb1"
 										     style="display: none;"></div>
 									</td>

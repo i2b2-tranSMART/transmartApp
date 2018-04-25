@@ -17,7 +17,7 @@ class RequestmapController {
 		if (!max) {
 			params.max = paginateMax
 		}
-		[requestmapList: Requestmap.list(params)]
+		[requestmaps: Requestmap.list(params), requestmapCount: Requestmap.count()]
 	}
 
 	def show(Requestmap requestmap) {

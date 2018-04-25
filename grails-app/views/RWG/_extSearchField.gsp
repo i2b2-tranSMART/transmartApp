@@ -1,6 +1,6 @@
 <g:javascript>
-jQuery(document).ready(function() {	
-	
+jQuery(document).ready(function() {
+
 	var escapedFieldName = '${fieldName}'.replace(".", "\\.");
 	jQuery("#" + escapedFieldName + "-input").autocomplete({
 		source: '${createLink([action: searchAction, controller: searchController, params: [category: 'GENE']])}',
@@ -26,12 +26,11 @@ function changeField(field, valueField) {
 	jQuery('#' + escapedFieldName).val('');
 	jQuery('#' + escapedFieldName + "-input").val('').removeAttr('disabled').focus();
 }
-
 </g:javascript>
 <g:textField name="${fieldName}" style="display: none" value="${value}"/>
 <g:if test="${label}">
-    <input id="${fieldName}-input" style="width: ${width}px" value="${label}" disabled="disabled"/>
+	<input id="${fieldName}-input" style="width: ${width}px" value="${label}" disabled="disabled"/>
 </g:if>
 <g:else>
-    <input id="${fieldName}-input" style="width: ${width}px"/>
+	<input id="${fieldName}-input" style="width: ${width}px"/>
 </g:else>

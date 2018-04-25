@@ -10,7 +10,7 @@
 
 <body>
 <div id="header-div">
-	<g:render template="/layouts/commonheader" model="[app: '']"/>
+	<g:render template='/layouts/commonheader' model="[app: '']"/>
 </div>
 <g:layoutBody/>
 <script>

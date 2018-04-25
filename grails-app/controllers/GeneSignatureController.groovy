@@ -1,7 +1,6 @@
 import com.recomdata.genesignature.FileSchemaException
 import com.recomdata.genesignature.WizardModelDetails
 import com.recomdata.util.DomainObjectExcelHelper
-import grails.plugin.springsecurity.SpringSecurityService
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.multipart.MultipartFile
@@ -35,8 +34,6 @@ class GeneSignatureController {
 	private @Autowired AccessLogService accessLogService
 	private @Autowired AuditLogService auditLogService
 	private @Autowired GeneSignatureService geneSignatureService
-	private @Autowired I2b2HelperService i2b2HelperService
-	private @Autowired SpringSecurityService springSecurityService
 	User currentUserBean
 	private @Autowired SecurityService securityService
 	private @Autowired UtilService utilService

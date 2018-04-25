@@ -1,6 +1,5 @@
 <g:javascript>
 jQuery(document).ready(function() {
-
 	var escapedFieldName = '${fieldName}'.replace(".", "\\.");
 	jQuery("#" + escapedFieldName + "-input").autocomplete({
 		source: function(request, response) {
@@ -28,12 +27,11 @@ jQuery(document).ready(function() {
 		  .appendTo(ul);
 	};
 });
-
 </g:javascript>
 <g:textField name="${fieldName}" style="display: none" value="${value}"/>
 <g:if test="${label}">
-    <input id="${fieldName}-input" style="width: ${width}px" value="${label}" disabled="disabled"/>
+	<input id="${fieldName}-input" style="width: ${width}px" value="${label}" disabled="disabled"/>
 </g:if>
 <g:else>
-    <input id="${fieldName}-input" style="width: ${width}px"/>
+	<input id="${fieldName}-input" style="width: ${width}px"/>
 </g:else>

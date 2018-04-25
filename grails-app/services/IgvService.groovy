@@ -12,7 +12,6 @@ class IgvService {
 
 	static transactional = false
 
-	@Autowired private I2b2HelperService i2b2HelperService
 	@Autowired private SnpService snpService
 
 	/**

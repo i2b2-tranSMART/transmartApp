@@ -25,11 +25,35 @@ class LoginController {
 	SpringSecurityService springSecurityService
 	UserDetailsService userDetailsService
 
+	@Value('${com.recomdata.administrator:}')
+	private String adminEmail
+
+	@Value('${com.recomdata.appTitle:}')
+	private String appTitle
+
+	@Value('${ui.loginScreen.disclaimer:}')
+	private String disclaimer
+
 	@Value('${com.recomdata.guestAutoLogin:false}')
 	private boolean guestAutoLogin
 
 	@Value('${com.recomdata.guestUserName:}')
 	private String guestUserName
+
+	@Value('${com.recomdata.largeLogo:}')
+	private String largeLogo
+
+	@Value('${com.recomdata.providerLogo:}')
+	private String providerLogo
+
+	@Value('${com.recomdata.providerName:}')
+	private String providerName
+
+	@Value('${com.recomdata.providerURL:}')
+	private String providerUrl
+
+	@Value('${org.transmart.security.samlEnabled:false}')
+	private boolean samlEnabled
 
 	private String postUrl = SpringSecurityUtils.securityConfig.apf.filterProcessesUrl
 	private String defaultTargetUrl = SpringSecurityUtils.securityConfig.successHandler.defaultTargetUrl
@@ -46,9 +70,9 @@ class LoginController {
 		}
 	}
 
-	def forceAuth = {
+	def forceAuth() {
 		session.invalidate()
-		render view: 'auth', model: [postUrl: request.contextPath + postUrl]
+		render view: 'auth', model: authModel()
 	}
 
 	/**
@@ -76,7 +100,7 @@ class LoginController {
 			}
 		}
 
-		[postUrl: request.contextPath + postUrl]
+		authModel()
 	}
 
 	/**
@@ -94,9 +118,7 @@ class LoginController {
 	 * Login page for users with a remember-me cookie but accessing a IS_AUTHENTICATED_FULLY page.
 	 */
 	def full() {
-		render view: 'auth', params: params,
-				model: [hasCookie: authenticationTrustResolver.isRememberMe(SCH.context?.authentication),
-				        postUrl  : request.contextPath + postUrl]
+		render view: 'auth', params: params, model: authModel()
 	}
 
 	/**
@@ -148,5 +170,18 @@ class LoginController {
 		response.setDateHeader('max-age', 0)
 		response.setIntHeader('Expires', -1) //prevents caching at the proxy server
 		response.addHeader('cache-Control', 'private') //IE5.x only
+	}
+
+	private Map authModel() {
+		[postUrl     : request.contextPath + postUrl,
+		 hasCookie   : authenticationTrustResolver.isRememberMe(SCH.context?.authentication),
+		 adminEmail  : adminEmail,
+		 appTitle    : appTitle,
+		 disclaimer  : disclaimer,
+		 largeLogo   : largeLogo,
+		 providerLogo: providerLogo,
+		 providerName: providerName,
+		 providerUrl : providerUrl,
+		 samlEnabled : samlEnabled]
 	}
 }

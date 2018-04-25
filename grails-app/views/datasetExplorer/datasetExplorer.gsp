@@ -25,7 +25,7 @@
 
 	<script>
 		var pageInfo = {
-			basePath: "${request.getContextPath()}"
+			basePath: "${request.contextPath}"
 		}
 
 		GLOBAL = {
