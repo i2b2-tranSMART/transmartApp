@@ -116,6 +116,13 @@ grails {
 				clientLookup.className = 'org.transmart.oauth2.Client'
 				refreshTokenLookup.className = 'org.transmart.oauth2.RefreshToken'
 			}
+			roleHierarchy = '''
+				ROLE_ADMIN > ROLE_DATASET_EXPLORER_ADMIN
+				ROLE_DATASET_EXPLORER_ADMIN > ROLE_PUBLIC_USER
+				ROLE_DATASET_EXPLORER_ADMIN > ROLE_SPECTATOR
+				ROLE_DATASET_EXPLORER_ADMIN > ROLE_STUDY_OWNER
+				ROLE_DATASET_EXPLORER_ADMIN > ROLE_TRAINING_USER
+			'''
 			useSecurityEventListener = true
 		}
 	}
