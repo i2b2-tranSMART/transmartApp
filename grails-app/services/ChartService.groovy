@@ -174,7 +174,7 @@ class ChartService {
 		result.commons.conceptKey = concept.substring(concept.substring(3).indexOf('\\') + 3)
 		result.commons.conceptName = i2b2HelperService.getShortNameFromKey(concept)
 		result.commons.conceptPath = concept
-		result.commons.omics_params = args.omics_params ?: null
+		result.commons.omics_params = omics_params ?: null
 
 		if (i2b2HelperService.isValueConceptCode(result.commons.conceptCode)) {
 
