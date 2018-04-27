@@ -1392,7 +1392,8 @@ function setupOntTree(id_in, title_in) {
 
         if (expand) {
             Ext.Ajax.request({
-                url: addNodeDseURL + "?node=" + node.id,
+                url: addNodeDseURL,
+                params: { node: node.id },
                 method: 'POST',
                 success: function (result, request) {
                 },
