@@ -2,6 +2,7 @@ import grails.plugin.springsecurity.SpringSecurityService
 import groovy.util.logging.Slf4j
 import org.apache.commons.lang.RandomStringUtils
 import org.codehaus.groovy.grails.exceptions.InvalidPropertyException
+import org.codehaus.groovy.grails.orm.hibernate.cfg.GrailsHibernateUtil
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -189,7 +190,7 @@ class AuthUserController implements InitializingBean {
 	// the owning side of the many-to-many are the roles
 
 	private void manageRoles(AuthUser authUser) {
-		Collection<Role> oldRoles = authUser.authorities ?: []
+		Collection<Role> oldRoles = unproxiedRoles(authUser)
 		Set<Role> newRoles = params.keySet().findAll { String key ->
 			key.contains('ROLE') && params[key] == 'on'
 		}.collect { String key -> Role.findByAuthority(key) }
@@ -201,6 +202,14 @@ class AuthUserController implements InitializingBean {
 		for (Role it in (oldRoles - newRoles)) {
 			it.removeFromPeople authUser
 		}
+	}
+
+	private Collection<Role> unproxiedRoles(AuthUser authUser) {
+		Collection<Role> unproxied = []
+		for (Role role in (authUser.authorities ?: [])) {
+			unproxied << GrailsHibernateUtil.unwrapIfProxy(role)
+		}
+		unproxied
 	}
 
 	private Map buildPersonModel(AuthUser authUser) {
