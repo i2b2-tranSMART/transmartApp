@@ -1368,7 +1368,8 @@ function setupOntTree(id_in, title_in) {
     
     ontTree.on('beforecollapsenode', function (node, deep, anim) {
         Ext.Ajax.request({
-            url: removeNodeDseURL + "?node=" + node.id,
+            url: removeNodeDseURL,
+            params: { node: node.id },
             method: 'POST',
             success: function (result, request) {
             },
