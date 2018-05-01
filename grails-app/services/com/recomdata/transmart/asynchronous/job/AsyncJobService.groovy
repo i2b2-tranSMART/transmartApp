@@ -6,6 +6,7 @@ import grails.transaction.Transactional
 import groovy.util.logging.Slf4j
 import org.json.JSONArray
 import org.json.JSONObject
+import org.quartz.JobKey
 import org.quartz.Scheduler
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Propagation
@@ -88,7 +89,7 @@ class AsyncJobService {
 	}
 
 	/**
-	 * Method that will create the new asynchronous job name
+	 * Creates the new asynchronous job name.
 	 * Current methodology is username-jobtype-ID from sequence generator
 	 */
 	@Transactional
@@ -144,7 +145,7 @@ class AsyncJobService {
 	JSONObject canceljob(String jobName, String group = null) {
 		String jobStatus = 'Cancelled'
 		logger.debug 'Attempting to delete {} from the Quartz scheduler', jobName
-		boolean result = quartzScheduler.deleteJob(jobName, group)
+		boolean result = quartzScheduler.deleteJob(new JobKey(jobName, group))
 		logger.debug 'Deletion attempt successful? {}', result
 
 		updateStatus jobName, jobStatus
