@@ -42,19 +42,13 @@ class UserProfileController {
 
 	def save(String email, String firstname, String lastname) {
 		try {
-			if (auth0Enabled) {
-				AuthUser authUser = auth0Service.updateUser(email, firstname, lastname, params)
-				if (authUser.hasErrors()) {
-					logger.error 'UserProfile.save() errors: {}', utilService.errorStrings(authUser)
-					flash.error = 'Error occurred while updating user profile. Please try again later or contact administrator if error persists.'
-				}
-				else {
-					flash.message = 'Profile successfully updated.'
-				}
+			AuthUser authUser = userService.updateUser(email, firstname, lastname, params)
+			if (authUser.hasErrors()) {
+				logger.error 'UserProfile.save() errors: {}', utilService.errorStrings(authUser)
+				flash.error = 'Error occurred while updating user profile. Please try again later or contact administrator if error persists.'
 			}
 			else {
-				logger.error 'spring-security-auth0 is not active. Check configuration settings.'
-				flash.error = severeMessage
+				flash.message = 'Profile successfully updated.'
 			}
 		}
 		catch (e) {
