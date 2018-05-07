@@ -5,7 +5,7 @@
 		<g:set var="projectLogo" value="${grailsApplication.config.com.recomdata.projectLogo}"/>
 		<g:set var="providerName" value="${grailsApplication.config.com.recomdata.providerName}"/>
 		<g:set var="providerLogo" value="${grailsApplication.config.com.recomdata.providerLogo}"/>
-		<p><b>Welcome to tranSMART <g:if test="${projectName}">for ${projectName}</g:if></b></p>
+		<p><b>Welcome to i2b2/tranSMART 18-1 Beta <g:if test="${projectName}">for ${projectName}</g:if></b></p>
 
 		<p>The <b>Browse</b> window lets you search and dive into the information contained in tranSMART,
 		including Programs, Studies, Assays and the associated Analyses Results, Subject Level Data and Raw Files.
