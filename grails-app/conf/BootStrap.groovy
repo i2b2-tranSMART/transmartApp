@@ -7,6 +7,7 @@ import org.codehaus.groovy.grails.exceptions.GrailsConfigurationException
 import org.codehaus.groovy.grails.plugins.GrailsPluginUtils
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.web.context.SecurityContextPersistenceFilter
+import org.springframework.util.Assert
 import org.transmart.plugin.shared.SecurityService
 import org.transmartproject.security.OAuth2SyncService
 
@@ -60,35 +61,42 @@ class BootStrap {
 				config.com.recomdata.transmart.data.export.rScriptDirectory
 
 		// RModules.pluginScriptDirectory
+		File rScriptsDir
 		val = config.RModules.pluginScriptDirectory
 		if (val) {
-			logger.warn 'RModules.pluginScriptDirectory should not be explicitly set, value "{}" ignored', val
+			rScriptsDir = new File(val.toString())
 		}
-		File rdcModulesDir = GrailsPluginUtils.getPluginDirForName('rdc-rmodules')?.file
-		if (!rdcModulesDir) {
-			// it actually varies...
-			rdcModulesDir = GrailsPluginUtils.getPluginDirForName('rdcRmodules')?.file
-		}
-		if (!rdcModulesDir) {
-			String version = grailsApplication.mainContext.pluginManager.allPlugins.find {
-				it.name == 'rdc-rmodules' || it.name == 'rdcRmodules'
-			}.version
-			rdcModulesDir = new File(basePath + '/plugins', 'rdc-rmodules-' + version)
-		}
-		if (!rdcModulesDir) {
-			throw new RuntimeException('Could not determine directory for rdc-rmodules plugin')
+		else {
+			File rdcModulesDir = GrailsPluginUtils.getPluginDirForName('rdc-rmodules')?.file
+			if (!rdcModulesDir) {
+				// it actually varies...
+				rdcModulesDir = GrailsPluginUtils.getPluginDirForName('rdcRmodules')?.file
+			}
+			if (!rdcModulesDir) {
+				String version = grailsApplication.mainContext.pluginManager.allPlugins.find {
+					it.name == 'rdc-rmodules' || it.name == 'rdcRmodules'
+				}.version
+				rdcModulesDir = new File(basePath + '/plugins', 'rdc-rmodules-' + version)
+			}
+			if (!rdcModulesDir) {
+				throw new RuntimeException('Could not determine directory for rdc-rmodules plugin')
+			}
+
+			rScriptsDir = new File(rdcModulesDir, 'Rscripts')
+			if (!rScriptsDir || !rScriptsDir.isDirectory()) {
+				rScriptsDir = new File(rdcModulesDir, 'web-app/Rscripts')
+			}
+			config.RModules.pluginScriptDirectory = rScriptsDir.canonicalPath
 		}
 
-		File rScriptsDir = new File(rdcModulesDir, 'Rscripts')
-		if (!rScriptsDir || !rScriptsDir.isDirectory()) {
-			rScriptsDir = new File(rdcModulesDir, 'web-app/Rscripts')
-		}
-		if (!rScriptsDir.isDirectory()) {
-			throw new RuntimeException('Could not determine proper for RModules.pluginScriptDirectory')
-		}
-		config.RModules.pluginScriptDirectory = rScriptsDir.canonicalPath + '/'
+		Assert.isTrue rScriptsDir.isDirectory(), 'RModules.pluginScriptDirectory value "' +
+				config.RModules.pluginScriptDirectory + '" is not a directory'
 
-		logger.info 'RModules.pluginScriptDirectory = {}', config.RModules.pluginScriptDirectory
+		String pluginScriptDirectory = config.RModules.pluginScriptDirectory
+		if (!pluginScriptDirectory.endsWith('/')) {
+			pluginScriptDirectory += '/'
+		}
+		logger.info 'RModules.pluginScriptDirectory = {}', pluginScriptDirectory
 
 		// At this point we assume c.RModules exists
 		if (!config.RModules.containsKey('host')) {
