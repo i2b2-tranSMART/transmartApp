@@ -1,7 +1,7 @@
 <html>
 <head>
 	<meta name="layout" content="admin"/>
-	<title>AccessLog List</title>
+	<title>Build Info</title>
 </head>
 
 <body>
