@@ -60,43 +60,47 @@ class BootStrap {
 		logger.info 'com.recomdata.transmart.data.export.rScriptDirectory = {}',
 				config.com.recomdata.transmart.data.export.rScriptDirectory
 
-		// RModules.pluginScriptDirectory
-		File rScriptsDir
-		val = config.RModules.pluginScriptDirectory
-		if (val) {
-			rScriptsDir = new File(val.toString())
-		}
-		else {
-			File rdcModulesDir = GrailsPluginUtils.getPluginDirForName('rdc-rmodules')?.file
-			if (!rdcModulesDir) {
-				// it actually varies...
-				rdcModulesDir = GrailsPluginUtils.getPluginDirForName('rdcRmodules')?.file
+		// set RModules.external=true in config in cases like running
+		// in Docker where a localhost temp directory isn't needed
+		if (config.RModules.external != true) {
+			// RModules.pluginScriptDirectory
+			File rScriptsDir
+			val = config.RModules.pluginScriptDirectory
+			if (val) {
+				rScriptsDir = new File(val.toString())
 			}
-			if (!rdcModulesDir) {
-				String version = grailsApplication.mainContext.pluginManager.allPlugins.find {
-					it.name == 'rdc-rmodules' || it.name == 'rdcRmodules'
-				}.version
-				rdcModulesDir = new File(basePath + '/plugins', 'rdc-rmodules-' + version)
-			}
-			if (!rdcModulesDir) {
-				throw new RuntimeException('Could not determine directory for rdc-rmodules plugin')
+			else {
+				File rdcModulesDir = GrailsPluginUtils.getPluginDirForName('rdc-rmodules')?.file
+				if (!rdcModulesDir) {
+					// it actually varies...
+					rdcModulesDir = GrailsPluginUtils.getPluginDirForName('rdcRmodules')?.file
+				}
+				if (!rdcModulesDir) {
+					String version = grailsApplication.mainContext.pluginManager.allPlugins.find {
+						it.name == 'rdc-rmodules' || it.name == 'rdcRmodules'
+					}.version
+					rdcModulesDir = new File(basePath + '/plugins', 'rdc-rmodules-' + version)
+				}
+				if (!rdcModulesDir) {
+					throw new RuntimeException('Could not determine directory for rdc-rmodules plugin')
+				}
+
+				rScriptsDir = new File(rdcModulesDir, 'Rscripts')
+				if (!rScriptsDir || !rScriptsDir.isDirectory()) {
+					rScriptsDir = new File(rdcModulesDir, 'web-app/Rscripts')
+				}
+				config.RModules.pluginScriptDirectory = rScriptsDir.canonicalPath
 			}
 
-			rScriptsDir = new File(rdcModulesDir, 'Rscripts')
-			if (!rScriptsDir || !rScriptsDir.isDirectory()) {
-				rScriptsDir = new File(rdcModulesDir, 'web-app/Rscripts')
+			Assert.isTrue rScriptsDir.isDirectory(), 'RModules.pluginScriptDirectory value "' +
+					config.RModules.pluginScriptDirectory + '" is not a directory'
+
+			String pluginScriptDirectory = config.RModules.pluginScriptDirectory
+			if (!pluginScriptDirectory.endsWith('/')) {
+				pluginScriptDirectory += '/'
 			}
-			config.RModules.pluginScriptDirectory = rScriptsDir.canonicalPath
+			logger.info 'RModules.pluginScriptDirectory = {}', pluginScriptDirectory
 		}
-
-		Assert.isTrue rScriptsDir.isDirectory(), 'RModules.pluginScriptDirectory value "' +
-				config.RModules.pluginScriptDirectory + '" is not a directory'
-
-		String pluginScriptDirectory = config.RModules.pluginScriptDirectory
-		if (!pluginScriptDirectory.endsWith('/')) {
-			pluginScriptDirectory += '/'
-		}
-		logger.info 'RModules.pluginScriptDirectory = {}', pluginScriptDirectory
 
 		// At this point we assume c.RModules exists
 		if (!config.RModules.containsKey('host')) {
