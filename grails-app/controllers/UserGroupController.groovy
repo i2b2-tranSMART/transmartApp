@@ -1,7 +1,6 @@
 import command.UserGroupCommand
 import grails.converters.JSON
 import grails.transaction.Transactional
-import grails.validation.ValidationException
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.transmart.plugin.shared.UtilService
@@ -35,7 +34,7 @@ class UserGroupController {
 			[ug: userGroup, soas: SecureObjectAccess.findAllByPrincipal(userGroup, [sort: 'accessLevel'])]
 		}
 		else {
-			flash.message = "UserGroup not found with id ${params.id}"
+			flash.message = 'UserGroup not found with id ' + params.id
 			redirect action: 'list'
 		}
 	}
@@ -48,10 +47,10 @@ class UserGroupController {
 				soa.delete(flush: true)
 			}
 			userGroup.delete()
-			flash.message = "UserGroup ${params.id} deleted"
+			flash.message = 'UserGroup ' + params.id + ' deleted'
 		}
 		else {
-			flash.message = "UserGroup not found with id ${params.id}"
+			flash.message = 'UserGroup not found with id ' + params.id
 		}
 		redirect action: 'list'
 	}
@@ -61,7 +60,7 @@ class UserGroupController {
 			[ug: userGroup]
 		}
 		else {
-			flash.message = "UserGroup not found with id ${params.id}"
+			flash.message = 'UserGroup not found with id ' + params.id
 			redirect action: 'list'
 		}
 	}
@@ -70,7 +69,7 @@ class UserGroupController {
 		if (userGroup) {
 			userGroup.properties = params
 			if (!userGroup.hasErrors() && userGroup.save()) {
-				flash.message = "UserGroup ${params.id} updated"
+				flash.message = 'UserGroup ' + params.id + ' updated'
 				redirect action: 'show', id: userGroup.id
 			}
 			else {
@@ -78,7 +77,7 @@ class UserGroupController {
 			}
 		}
 		else {
-			flash.message = "UserGroup not found with id ${params.id}"
+			flash.message = 'UserGroup not found with id ' + params.id
 			redirect action: 'edit', id: params.id
 		}
 	}
@@ -89,14 +88,13 @@ class UserGroupController {
 
 	def save() {
 		UserGroup userGroup = new UserGroup(params)
-		try {
-			userGroup.save()
+		if (userGroup.save()) {
 			accessLogService.report 'Group created',
-					"Group: ${userGroup.name} created."
+					'Group: ' + userGroup.name + ' created.'
 			redirect action: 'show', id: userGroup.id
 		}
-		catch (ValidationException e) {
-			logger.error e.localizedMessage, e
+		else {
+			logger.error '{}', utilService.errorStrings(userGroup)
 			render view: 'create', model: [ug: userGroup]
 		}
 	}
@@ -132,7 +130,7 @@ class UserGroupController {
 				groupswithoutuser: getGroupsWithoutUser(user.id, searchtext)]
 	}
 
-	def addUserToGroups(UserGroupCommand fl, String searchText) {
+	def addUserToGroups(UserGroupCommand fl, String searchtext) {
 		AuthUser user = AuthUser.get(params.currentprincipalid)
 		if (user) {
 			List<UserGroup> groupsToAdd = UserGroup.findAllByIdInList fl.groupstoadd.collect { it.toLong() }
@@ -145,10 +143,10 @@ class UserGroupController {
 		render template: 'addremoveg',
 				model: [userInstance     : user,
 				        groupswithuser   : getGroupsWithUser(user.id),
-				        groupswithoutuser: getGroupsWithoutUser(user.id, searchText)]
+				        groupswithoutuser: getGroupsWithoutUser(user.id, searchtext)]
 	}
 
-	def removeUserFromGroups(UserGroupCommand fl, String searchText) {
+	def removeUserFromGroups(UserGroupCommand fl, String searchtext) {
 		AuthUser user = AuthUser.get(params.currentprincipalid)
 		if (user) {
 			List<UserGroup> groupsToRemove = UserGroup.getAll(fl.groupstoremove.collect { it.toLong() }).findAll()
@@ -161,7 +159,7 @@ class UserGroupController {
 		render template: 'addremoveg',
 				model: [userInstance     : user,
 				        groupswithuser   : getGroupsWithUser(user.id),
-				        groupswithoutuser: getGroupsWithoutUser(user.id, searchText)]
+				        groupswithoutuser: getGroupsWithoutUser(user.id, searchtext)]
 	}
 
 	def addUsersToUserGroup(UserGroupCommand fl, UserGroup userGroup, Long id) {
@@ -184,11 +182,11 @@ class UserGroupController {
 			}
 
 			if (!userGroup.hasErrors() && userGroup.save(flush: true)) {
-				flash.message = "UserGroup ${params.id} updated"
+				flash.message = 'UserGroup ' + params.id + ' updated'
 			}
 		}
 		else {
-			flash.message = "UserGroup not found with id ${params.id}"
+			flash.message = 'UserGroup not found with id ' + params.id
 		}
 
 		render template: 'addremove', model: [
@@ -217,7 +215,7 @@ class UserGroupController {
 			}
 
 			if (!userGroup.hasErrors() && userGroup.save(flush: true)) {
-				flash.message = "UserGroup ${id} updated"
+				flash.message = 'UserGroup ' + id + ' updated'
 			}
 		}
 
