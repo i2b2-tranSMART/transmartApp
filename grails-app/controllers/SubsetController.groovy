@@ -18,8 +18,6 @@ class SubsetController {
 	@Autowired private SecurityService securityService
 	@Autowired private UtilService utilService
 
-	def index() {}
-
 	def getQueryForSubset(String subsetId) {
 		Subset subset = Subset.get(subsetId)
 		Map<String, String> result = [:]
