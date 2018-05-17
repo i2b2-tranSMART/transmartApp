@@ -1,7 +1,7 @@
 <html>
 <head>
 	<meta name="layout" content="admin"/>
-	<title>AccessLog List</title>
+	<title>AccessLogEntry List</title>
 </head>
 
 <body>
@@ -19,7 +19,7 @@
 			</tr>
 		</table>
 	</g:form>
-	<h1>AccessLog List</h1>
+	<h1>AccessLogEntry List</h1>
 	<g:if test="${flash.message}">
 		<div class="message">${flash.message}</div>
 	</g:if>
@@ -35,15 +35,15 @@
 			</tr>
 			</thead>
 			<tbody>
-			<g:each in="${accessLogInstanceList}" status="i" var="accessLogInstance">
+			<g:each in="${accessLogList}" status="i" var="accessLog">
 				<tr class="${(i % 2) == 0 ? 'odd' : 'even'}" style="height: 30px;">
-					<td style="width: 180px; vertical-align: top;">${fieldValue(bean: accessLogInstance, field: 'accesstime')}</td>
-					<td style="width: 100px; vertical-align: top;">${fieldValue(bean: accessLogInstance, field: 'username')}</td>
-					<td style="width: 200px; vertical-align: top;">${fieldValue(bean: accessLogInstance, field: 'event')}</td>
-					<td style="vertical-align: top;">${fieldValue(bean: accessLogInstance, field: 'eventmessage')}</td>
+					<td style="width: 180px; vertical-align: top;">${fieldValue(bean: accessLog, field: 'accessTime')}</td>
+					<td style="width: 100px; vertical-align: top;">${fieldValue(bean: accessLog, field: 'username')}</td>
+					<td style="width: 200px; vertical-align: top;">${fieldValue(bean: accessLog, field: 'event')}</td>
+					<td style="vertical-align: top;">${fieldValue(bean: accessLog, field: 'eventMessage')}</td>
 					<td style="vertical-align: top;">
-					<g:if test="${accessLogInstance.requestURL}">
-						<a href="${accessLogInstance.requestURL}" target="_blank">link</a>
+					<g:if test="${accessLog.requestURL}">
+						<a href="${accessLog.requestURL}" target="_blank">link</a>
 					</g:if>
 					</td>
 				</tr>

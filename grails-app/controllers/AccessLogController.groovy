@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.transmart.AccessLogFilter
 import org.transmart.plugin.shared.UtilService
-import org.transmart.searchapp.AccessLog
+import org.transmartproject.db.log.AccessLogEntry
 
 import java.text.SimpleDateFormat
 
@@ -26,19 +26,19 @@ class AccessLogController {
 		AccessLogFilter filter = configureFilter()
 
 		Map<String, ?> pageMap = searchService.createPagingParamMap(params, paginateMax, 0)
-		pageMap.sort = 'accesstime'
+		pageMap.sort = 'accessTime'
 		pageMap.order = 'desc'
 
-		List<AccessLog> result = AccessLog.createCriteria().list(
+		List<AccessLogEntry> result = AccessLogEntry.createCriteria().list(
 				max: pageMap.max,
 				offset: pageMap.offset,
 				sort: pageMap.sort,
 				order: pageMap.order) {
-			between 'accesstime', filter.startdate, filter.enddate
+			between 'accessTime', filter.startdate, filter.enddate
 		}
 
 		SimpleDateFormat df1 = new SimpleDateFormat('dd/MM/yyyy')
-		[accessLogInstanceList: result, startdate: df1.format(filter.startdate),
+		[accessLogList: result, startdate: df1.format(filter.startdate),
 		 enddate: df1.format(filter.enddate), totalcount: result.totalCount]
 	}
 
@@ -47,84 +47,84 @@ class AccessLogController {
 		AccessLogFilter filter = configureFilter()
 
 		Map<String, ?> pageMap = searchService.createPagingParamMap(params, paginateMax, 0)
-		pageMap.sort = 'accesstime'
+		pageMap.sort = 'accessTime'
 		pageMap.order = 'desc'
 
-		List<AccessLog> results = AccessLog.createCriteria().list(
+		List<AccessLogEntry> results = AccessLogEntry.createCriteria().list(
 				sort: pageMap.sort,
 				order: pageMap.order) {
-			between 'accesstime', filter.startdate, filter.enddate
+			between 'accessTime', filter.startdate, filter.enddate
 		}
 
 		List<List> values = []
-		for (AccessLog accessLog in results) {
-			values << [accessLog.accesstime, accessLog.username, accessLog.event, accessLog.eventmessage]
+		for (AccessLogEntry accessLog in results) {
+			values << [accessLog.accessTime, accessLog.username, accessLog.event, accessLog.eventMessage]
 		}
 
 		utilService.sendDownload response, 'application/vnd.ms-excel; charset=utf-8', 'pre_clinical.xls',
 				new ExcelGenerator().generateExcel([new ExcelSheet('sheet1', headers, values)])
 	}
 
-	def show(AccessLog accessLog) {
+	def show(AccessLogEntry accessLog) {
 		if (!accessLog) {
-			flash.message = "AccessLog not found with id ${params.id}"
+			flash.message = "AccessLogEntry not found with id ${params.id}"
 			redirect action: 'list'
 		}
 		else {
-			[accessLogInstance: accessLog]
+			[accessLog: accessLog]
 		}
 	}
 
-	def delete(AccessLog accessLog) {
+	def delete(AccessLogEntry accessLog) {
 		if (accessLog) {
 			accessLog.delete()
-			flash.message = "AccessLog $params.id deleted"
+			flash.message = "AccessLogEntry $params.id deleted"
 		}
 		else {
-			flash.message = "AccessLog not found with id $params.id"
+			flash.message = "AccessLogEntry not found with id $params.id"
 		}
 		redirect action: 'list'
 	}
 
-	def edit(AccessLog accessLog) {
+	def edit(AccessLogEntry accessLog) {
 		if (!accessLog) {
-			flash.message = "AccessLog not found with id $params.id"
+			flash.message = "AccessLogEntry not found with id $params.id"
 			redirect action: 'list'
 		}
 		else {
-			[accessLogInstance: accessLog]
+			[accessLog: accessLog]
 		}
 	}
 
-	def update(AccessLog accessLog) {
+	def update(AccessLogEntry accessLog) {
 		if (accessLog) {
 			accessLog.properties = params
 			if (!accessLog.hasErrors() && accessLog.save()) {
-				flash.message = "AccessLog $params.id updated"
+				flash.message = "AccessLogEntry $params.id updated"
 				redirect action: 'show', id: accessLog.id
 			}
 			else {
-				render view: 'edit', model: [accessLogInstance: accessLog]
+				render view: 'edit', model: [accessLog: accessLog]
 			}
 		}
 		else {
-			flash.message = "AccessLog not found with id $params.id"
+			flash.message = "AccessLogEntry not found with id $params.id"
 			redirect action: 'edit', id: params.id
 		}
 	}
 
 	def create() {
-		[accessLogInstance: new AccessLog(params)]
+		[accessLog: new AccessLogEntry(params)]
 	}
 
 	def save() {
-		AccessLog accessLog = new AccessLog(params)
+		AccessLogEntry accessLog = new AccessLogEntry(params)
 		if (!accessLog.hasErrors() && accessLog.save()) {
-			flash.message = "AccessLog $accessLog.id created"
+			flash.message = "AccessLogEntry $accessLog.id created"
 			redirect action: 'show', id: accessLog.id
 		}
 		else {
-			render view: 'create', model: [accessLogInstance: accessLog]
+			render view: 'create', model: [accessLog: accessLog]
 		}
 	}
 

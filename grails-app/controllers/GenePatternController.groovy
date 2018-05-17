@@ -668,7 +668,7 @@ class GenePatternController {
 		asyncJobService.updateStatus jobName, statusList[0]
 
 		accessLogService.report "Survival Analysis, Job: $jobName",
-				eventmessage: "result_instance_id1: $result_instance_id1, result_instance_id2: $result_instance_id2"
+				eventMessage: "result_instance_id1: $result_instance_id1, result_instance_id2: $result_instance_id2"
 
 		asyncJobService.updateStatus jobName, statusList[1]
 
