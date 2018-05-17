@@ -103,7 +103,7 @@ grails.project.dependency.resolution = {
 		runtime ':jquery-ui:1.10.4'
 		runtime ':jquery:1.11.1'
 		runtime ':prototype:1.0'
-		runtime ':resources:1.2.1'
+		runtime ':resources:1.2.14'
 
 		//test ":code-coverage:1.2.6" // Doesn't work with forked tests yet
 
