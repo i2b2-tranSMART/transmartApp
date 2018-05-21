@@ -206,7 +206,6 @@ class ChartController {
 			}
 		}
 
-		PrintWriter pw = new PrintWriter(response.getOutputStream())
 		if (concept_key) {
 			if (omicsParams) {
 				omicsParams.concept_key = concept_key

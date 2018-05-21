@@ -73,6 +73,7 @@ grails {
 			reloadable = false
 		}
 	}
+//	controllers.defaultScope = 'singleton'
 	converters.default.pretty.print = true
 	converters.encoding = 'UTF-8'
 	// Keep pre-2.3.0 behavior
@@ -81,29 +82,27 @@ grails {
 		trimStrings = false
 	}
 	enable.native2ascii = true // enabled native2ascii conversion of i18n properties files
-	spring.bean.packages = []
-	views.default.codec = 'none' // none, html, base64
-	views {
-		gsp.encoding = 'UTF-8'
-		javascript.library = 'jquery'
-	}
+	exceptionresolver.params.exclude = ['password']
+	hibernate.pass.readonly = false
+	json.legacy.builder = false
 	mime {
-		disable.accept.header.userAgents = []
+		disable.accept.header.userAgents = ['Gecko', 'WebKit', 'Presto', 'Trident']
 		file.extensions = true // enables the parsing of file extensions from URLs into the request format
 		types = [
-			html         : ['text/html', 'application/xhtml+xml'],
-			xml          : ['text/xml', 'application/xml'],
-			text         : 'text-plain',
-			js           : 'text/javascript',
-			rss          : 'application/rss+xml',
-			atom         : 'application/atom+xml',
-			css          : 'text/css',
-			csv          : 'text/csv',
-			all          : '*/*',
-			json         : ['application/json', 'text/json'],
-			form         : 'application/x-www-form-urlencoded',
-			multipartForm: 'multipart/form-data',
-			jnlp         : 'application/x-java-jnlp-file'
+				all          : '*/*',
+				atom         : 'application/atom+xml',
+				css          : 'text/css',
+				csv          : 'text/csv',
+				form         : 'application/x-www-form-urlencoded',
+				hal          : ['application/hal+json','application/hal+xml'],
+				html         : ['text/html', 'application/xhtml+xml'],
+				jnlp         : 'application/x-java-jnlp-file',
+				js           : 'text/javascript',
+				json         : ['application/json', 'text/json'],
+				multipartForm: 'multipart/form-data',
+				rss          : 'application/rss+xml',
+				text         : 'text-plain',
+				xml          : ['text/xml', 'application/xml']
 		]
 	}
 	plugin {
@@ -130,6 +129,24 @@ grails {
 	// same server, you can set this to false and set .apache = true
 	// Bear in mind bug GRAILS-11376 with Tomcat NIO and Grails 2.3.6+
 	plugins.sendfile.tomcat = false
+	project.groupId = appName
+	scaffolding.templates.domainSuffix = ''
+	spring.bean.packages = []
+	views.default.codec = 'none' // TODO html
+	views {
+		gsp {
+			codecs {
+				expression = 'none' // TODO html
+				scriptlet = 'none' // TODO html
+				taglib = 'none'
+				staticparts = 'none'
+			}
+			encoding = 'UTF-8'
+			htmlcodec = 'xml'
+			javascript.library = 'jquery'
+		}
+	}
+	web.disable.multipart = false
 }
 
 org {
@@ -220,7 +237,7 @@ bruteForceLoginLock {
 	lockTimeInMinutes = 10
 }
 
-log4j = {
+log4j.main = {
 	/**
 	 * Configuration for writing audit metrics.
 	 * This needs to be placed in the out-of-tree Config.groovy, as the log4j config there will override this.

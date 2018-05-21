@@ -81,20 +81,21 @@ grails.project.dependency.resolution = {
 		runtime 'com.oracle:ojdbc7:12.1.0.1'
 
 		test 'org.gmock:gmock:0.9.0-r435-hyve2', { transitive = false }
-		test 'org.grails:grails-datastore-test-support:1.0-grails-2.3'
+		test 'org.grails:grails-datastore-test-support:1.0.2-grails-2.4'
 		test 'org.hamcrest:hamcrest-core:1.3'
 		test 'org.hamcrest:hamcrest-library:1.3'
 	}
 
 	plugins {
 		build ':release:3.1.2'
-		build ':tomcat:7.0.54'
+		build ':tomcat:8.0.50'
 
 		compile ':cache-ehcache:1.0.5'
 		compile ':codenarc:0.21'
 		compile ':hibernate:3.6.10.19'
 		compile ':quartz:1.0.2'
 		compile ':rest-client-builder:2.1.1'
+		compile ':scaffolding:2.1.2'
 		compile ':spring-security-core:2.0.0'
 		compile ':spring-security-kerberos:1.0.0'
 		compile ':spring-security-ldap:2.0.0'
