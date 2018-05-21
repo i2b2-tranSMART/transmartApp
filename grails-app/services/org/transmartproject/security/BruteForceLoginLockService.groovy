@@ -4,6 +4,7 @@ import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import groovy.util.logging.Slf4j
+import org.springframework.beans.factory.InitializingBean
 import org.springframework.util.Assert
 
 import javax.annotation.PostConstruct
@@ -18,7 +19,7 @@ import static java.util.concurrent.TimeUnit.MINUTES
  * http://www.grygoriy.com/blog/2012/10/06/prevent-brute-force-attack-with-spring-security/
  */
 @Slf4j('logger')
-class BruteForceLoginLockService {
+class BruteForceLoginLockService implements InitializingBean {
 
 	static transactional = false
 
@@ -26,16 +27,6 @@ class BruteForceLoginLockService {
 
 	int allowedNumberOfAttempts
 	int lockTimeInMinutes
-
-	@PostConstruct
-	void init() {
-		Assert.isTrue allowedNumberOfAttempts > 0, 'allowedNumberOfAttempts has to be greater than 0'
-		Assert.isTrue lockTimeInMinutes > 0, 'lockTimeInMinutes has to be greater than 0'
-
-		failedAttempts = CacheBuilder.newBuilder()
-				.expireAfterWrite(lockTimeInMinutes, MINUTES)
-				.build({ 0 } as CacheLoader) as Cache<String, Integer>
-	}
 
 	/**
 	 * Triggers on each unsuccessful login attempt and increases number of failedAttempts in local accumulator
@@ -65,5 +56,14 @@ class BruteForceLoginLockService {
 	int remainedAttempts(String login) {
 		int result = allowedNumberOfAttempts - failedAttempts.get(login)
 		result < 0 ? 0 : result
+	}
+
+	void afterPropertiesSet() {
+		Assert.isTrue allowedNumberOfAttempts > 0, 'allowedNumberOfAttempts has to be greater than 0'
+		Assert.isTrue lockTimeInMinutes > 0, 'lockTimeInMinutes has to be greater than 0'
+
+		failedAttempts = CacheBuilder.newBuilder()
+				.expireAfterWrite(lockTimeInMinutes, MINUTES)
+				.build({ 0 } as CacheLoader) as Cache<String, Integer>
 	}
 }

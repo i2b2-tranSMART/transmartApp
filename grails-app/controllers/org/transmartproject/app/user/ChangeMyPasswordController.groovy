@@ -8,6 +8,7 @@ import org.springframework.context.MessageSource
 import org.springframework.web.servlet.support.RequestContextUtils
 import org.transmart.plugin.shared.SecurityService
 import org.transmart.searchapp.AuthUser
+import org.springframework.security.authentication.encoding.PasswordEncoder
 
 class ChangeMyPasswordController {
 
@@ -47,6 +48,7 @@ class ChangeMyPasswordController {
 class ChangePasswordCommand {
 
 	GrailsApplication grailsApplication
+	PasswordEncoder passwordEncoder
 	SpringSecurityService springSecurityService
 
 	String oldPassword
@@ -55,7 +57,7 @@ class ChangePasswordCommand {
 
 	static constraints = {
 		oldPassword blank: false, validator: { String oldPassword, ChangePasswordCommand command ->
-			if (!command.springSecurityService.passwordEncoder.isPasswordValid(
+			if (!command.passwordEncoder.isPasswordValid(
 					command.springSecurityService.currentUser.getPersistentValue('passwd'), oldPassword, null)) {
 				'doesNotMatch'
 			}

@@ -7,6 +7,7 @@ import org.transmartproject.core.dataquery.TabularResult
 import org.transmartproject.core.dataquery.highdim.AssayColumn
 import org.transmartproject.core.dataquery.highdim.HighDimensionDataTypeResource
 import org.transmartproject.core.dataquery.highdim.HighDimensionResource
+import org.transmartproject.core.dataquery.highdim.projections.AllDataProjection
 import org.transmartproject.core.dataquery.highdim.projections.Projection
 import org.transmartproject.core.exceptions.NoSuchResourceException
 
@@ -63,7 +64,7 @@ class TabSeparatedExporter implements HighDimExporter {
 		'Tab separated file'
 	}
 
-	void export(TabularResult tabularResult, Projection projection,
+	void export(TabularResult tabularResult, Projection proj,
 	            Closure<OutputStream> newOutputStream, Closure<Boolean> isCancelled = null) {
 
 		logger.info 'started exporting to {}', format
@@ -71,6 +72,8 @@ class TabSeparatedExporter implements HighDimExporter {
 		if (isCancelled && isCancelled()) {
 			return
 		}
+
+		AllDataProjection projection = proj
 
 		long startTime = System.currentTimeMillis()
 
@@ -143,7 +146,7 @@ class TabSeparatedExporter implements HighDimExporter {
 	 * @return A translation from a database field name to a field name in the output file
 	 */
 	protected String getFieldTranslation(String fieldname) {
-		translationMap.get fieldname, fieldname
+		translationMap.get(fieldname) ?: fieldname
 	}
 
 	/**

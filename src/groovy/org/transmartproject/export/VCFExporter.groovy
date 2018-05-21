@@ -8,6 +8,7 @@ import org.transmartproject.core.dataquery.TabularResult
 import org.transmartproject.core.dataquery.highdim.AssayColumn
 import org.transmartproject.core.dataquery.highdim.HighDimensionResource
 import org.transmartproject.core.dataquery.highdim.projections.Projection
+import org.transmartproject.db.dataquery.highdim.vcf.VcfDataRow
 
 import javax.annotation.PostConstruct
 
@@ -106,7 +107,7 @@ class VCFExporter implements HighDimExporter {
 		['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT'] + tabularResult.indicesList*.label
 	}
 
-	protected List<String> getDataForPosition(DataRow datarow, List<AssayColumn> assayList) {
+	protected List<String> getDataForPosition(VcfDataRow datarow, List<AssayColumn> assays) {
 		List data = []
 
 		// First add general info from the summary
@@ -114,7 +115,7 @@ class VCFExporter implements HighDimExporter {
 		data << datarow.position
 		data << datarow.rsId
 		data << datarow.cohortInfo.referenceAllele
-		data << (datarow.cohortInfo.alternativeAlleles.join(',') ?: EMPTY_VALUE)
+		data << datarow.cohortInfo.alternativeAlleles.join(',') ?: EMPTY_VALUE
 
 		// TODO: Determine whether these values still apply for the cohort selected
 		data << datarow.quality
@@ -127,8 +128,8 @@ class VCFExporter implements HighDimExporter {
 		data << datarow.format
 
 		// Determine a list of original variants and new variants, to do translation
-		List<String> originalVariants = [] + datarow.referenceAllele + datarow.alternativeAlleles
-		List<String> newVariants = [] + datarow.referenceAllele + datarow.cohortInfo.alternativeAlleles
+		List<String> originalVariants = [datarow.referenceAllele] + datarow.alternativeAlleles
+		List<String> newVariants = [datarow.referenceAllele] + datarow.cohortInfo.alternativeAlleles
 
 		// Every line must always have a GT field in the format column
 		// to follow the specification.
@@ -139,7 +140,7 @@ class VCFExporter implements HighDimExporter {
 		}
 
 		// Now add the data for each assay
-		for (AssayColumn assay in assayList) {
+		for (AssayColumn assay in assays) {
 			data << getSubjectData(datarow, assay, originalVariants, newVariants, formats, genotypeIndex).join(':')
 		}
 
@@ -213,7 +214,7 @@ class VCFExporter implements HighDimExporter {
 				String oldIndex = assayData[it]
 
 				if (oldIndex != null) {
-					String variant = originalVariants[oldIndex]
+					String variant = originalVariants[oldIndex as int]
 					int newIndex = newVariants.indexOf(variant)
 					convertedIndices << newIndex
 				}

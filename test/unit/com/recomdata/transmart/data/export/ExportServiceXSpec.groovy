@@ -5,6 +5,10 @@ import grails.test.mixin.TestMixin
 import grails.test.mixin.services.ServiceUnitTestMixin
 import grails.test.mixin.web.ControllerUnitTestMixin
 import org.transmart.authorization.CurrentUserBeanProxyFactory
+import org.transmartproject.db.accesscontrol.AccessControlChecks
+import org.transmartproject.db.ontology.DefaultConceptsResource
+import org.transmartproject.db.ontology.StudiesResourceService
+import org.transmartproject.db.user.User
 import spock.lang.Specification
 
 /**
@@ -18,74 +22,55 @@ import spock.lang.Specification
 @TestMixin([ServiceUnitTestMixin, ControllerUnitTestMixin])
 class ExportServiceXSpec extends Specification {
 
-    def service
+	private ExportService exportService
 
-    def setup() {
-        defineBeans {
-            // the dependency only has to be satisfied; it's not used in the
-            // tested method here
-            "${CurrentUserBeanProxyFactory.BEAN_BAME}"(Object)
-        }
-        service = testFor(ExportService)
-    }
+	void setup() {
+		defineBeans {
+			accessControlChecks(AccessControlChecks)
+			conceptsResource(DefaultConceptsResource)
+			studiesResource(StudiesResourceService)
+			"$CurrentUserBeanProxyFactory.BEAN_BAME"(User)
+		}
 
-    void "test getHighDimDataTypesAndFormats basic functionality"() {
-        given: "a set of selected checkboxes"
-        def selectedCheckBoxList = [
-                [
-                        subset    : 'subset1',
-                        dataTypeId: 'mrna',
-                        fileType  : 'TXT',
-                ],
-                [
-                        subset    : 'subset1',
-                        dataTypeId: 'mrna',
-                        fileType  : 'TXT',
-                ],
-                [
-                        subset    : 'subset1',
-                        dataTypeId: 'mrna',
-                        fileType  : 'XLS',
-                ],
-                [
-                        subset    : 'subset1',
-                        dataTypeId: 'mirna',
-                        fileType  : 'TXT',
-                ],
-                [
-                        subset    : 'subset2',
-                        dataTypeId: 'mrna',
-                        fileType  : 'TXT',
-                ],
-        ].collect { (it as JSON).toString() }
+		exportService = testFor(ExportService)
+	}
 
-        when: "the strings are parsed"
-        def formats = service.getHighDimDataTypesAndFormats(selectedCheckBoxList)
+	void 'test getHighDimDataTypesAndFormats basic functionality'() {
+		given: 'a set of selected checkboxes'
+		List<String> selectedCheckBoxList = [
+				[subset: 'subset1', dataTypeId: 'mrna', fileType: 'TXT'],
+				[subset: 'subset1', dataTypeId: 'mrna', fileType: 'TXT'],
+				[subset: 'subset1', dataTypeId: 'mrna', fileType: 'XLS'],
+				[subset: 'subset1', dataTypeId: 'mirna', fileType: 'TXT'],
+				[subset: 'subset2', dataTypeId: 'mrna', fileType: 'TXT']
+		].collect { (it as JSON).toString() }
 
-        then: "the output is a properly formatted map"
-        // Expected
-        //      subset1={mrna={TXT=[GPL570, GPL571], XLS=[GPL570]}, mirna={TXT=[GPL570]}}
-        //      subset2={mrna={TXT=[GPL570]}}
-        formats.keySet().size() == 2
-        formats.containsKey("subset1")
-        formats.containsKey("subset2")
+		when: 'the strings are parsed'
+		Map formats = exportService.getHighDimDataTypesAndFormats(selectedCheckBoxList)
 
-        formats.subset1.keySet().size() == 2
-        formats.subset1.containsKey("mrna")
-        formats.subset1.containsKey("mirna")
+		then: 'the output is a properly formatted map'
+		// Expected
+		//      subset1={mrna={TXT=[GPL570, GPL571], XLS=[GPL570]}, mirna={TXT=[GPL570]}}
+		//      subset2={mrna={TXT=[GPL570]}}
+		formats.keySet().size() == 2
+		formats.containsKey 'subset1'
+		formats.containsKey 'subset2'
 
-        formats.subset1.mrna.keySet().size() == 2
-        formats.subset1.mrna.containsKey("TXT")
-        formats.subset1.mrna.containsKey("XLS")
+		formats.subset1.keySet().size() == 2
+		formats.subset1.containsKey 'mrna'
+		formats.subset1.containsKey 'mirna'
 
-        formats.subset1.mirna.keySet().size() == 1
-        formats.subset1.mirna.containsKey("TXT")
+		formats.subset1.mrna.keySet().size() == 2
+		formats.subset1.mrna.containsKey 'TXT'
+		formats.subset1.mrna.containsKey 'XLS'
 
-        formats.subset2.keySet().size() == 1
-        formats.subset2.containsKey("mrna")
+		formats.subset1.mirna.keySet().size() == 1
+		formats.subset1.mirna.containsKey 'TXT'
 
-        formats.subset2.mrna.keySet().size() == 1
-        formats.subset2.mrna.containsKey("TXT")
+		formats.subset2.keySet().size() == 1
+		formats.subset2.containsKey 'mrna'
 
-    }
+		formats.subset2.mrna.keySet().size() == 1
+		formats.subset2.mrna.containsKey 'TXT'
+	}
 }

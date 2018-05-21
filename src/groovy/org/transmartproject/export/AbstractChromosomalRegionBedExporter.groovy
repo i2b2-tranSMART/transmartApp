@@ -34,7 +34,7 @@ abstract class AbstractChromosomalRegionBedExporter implements HighDimExporter {
 		long startTime = System.currentTimeMillis()
 
 		List<AssayColumn> assayList = tabularResult.indicesList
-		Map<Object, Writer> streamsPerSample = [:]
+		Map<Long, Writer> streamsPerSample = [:]
 
 		try {
 			for (RegionRow datarow in tabularResult) {
