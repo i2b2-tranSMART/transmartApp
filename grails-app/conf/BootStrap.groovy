@@ -5,6 +5,7 @@ import groovy.util.logging.Slf4j
 import org.codehaus.groovy.grails.commons.GrailsApplication
 import org.codehaus.groovy.grails.exceptions.GrailsConfigurationException
 import org.codehaus.groovy.grails.plugins.GrailsPluginUtils
+import org.springframework.security.authentication.RememberMeAuthenticationToken
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.web.context.SecurityContextPersistenceFilter
 import org.springframework.util.Assert
@@ -124,6 +125,7 @@ class BootStrap {
 
 	private void configureJwt() {
 		UsernamePasswordAuthenticationToken.metaClass.getJwtToken = { -> securityService.jwtToken() }
+		RememberMeAuthenticationToken.metaClass.getJwtToken = { -> securityService.jwtToken() }
 	}
 
 	private void configureGroovySqlLogging() {
