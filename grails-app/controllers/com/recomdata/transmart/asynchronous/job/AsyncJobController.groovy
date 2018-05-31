@@ -4,6 +4,7 @@ import com.recomdata.asynchronous.JobResultsService
 import com.recomdata.genepattern.JobStatus
 import com.recomdata.genepattern.WorkflowStatus
 import grails.converters.JSON
+import grails.gsp.PageRenderer
 import org.json.JSONObject
 import org.transmart.audit.AuditLogService
 import org.transmart.audit.StudyIdService
@@ -15,6 +16,7 @@ class AsyncJobController {
 	AccessLogEntryResource accessLogService
 	AsyncJobService asyncJobService
 	AuditLogService auditLogService
+	PageRenderer groovyPageRenderer
 	JobResultsService jobResultsService
 	StudyIdService studyIdService
 	User currentUserBean
@@ -76,7 +78,7 @@ class AsyncJobController {
 		def statusIndexExists = result.get('statusIndexExists')
 		if (statusIndexExists) {
 			def statusIndex = result.get('statusIndex')
-			String statusHtml = render(template: '/genePattern/jobStatusList', model: [
+			String statusHtml = groovyPageRenderer.render(template: '/genePattern/jobStatusList', model: [
 					jobStatuses: jobResultsService[jobName]['StatusList'],
 					statusIndex: statusIndex])
 			result.put 'jobStatusHTML', statusHtml
@@ -114,7 +116,7 @@ class AsyncJobController {
 
 		JSONObject result = wfstatus.result ?: new JSONObject()
 
-		String statusHtml = render(template: '/genePattern/jobStatus', model: [wfstatus: wfstatus])
+		String statusHtml = groovyPageRenderer.render(template: '/genePattern/jobStatus', model: [wfstatus: wfstatus])
 		result.put 'statusHTML', statusHtml
 
 		if (wfstatus.isCompleted()) {

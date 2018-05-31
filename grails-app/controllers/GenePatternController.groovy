@@ -8,6 +8,7 @@ import com.recomdata.genepattern.JobStatus
 import com.recomdata.genepattern.WorkflowStatus
 import com.recomdata.transmart.asynchronous.job.AsyncJobService
 import grails.converters.JSON
+import grails.gsp.PageRenderer
 import groovy.util.logging.Slf4j
 import org.hibernate.SessionFactory
 import org.json.JSONObject
@@ -39,7 +40,7 @@ class GenePatternController {
 	AccessLogService accessLogService
 	AsyncJobService asyncJobService
 	DataSource dataSource
-	GenePatternService genePatternService
+	PageRenderer groovyPageRenderer
 	I2b2HelperService i2b2HelperService
 	JobResultsService jobResultsService
 	SampleInfoService sampleInfoService
@@ -783,7 +784,7 @@ class GenePatternController {
 
 		JSONObject result = wfstatus.result ?: new JSONObject()
 
-		String statusHtml = render(template: 'jobStatus', model: [wfstatus: wfstatus])
+		String statusHtml = groovyPageRenderer.render(template: 'jobStatus', model: [wfstatus: wfstatus])
 		result.put 'statusHTML', statusHtml
 
 		if (wfstatus.isCompleted()) {
