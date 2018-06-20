@@ -210,8 +210,8 @@ class BootStrap {
 		boolean hashed = (password.length() == 59 || password.length() == 60) &&
 				(password.startsWith('$2a$') || password.startsWith('$2b$') || password.startsWith('$2y$'))
 
-		AuthUser admin = new AuthUser(email: email ?: null, enabled: true, name: 'System admin',
-				passwd: hashed ? passwd : springSecurityService.encodePassword(password),
+		AuthUser admin = new AuthUser(description: 'System admin', email: email ?: null, enabled: true,
+				name: 'System admin', passwd: hashed ? password : springSecurityService.encodePassword(password),
 				uniqueId: 'admin', userRealName: 'System admin', username: 'admin')
 
 		String errorMessage = createAdmin(admin)
