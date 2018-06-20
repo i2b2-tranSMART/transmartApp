@@ -1,4 +1,5 @@
 import grails.plugin.springsecurity.SecurityFilterPosition
+import grails.plugin.springsecurity.SpringSecurityService
 import grails.plugin.springsecurity.SpringSecurityUtils
 import groovy.sql.Sql
 import groovy.util.logging.Slf4j
@@ -8,8 +9,15 @@ import org.codehaus.groovy.grails.plugins.GrailsPluginUtils
 import org.springframework.security.authentication.RememberMeAuthenticationToken
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.web.context.SecurityContextPersistenceFilter
+import org.springframework.transaction.TransactionStatus
 import org.springframework.util.Assert
+import org.transmart.plugin.auth0.Auth0Config
 import org.transmart.plugin.shared.SecurityService
+import org.transmart.plugin.shared.UtilService
+import org.transmart.plugin.shared.security.Roles
+import org.transmart.searchapp.AuthUser
+import org.transmart.searchapp.Role
+import org.transmartproject.db.log.AccessLogService
 import org.transmartproject.security.OAuth2SyncService
 
 import javax.servlet.ServletContext
@@ -18,10 +26,14 @@ import java.util.logging.Level
 @Slf4j('logger')
 class BootStrap {
 
+	AccessLogService accessLogService
+	Auth0Config auth0Config
 	GrailsApplication grailsApplication
 	OAuth2SyncService OAuth2SyncService
 	SecurityContextPersistenceFilter securityContextPersistenceFilter
 	SecurityService securityService
+	SpringSecurityService springSecurityService
+	UtilService utilService
 
 	def init = { ServletContext servletContext ->
 		configureJwt()
@@ -30,6 +42,7 @@ class BootStrap {
 		checkConfigFine()
 		fixupConfig servletContext
 		forceMarshallerRegistrarInitialization()
+		autoCreateAdmin()
 	}
 
 	private void fixupConfig(ServletContext servletContext) {
@@ -172,5 +185,54 @@ class BootStrap {
 
 	private void forceMarshallerRegistrarInitialization() {
 		grailsApplication.mainContext.getBean 'marshallerRegistrarService'
+	}
+
+	private void autoCreateAdmin() {
+		if (!auth0Config?.autoCreateAdmin) {
+			logger.info 'Auth0 is disabled, or admin auto-create is disabled, not creating admin user'
+			return
+		}
+
+		if (AuthUser.countByUsername('admin')) {
+			logger.info 'admin auto-create is enabled but admin user exists, not creating admin user'
+			return
+		}
+
+		String password = auth0Config.autoCreateAdminPassword
+		if (!password) {
+			logger.error 'admin auto-create is enabled but no password is specified, cannot create admin user'
+			return
+		}
+
+		String email = auth0Config.autoCreateAdminEmail // can be null
+
+		// don't double-hash
+		boolean hashed = (password.length() == 59 || password.length() == 60) &&
+				(password.startsWith('$2a$') || password.startsWith('$2b$') || password.startsWith('$2y$'))
+
+		AuthUser admin = new AuthUser(email: email ?: null, enabled: true, name: 'System admin',
+				passwd: hashed ? passwd : springSecurityService.encodePassword(password),
+				uniqueId: 'admin', userRealName: 'System admin', username: 'admin')
+
+		String errorMessage = createAdmin(admin)
+		if (errorMessage) {
+			accessLogService.report 'admin auto-create', errorMessage
+		}
+	}
+
+	private String createAdmin(AuthUser admin) {
+		AuthUser.withTransaction { TransactionStatus tx -> // TODO move to tx service
+			if (admin.save(flush: true)) {
+				Role.findByAuthority(Roles.ADMIN.authority).addToPeople admin
+				logger.info 'auto-created admin user'
+				accessLogService.report 'admin auto-create', 'created admin user'
+				return null
+			}
+
+			tx.setRollbackOnly()
+			String message = 'auto-create admin user failed: ' + utilService.errorStrings(admin)
+			logger.error message
+			return message
+		}
 	}
 }
