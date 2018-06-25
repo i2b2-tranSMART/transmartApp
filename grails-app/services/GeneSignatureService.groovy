@@ -666,7 +666,7 @@ class GeneSignatureService {
 	Map getPermissionedCountMap(Long userId, boolean admin) {
 		String permCriteria = admin ? '(1=1)' :
 				'(gs.CREATED_BY_AUTH_USER_ID=' + userId +
-						' or gs.PUBLIC_FLAG=' + (databasePortabilityService.databaseType == ORACLE ? '1' : 'true')
+						' or gs.PUBLIC_FLAG=' + (databasePortabilityService.databaseType == ORACLE ? '1' : 'true') + ')'
 		String sql = '''
 				select gsi.SEARCH_GENE_SIGNATURE_ID as id, count(*) Gene_Ct,
 				       sum(CASE WHEN gsi.FOLD_CHG_METRIC>0 THEN 1 ELSE 0 END) Up_Ct,
