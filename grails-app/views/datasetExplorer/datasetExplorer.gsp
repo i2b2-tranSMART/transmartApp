@@ -41,7 +41,7 @@
 			NumOfQueryCriteriaGroupsAtStart: 3,
 			MaxSearchResults: 100,
 			ONTUrl: '',
-			usePMHost: '${grailsApplication.config.com.recomdata.datasetExplorer.usePMHost}',
+			usePMHost: '${usePmHost}',
 			Config: 'jj',
 			CurrentQueryName: '',
 			CurrentComparisonName: ' ',
@@ -52,15 +52,15 @@
 			CurrentGenes: '',
 			CurrentChroms: '',
 			CurrentDataType: '',
-			GPURL: '${grailsApplication.config.com.recomdata.datasetExplorer.genePatternURL}',
-			EnableGP: '${grailsApplication.config.com.recomdata.datasetExplorer.enableGenePattern}',
+			GPURL: '${genePatternUrl}',
+			EnableGP: '${enableGenePattern}',
 			HeatmapType: 'Compare',
 			IsAdmin: ${admin},
 			Tokens: "${tokens}",
 			InitialSecurity: ${initialaccess},
 			restoreSubsetId: '${params.sId}',
 			resulttype: 'applet',
-			searchType: "${grailsApplication.config.com.recomdata.search.genepathway}",
+			searchType: "${searchGenepathway}",
 			DefaultCohortInfo: '',
 			CurrentTimepoints: [],
 			CurrentSamples: [],
@@ -74,31 +74,32 @@
 			Binning: false,
 			ManualBinning: false,
 			NumberOfBins: 4,
-			HelpURL: '${grailsApplication.config.com.recomdata.adminHelpURL}',
-			ContactUs: '${grailsApplication.config.com.recomdata.contactUs}',
-			AppTitle: '${grailsApplication.config.com.recomdata.appTitle}',
+			HelpURL: '${adminHelpUrl}',
+			ContactUs: '${contactUs}',
+			AppTitle: '${appTitle}',
 			BuildVersion: 'Build Version: <g:meta name="environment.BUILD_NUMBER"/> - <g:meta name="environment.BUILD_ID"/>',
 			AnalysisRun: false,
 			Analysis: 'Advanced',
 			HighDimDataType: '',
 			SNPType: '',
 			basePath: pageInfo.basePath,
-			hideAcrossTrialsPanel: ${!!grailsApplication.config.com.recomdata.datasetExplorer.hideAcrossTrialsPanel},
-			gridViewEnabled: ${!grailsApplication.config.ui.tabs.datasetExplorer.gridView.hide},
-			dataExportEnabled: ${!grailsApplication.config.ui.tabs.datasetExplorer.dataExport.hide},
-			dataExportJobsEnabled: ${!grailsApplication.config.ui.tabs.datasetExplorer.dataExportJobs.hide},
-			analysisJobsEnabled: ${!!grailsApplication.config.ui.tabs.datasetExplorer.analysisJobs.show},
-			workspaceEnabled: ${!grailsApplication.config.ui.tabs.datasetExplorer.workspace.hide},
-			sampleExplorerEnabled: ${!!grailsApplication.config.ui.tabs.sampleExplorer.show},
-			metacoreAnalyticsEnabled: ${!!grailsApplication.config.com.thomsonreuters.transmart.metacoreAnalyticsEnable},
-			metacoreUrl: '${grailsApplication.config.com.thomsonreuters.transmart.metacoreURL}',
+			hideAcrossTrialsPanel: ${hideAcrossTrialsPanel},
+			gridViewEnabled: ${gridViewEnabled},
+			dataExportEnabled: ${dataExportEnabled},
+			dataExportJobsEnabled: ${dataExportJobsEnabled},
+			analysisJobsEnabled: ${analysisJobsEnabled},
+			workspaceEnabled: ${workspaceEnabled},
+			sampleExplorerEnabled: ${sampleExplorerEnabled},
+			metacoreAnalyticsEnabled: ${metacoreAnalyticsEnabled},
+			metacoreUrl: '${metacoreUrl}',
 			AnalysisHasBeenRun: false,
 			ResultSetRegionParams: {},
 			currentReportCodes: [],
 			currentReportStudy: [],
 			currentSubsetsStudy: '',
 			isGridViewLoaded: false,
-			analysisTabExtensions: ${grailsApplication.mainContext.getBean('transmartExtensionsRegistry').analysisTabExtensions as grails.converters.JSON}
+			analysisTabExtensions: ${analysisTabExtensions},
+			xnatEnabled: ${xnatEnabled}
 		};
 
 		var sessionSearch = "${rwgSearchFilter}";
@@ -107,9 +108,9 @@
 		var searchPage = "datasetExplorer";
 		var dseOpenedNodes = "${dseOpenedNodes}";
 		var dseClosedNodes = "${dseClosedNodes}";
-		var helpURL = '${grailsApplication.config.com.recomdata.adminHelpURL}';
+		var helpURL = '${adminHelpUrl}';
 
-		Ext.BLANK_IMAGE_URL = "${resource(dir:'js', file:'ext/resources/images/default/s.gif')}";
+		Ext.BLANK_IMAGE_URL = "${resource(dir: 'js/ext/resources/images/default', file: 's.gif')}";
 		Ext.Ajax.timeout = 1800000;
 		Ext.Updater.defaults.timeout = 1800000;
 
@@ -136,8 +137,8 @@
 <div id="sidebartoggle">&nbsp;</div>
 
 <div id="noAnalyzeResults" style="display: none;">No subject-level results found.<br/>
-	<g:if test="${!grailsApplication.config.ui.tabs.browse.hide}">
-		<g:link controller="RWG" action="index">Switch to Browse view</g:link>
+	<g:if test="${!hideBrowse}">
+		<g:link controller='RWG'>Switch to Browse view</g:link>
 	</g:if>
 </div>
 
@@ -145,8 +146,8 @@
 
 <g:form name="exportdsform" controller="export" action="exportDataset"/>
 <g:form name="exportgridform" controller="chart" action="exportGrid"/>
-<g:if test="${'true' == grailsApplication.config.com.recomdata.datasetExplorer.enableGenePattern}">
-	<g:set var="gplogout" value="${grailsApplication.config.com.recomdata.datasetExplorer.genePatternURL}/gp/logout"/>
+<g:if test="${'true' == enableGenePattern}">
+	<g:set var="gplogout" value="${genePatternUrl}/gp/logout"/>
 </g:if>
 <g:else>
 	<g:set var="gplogout" value=""/>
@@ -170,7 +171,7 @@
 <span id="visualizerSpan1"></span>
 
 <!-- This implements the Help functionality -->
-<script type="text/javascript" src="${resource(dir: 'js', file: 'help/D2H_ctxt.js')}"></script>
+<script type="text/javascript" src="${resource(dir: 'js/help', file: 'D2H_ctxt.js')}"></script>
 
 <r:layoutResources/>
 
