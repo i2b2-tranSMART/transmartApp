@@ -165,6 +165,9 @@ com.recomdata.search.paginate.max = 20 // default paging size
 com.recomdata.search.paginate.maxsteps = 5
 com.recomdata.admin.paginate.max = 20
 
+//default landing page
+com.recomdata.defaults.landing = '/datasetExplorer'
+
 //**************************
 //This is the login information for the different i2b2 projects.
 //SUBJECT Data.
