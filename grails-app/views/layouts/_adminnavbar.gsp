@@ -46,7 +46,7 @@
 		<ul class="navlist">
 			<li>
 				<span class="adminMenuButton">
-					<g:link class='list' controller='authUser'>User List</g:link>
+					<g:link class='list' controller='authUser' action='list'>User List</g:link>
 				</span>
 			</li>
 			<li>
