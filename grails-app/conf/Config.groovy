@@ -1,9 +1,5 @@
 import grails.build.logging.GrailsConsole
 import grails.util.Environment
-import org.transmart.searchapp.AuthUser
-import org.transmart.searchapp.Requestmap
-import org.transmart.searchapp.Role
-import org.transmart.util.ReferenceConfigObject
 
 def console
 if (!Environment.isWarDeployed() && Environment.isWithinShell()) {
@@ -40,9 +36,6 @@ if (Environment.current != Environment.TEST) {
 }
 else {
 	// settings for the test environment
-
-	// optional; only for config options that do not affect tests passing/failing, e.g. test-specific logger config
-	defaultConfigFiles = ["$userHome/.grails/${appName}Config/Config-test.groovy"]
 
 	org.transmart.configFine = true
 }
@@ -293,37 +286,3 @@ log4j.main = {
 
 	warn 'org.codehaus.groovy.grails.commons.cfg.ConfigurationHelper'
 }
-
-environments {
-	test {
-		grails {
-			plugin {
-				springsecurity {
-					authority.className = Role.name
-					requestMap.className = Requestmap.name
-					userLookup {
-						authorityJoinClassName = AuthUser.name
-						passwordPropertyName = 'passwd'
-						userDomainClassName = AuthUser.name
-					}
-				}
-			}
-		}
-	}
-}
-
-// transmart-core-db domain classes now have their own DataSource because several map to the same
-// table as another domain class. Hibernate doesn't allow two classes to represent the same table
-// in the same SessionFactory, so the previous "workaround" used different case in the schema/table
-// names. A few of the domain classes are mapped differently enough that depending on which
-// 'create table' statement was executed first in the SchemaExport that's run for integration tests,
-// test data creation would artificially fail. This doesn't affect the running application because
-// the database already exists.
-//
-// All the domain classes (except those that use the 'oauth2' datasource) use the same database, so
-// config nodes are added using ReferenceConfigObject instances that are essentially pointers to
-// the default 'dataSource' and 'hibernate' nodes. This approach is needed because datasource
-// configuration is mostly done in external config files, so there's no cleaner way to reference
-// that configuration from here.
-getBinding().setVariable 'dataSource_core', new ReferenceConfigObject('dataSource')
-getBinding().setVariable 'hibernate_core', new ReferenceConfigObject('hibernate')
