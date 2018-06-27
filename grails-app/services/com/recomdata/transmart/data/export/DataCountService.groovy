@@ -37,7 +37,7 @@ class DataCountService {
 						from I2B2DEMODATA.patient_dimension
 						where sourcesystem_cd not like '%:S:%'
 					)
-				}'''
+				)'''
 
 		[SNP: rID ? getCountFromDB(sql, String.valueOf(rID)) : 0]
 	}
