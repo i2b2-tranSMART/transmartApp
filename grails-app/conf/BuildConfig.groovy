@@ -127,8 +127,8 @@ grails.project.dependency.resolution = {
 			compile ':transmart-mydas:'           + tmVersion
 			compile ':transmart-rest-api:'        + tmVersion
 			compile ':transmart-shared:'          + tmVersion
-			compile ':transmart-xnat-importer:'   + tmVersion
-			compile ':xnat-viewer:'               + tmVersion
+//			compile ':transmart-xnat-importer:'   + tmVersion
+//			compile ':xnat-viewer:'               + tmVersion
 			test ':transmart-core-db-tests:'      + tmVersion
 		}
 		else {
