@@ -370,7 +370,7 @@ class SecureObjectAccessController {
 			return []
 		}
 
-		Principal.findAll '''
+		Principal.executeQuery'''
 				from Principal g
 				WHERE g.id NOT IN (
 					SELECT so.principal.id
