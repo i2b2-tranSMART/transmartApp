@@ -2,11 +2,11 @@
 <html>
   <head>
     <title>setValueDialog.html</title>
-	
+
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-  
+
   </head>
-  
+
   <body>
     <script type="text/javascript">
   function setValueMethodChanged(value)
@@ -18,7 +18,7 @@
   if(value=="numeric")
       {
       document.getElementById("divhighlow").style.display="none";
-      document.getElementById("divnumeric").style.display="inline"; 
+      document.getElementById("divnumeric").style.display="inline";
       }
   if(value=="novalue")
   	{
@@ -31,20 +31,20 @@
   if(value=="BETWEEN")
   document.getElementById("divhighvalue").style.display="inline";
   else
-  document.getElementById("divhighvalue").style.display="none"; 
+  document.getElementById("divhighvalue").style.display="none";
   }
     </script>
   <div style="background:#eee;height:100%;padding:5px;">
 
   <table style="font:9pt arial;width=500px">
-  <tr><td colspan="2">Searches by value can be constrained by the high/low flag set by the 
+  <tr><td colspan="2">Searches by value can be constrained by the high/low flag set by the
   performing laboratory, or by the values themselves.</td></tr>
   <tr>
   <td width="200px"><input type="radio"  name="setValueMethod" value="novalue" onclick="setValueMethodChanged(this.value)">No Value
 	<br>
 	<input type="radio" name="setValueMethod" value="highlow" onclick="setValueMethodChanged(this.value)">By high/low flag
 	<br>
-	<input type="radio" name="setValueMethod" CHECKED value="numeric" onclick="setValueMethodChanged(this.value)">By numeric value  
+	<input type="radio" name="setValueMethod" CHECKED value="numeric" onclick="setValueMethodChanged(this.value)">By numeric value
 	<br><div style="visibility:hidden">
 	units = <select id="setValueUnits">
 			</select></div>
@@ -52,7 +52,7 @@
   <td width="200px">
   <div id="divnumeric" style="display:inline">
   Please select operator:<br>
-  <select id="setValueOperator" onclick="setValueOperatorChanged(this.value);">
+  <select id="setValueOperator" onchange="setValueOperatorChanged(this.value);">
   <option value="LT">LESS THAN(<)</option>
   <option value="LE">LESS THAN OR EQUAL TO(<=)</option>
   <option value="EQ">EQUAL TO(=)</option>
