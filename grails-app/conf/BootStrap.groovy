@@ -30,6 +30,7 @@ class BootStrap {
 		checkConfigFine()
 		fixupConfig servletContext
 		forceMarshallerRegistrarInitialization()
+		checkRequiredConfig()
 	}
 
 	private void fixupConfig(ServletContext servletContext) {
@@ -172,5 +173,19 @@ class BootStrap {
 
 	private void forceMarshallerRegistrarInitialization() {
 		grailsApplication.mainContext.getBean 'marshallerRegistrarService'
+	}
+
+	private void checkRequiredConfig() {
+		checkRequiredConfigString 'com.recomdata.adminEmail'
+		checkRequiredConfigString 'com.recomdata.contactUs'
+	}
+
+	private void checkRequiredConfigString(String attributeName) {
+		String value = ''
+		Map flat = grailsApplication.config.flatten()
+		if (flat.containsKey(attributeName)) {
+			value = flat[attributeName] ?: ''
+		}
+		Assert.hasLength value, 'Config setting "' + attributeName + '" is required; please specify a value in Config.groovy'
 	}
 }
