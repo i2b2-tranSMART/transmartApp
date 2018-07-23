@@ -221,6 +221,9 @@
 				<span class="adminMenuButton">
 					<g:link class='list' controller='statusInfo'>Status of Support Connections</g:link>
 				</span>
+				<span class="adminMenuButton">
+					<g:link class='list' controller='logging'>Application Logging</g:link>
+				</span>
 			</li>
 		</ul>
 	</div>
