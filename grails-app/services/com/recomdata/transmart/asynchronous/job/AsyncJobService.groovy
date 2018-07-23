@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.util.Assert
 import org.transmart.plugin.shared.SecurityService
-import org.transmartproject.db.user.User
+import org.transmartproject.core.users.User
 
 @Slf4j('logger')
 class AsyncJobService {
