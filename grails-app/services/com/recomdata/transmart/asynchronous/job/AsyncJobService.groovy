@@ -1,8 +1,10 @@
 package com.recomdata.transmart.asynchronous.job
 
 import com.recomdata.asynchronous.JobResultsService
+import com.recomdata.transmart.data.export.DataExportService
 import com.recomdata.transmart.domain.i2b2.AsyncJob
 import grails.transaction.Transactional
+import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.json.JSONArray
 import org.json.JSONObject
@@ -10,11 +12,14 @@ import org.quartz.JobKey
 import org.quartz.Scheduler
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Propagation
+import org.springframework.util.Assert
 import org.transmart.plugin.shared.SecurityService
+import org.transmartproject.db.user.User
 
 @Slf4j('logger')
 class AsyncJobService {
 
+	@Autowired private DataExportService dataExportService
 	@Autowired private JobResultsService jobResultsService
 	@Autowired private Scheduler quartzScheduler
 	@Autowired private SecurityService securityService
@@ -259,5 +264,24 @@ class AsyncJobService {
 		}
 
 		cancelled
+	}
+
+	boolean isUserAllowedToExportResults(User user, String jobName) {
+		Assert.notNull user
+		Assert.hasLength jobName
+
+		AsyncJob job = AsyncJob.findByJobName(jobName)
+		Assert.notNull job, jobName + ' is not found.'
+
+		def jobInputsJsonObj = new JsonSlurper().parseText(job.jobInputsJson)
+
+		List<Long> resultInstanceIds = []
+		int subsetNumber = 1
+		while (jobInputsJsonObj['result_instance_id' + subsetNumber]) {
+			resultInstanceIds << (jobInputsJsonObj['result_instance_id' + subsetNumber] as Long)
+			subsetNumber++
+		}
+
+		dataExportService.isUserAllowedToExport user, resultInstanceIds
 	}
 }
