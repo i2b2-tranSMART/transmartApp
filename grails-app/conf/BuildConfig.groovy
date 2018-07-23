@@ -112,7 +112,7 @@ grails.project.dependency.resolution = {
 		if (!dm) {
 			compile ':biomart-domain:'            + tmVersion
 			compile ':blend4j-plugin:'            + tmVersion
-			compile ':dalliance-plugin:'          + tmVersion
+//			compile ':dalliance-plugin:'          + tmVersion
 			compile ':folder-management:'         + tmVersion
 			compile ':rdc-rmodules:'              + tmVersion
 			compile ':search-domain:'             + tmVersion
