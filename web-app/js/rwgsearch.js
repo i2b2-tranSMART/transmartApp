@@ -83,6 +83,7 @@ function addFilterCategories() {
 //Method to add the autocomplete for the search keywords
 function addSearchAutoComplete()	{
 	jQuery("#search-ac").autocomplete({
+        disabled: true,
 		position:{my:"left top",at:"left bottom",collision:"none"},
 		source: sourceURL,
 		minLength:1,
