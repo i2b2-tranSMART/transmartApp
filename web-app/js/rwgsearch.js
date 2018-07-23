@@ -3,25 +3,25 @@
 // Store the current search terms in an array in format ("category display|category:term") where category display is the display term i.e. Gene, Disease, etc.
 var currentCategories = new Array();
 var currentSearchOperators = new Array(); //AND or OR - keep in line with currentCategories
-var currentSearchTerms = new Array(); 
+var currentSearchTerms = new Array();
 
 // Store the nodes that were selected before a new node was selected, so that we can compare to the nodes that are selected after.  Selecting
-//  one node in the tree can cause lots of changes in other parts of the tree (copies of this node change, children/parents change, 
+//  one node in the tree can cause lots of changes in other parts of the tree (copies of this node change, children/parents change,
 //  parents of parents, children of parents of parent, etc.)
 var nodesBeforeSelect = new Array();
 
 // By default, allow the onSelect event to trigger for the tree nodes;  However, we don't want select events that are triggered from inside the onSelect
 // event to cause the onSelectEvent code to keep triggering itself.  So change this to false before any call to select() within the onSelect (the event
-// will still fire but is stopped immediately); and set this flag back to true at the end of the event so it can be triggered again.  
+// will still fire but is stopped immediately); and set this flag back to true at the end of the event so it can be triggered again.
 var allowOnSelectEvent = true;
 var uploader;
 // Method to add the categories for the select box
 function addSelectCategories()	{
-	
+
 	if (sessionSearchCategory == "") { sessionSearchCategory = "ALL"; }
-	
+
 	jQuery("#search-categories").append(jQuery("<option></option>").attr("value", "ALL").text("All").attr('id', 'allCategory'));
-	
+
 	jQuery("#search-categories").change(function() {
 		jQuery('#search-ac').autocomplete('option', 'source', sourceURL + "?category=" + this.options[this.selectedIndex].value);
 		jQuery.ajax({
@@ -29,25 +29,25 @@ function addSelectCategories()	{
 			data: {id: jQuery("#search-categories").val()}
 		});
 	});
-	
+
 	jQuery.getJSON(getCategoriesURL, function(json) {
 		for (var i=0; i<json.length; i++)	{
 			var category = json[i].category;
 			var catText = convertCategory(category);
 			jQuery("#search-categories").append(jQuery("<option></option>").attr("value", category).text(catText));
 		}
-		
-		jQuery("#search-categories").html(jQuery("option", jQuery("#search-categories")).sort(function(a, b) { 
+
+		jQuery("#search-categories").html(jQuery("option", jQuery("#search-categories")).sort(function(a, b) {
 	        return a.text == b.text ? 0 : a.text < b.text ? -1 : 1;
 	    }));
-		
+
 		jQuery("#allCategory").after(jQuery("<option></option>").attr("value", "text").text("Free Text"));
-		
+
 		jQuery("#search-categories").val(sessionSearchCategory);
 		jQuery('#search-ac').autocomplete('option', 'source', sourceURL + "?category=" + jQuery('#search-categories').val());
 
     });
-	
+
 }
 
 function addFilterCategories() {
@@ -59,9 +59,9 @@ function addFilterCategories() {
 			var contentDiv = jQuery("<div></div>").addClass("filtercontent").attr("name", category.category).attr("style", "display: none");
 			for (var j=0; j < choices.length; j++) {
 				var choice = choices[j];
-				
+
 				var newItem = jQuery("<div></div>").addClass("filteritem").attr("name", category.category).attr("id", choice.uid).text(choice.name);
-				
+
 				//If this has been selected, highlight it
 				var idString = '[id="' + category.displayName + "|" + category.category + ";" + choice.name + ";" + choice.uid + '"]';
 				idString = idString.replace(/,/g, "%44").replace(/&/g, "%26"); //Replace commas and ampersands
@@ -75,7 +75,7 @@ function addFilterCategories() {
 			jQuery("#filter-browser").append(titleDiv);
 			jQuery("#filter-browser").append(contentDiv);
 		}
-		
+
 		jQuery("#filter-browser").removeClass("ajaxloading");
     });
 }
@@ -83,15 +83,16 @@ function addFilterCategories() {
 //Method to add the autocomplete for the search keywords
 function addSearchAutoComplete()	{
 	jQuery("#search-ac").autocomplete({
+		disabled: true,
 		position:{my:"left top",at:"left bottom",collision:"none"},
 		source: sourceURL,
 		minLength:1,
-		select: function(event, ui) {  
+		select: function(event, ui) {
 		    if (ui.item != null && ui.item != "") {
 			searchParam={id:ui.item.id,display:ui.item.category,keyword:ui.item.label,category:ui.item.categoryId};
 			addSearchTerm(searchParam);
 		    }
-			
+
 			//If category is ALL, add this as free text as well
 			var category = jQuery("#search-categories").val();
 		    return false;
@@ -104,20 +105,20 @@ function addSearchAutoComplete()	{
 		else {
 			resulta += '</a>';
 		}
-		
-		return jQuery('<li></li>')		
+
+		return jQuery('<li></li>')
 		  .data("item.autocomplete", item )
 		  .append(resulta)
 		  .appendTo(ul);
-	};	
-		
+	};
+
 	// Capture the enter key on the slider and fire off the search event on the autocomplete
 	jQuery("#search-categories").keypress(function(event)	{
 		if (event.which == 13)	{
 			jQuery("#search-ac").autocomplete('search');
 		}
 	});
-	
+
 	jQuery('#search-ac').keypress(function(event) {
 		var category = jQuery("#search-categories").val();
 		var categoryText = jQuery('#search-categories option:selected').text();
@@ -150,9 +151,9 @@ function convertCategory(valueToConvert)	{
 //Add the search term to the array and show it in the panel.
 function addSearchTerm(searchTerm, noUpdate, openInAnalyze,datasetExplorerPath)	{
 	var category = searchTerm.display == undefined ? "TEXT" : searchTerm.display;
-	
+
 	category = category + "|" + (searchTerm.category == undefined ? "TEXT" : searchTerm.category);
-	
+
 	var text = (searchTerm.text == undefined ? (searchTerm.keyword == undefined ? searchTerm : searchTerm.keyword) : searchTerm.text);
 	var id = searchTerm.id == undefined ? -1 : searchTerm.id;
 	var key = category + ";" + text + ";" + id;
@@ -162,13 +163,13 @@ function addSearchTerm(searchTerm, noUpdate, openInAnalyze,datasetExplorerPath)	
 			currentCategories.push(category);
 			currentSearchOperators.push("or");
 		}
-	} 
-	
+	}
+
 	// clear the search text box
 	jQuery("#search-ac").val("");
 
 	// only refresh results if the tree was not updated (the onSelect also fires these event, so don't want to do 2x)
-	
+
 	if (!noUpdate) {
 		if(!openInAnalyze){
 			jQuery.ajax({
@@ -180,7 +181,7 @@ function addSearchTerm(searchTerm, noUpdate, openInAnalyze,datasetExplorerPath)	
 	}
 }
 
-//Main method to show the current array of search terms 
+//Main method to show the current array of search terms
 function showSearchTemplate()	{
 	var searchHTML = '';
 	var startATag = '&nbsp;<a id=\"';
@@ -189,27 +190,27 @@ function showSearchTemplate()	{
 	var firstItem = true;
 	var needsToggle = false;
 	var geneTerms = 0;
-	
+
 	var globalLogicOperator = "AND";
 	if (jQuery('#globaloperator').hasClass("or")) { globalLogicOperator = "OR"; }
 
-	// iterate through categories array and move all the "gene" categories together at the top 
+	// iterate through categories array and move all the "gene" categories together at the top
 	var newCategories = new Array();
 	var newSearchOperators = new Array();
-	
+
 	var geneCategoriesProcessed = false;
 	var geneCategories = 0;
-	
+
 	for (var i=0; i<currentCategories.length; i++)	{
 		var catFields = currentCategories[i].split("|");
 		var catId = catFields[1];
-		
+
 		// when we find a "gene" category, add it and the rest of the "gene" categories to the new array
 		if (isGeneCategory(catId)) {
 			geneCategories++;
 			// first check if we've processed "gene" categories yet
 			if (!geneCategoriesProcessed)  {
-				
+
 				// add first gene category to new array
 				newCategories.push(currentCategories[i]);
 				newSearchOperators.push(currentSearchOperators[i]);
@@ -221,7 +222,7 @@ function showSearchTemplate()	{
 					if (isGeneCategory(catId2)) {
 						newCategories.push(currentCategories[j]);
 						newSearchOperators.push(currentSearchOperators[j]);
-					}				
+					}
 				}
 				// set flag so we don't try to process again
 				geneCategoriesProcessed = true;
@@ -232,45 +233,45 @@ function showSearchTemplate()	{
 			newSearchOperators.push(currentSearchOperators[i]);
 		}
 	}
-	
+
 	// replace old array with new array
     currentCategories = newCategories;
     currentSearchOperators = newSearchOperators;
-	
+
 	for (var i=0; i<currentCategories.length; i++)	{
 		for (var j=0; j<currentSearchTerms.length; j++)	{
 			var fields = currentSearchTerms[j].split(";");
 			if (currentCategories[i] == fields[0]){
 				var tagID = currentSearchTerms[j].replace(/,/g, "%44").replace(/&/g, "%26");	// URL encode a few things
-				
+
 				var catFields = fields[0].split("|");
 				var catDisplay = catFields[0];
 				var catId = catFields[1];
-				
+
 				if (isGeneCategory(catId)) {
 					geneTerms++;
 				}
 
 				if (firstItem)	{
-					
-					if (i>0)	{	
-						
+
+					if (i>0)	{
+
 						var suppressAnd = false;
 						// if this is a "gene" category, check the previous category and see if it is also one
 		                if (isGeneCategory(catId))  {
 							var catFieldsPrevious = currentCategories[i-1].split("|");
 							var catIdPrevious = catFieldsPrevious[1];
 		                	if (isGeneCategory(catIdPrevious))  {
-		                		suppressAnd = true;	
+		                		suppressAnd = true;
 		                	}
-		                } 
-						
+		                }
+
 		                // if previous category is a "gene" category, don't show operator
 		                if (!suppressAnd)  {
 							searchHTML = searchHTML + "<span class='category_join'>" + globalLogicOperator + "<span class='h_line'></span></span>";  			// Need to add a new row and a horizontal line
 					    }
 		                else  {
-							searchHTML = searchHTML + "<br/>";  				                	
+							searchHTML = searchHTML + "<br/>";
 		                }
 					}
 					searchHTML = searchHTML +"<span class='category_label'>" +catDisplay + "&nbsp;></span>&nbsp;<span class=term>"+ fields[1] + startATag + tagID + endATag + imgTag +"</span>";
@@ -279,7 +280,7 @@ function showSearchTemplate()	{
 				else {
 					searchHTML = searchHTML + "<span class='spacer'>" + currentSearchOperators[i] + " </span><span class=term>"+ fields[1] + startATag + tagID + endATag + imgTag +"</span> ";
 					needsToggle = true;
-				}			
+				}
 			}
 			else {
 				continue; // Do the categories by row and in order
@@ -301,16 +302,16 @@ function showSearchTemplate()	{
 function showSearchResults(openInAnalyze, datasetExplorerPath)	{
 
 	// clear stored probe Ids for each analysis
-	analysisProbeIds = new Array();  
-	
+	analysisProbeIds = new Array();
+
 	// clear stored analysis results
 	jQuery('body').removeData();
-	
+
 	jQuery('#results-div').empty();
-	
+
 	// call method which retrieves facet counts and search results
 	showFacetResults(openInAnalyze, datasetExplorerPath);
-	
+
 	//all analyses will be closed when doing a new search, so clear this array
 	openAnalyses = [];
 
@@ -323,55 +324,55 @@ function showFacetResults(openInAnalyze, datasetExplorerPath)	{
 	}
 	var globalLogicOperator = "AND";
 	if (jQuery('#globaloperator').hasClass("or")) { globalLogicOperator = "OR" }
-	
+
 	var savedSearchTermsArray;
 	var savedSearchTerms;
-	
+
 	if (currentSearchTerms.toString() == '')
 		{
 			savedSearchTermsArray = new Array();
 			savedSearchTerms = '';
-		
+
 		}
 	else
 		{
 			savedSearchTerms = currentSearchTerms.join(",,,");
 			savedSearchTermsArray = savedSearchTerms.split(",,,");
 		}
-	
+
 	// Generate list of categories/terms to send to facet search
 	// create a string to send into the facet search, in form Cat1:Term1,Term2&Cat2:Term3,Term4,Term5&...
 
-	var facetSearch = new Array();   // will be an array of strings "Cat1:Term1|Term2", "Cat2:Term3", ...   
+	var facetSearch = new Array();   // will be an array of strings "Cat1:Term1|Term2", "Cat2:Term3", ...
 	var categories = new Array();    // will be an array of categories "Cat1","Cat2"
 	var terms = new Array();         // will be an array of strings "Term1|Term2", "Term3"
 	var operators = new Array();
 
-	// first, loop through each term and add categories and terms to respective arrays 		
+	// first, loop through each term and add categories and terms to respective arrays
     for (var i=0; i<savedSearchTermsArray.length; i++)	{
 		var fields = savedSearchTermsArray[i].split(";");
 		// search terms are in format <Category Display>|<Category>:<Search term display>:<Search term id>
-		var termId = fields[2]; 
+		var termId = fields[2];
 		var categoryFields = fields[0].split("|");
-		var category = categoryFields[1].replace(" ", "_");   // replace any spaces with underscores (these will then match the SOLR field names) 
-		
+		var category = categoryFields[1].replace(" ", "_");   // replace any spaces with underscores (these will then match the SOLR field names)
+
 		var categoryIndex = categories.indexOf(category);
 
 		// if category not in array yet, add category and term to their respective array, else just append term to proper spot in its array
 		if (categoryIndex == -1)  {
 		    categories.push(category);
-		    
+
 		    //Get the operator for this category from the global arrays
 		    var operatorIndex = currentCategories.indexOf(fields[0]);
 		    var operator = currentSearchOperators[operatorIndex];
 		    if (operator == null) { operator = 'or'; }
 		    operators.push(operator);
-		    
+
 
 		    terms.push(termId);
 		}
 		else  {
-		    terms[categoryIndex] = terms[categoryIndex] + "|" + termId; 			
+		    terms[categoryIndex] = terms[categoryIndex] + "|" + termId;
 		}
 	}
 
@@ -382,11 +383,11 @@ function showFacetResults(openInAnalyze, datasetExplorerPath)	{
     	queryType = "q";
     	facetSearch.push(queryType + "=" + categories[i] + ":" + encodeURIComponent(terms[i]) + "::" + operators[i]);
     }
-    
+
 	jQuery("#results-div").addClass('ajaxloading').empty();
-    
+
     var queryString = facetSearch.join("&");
-    
+
     //Construct a list of the current categories and operators to save
     var operators = [];
     for (var i=0; i < currentCategories.length; i++) {
@@ -395,9 +396,9 @@ function showFacetResults(openInAnalyze, datasetExplorerPath)	{
     	operators.push(category + "," + operator);
     }
     var operatorString = operators.join(";");
-    
+
     queryString += "&searchTerms=" + encodeURIComponent(savedSearchTerms) + "&searchOperators=" + operatorString + "&globaloperator=" + globalLogicOperator;
-    
+
     if(!openInAnalyze){
 	    if (searchPage == 'RWG') {
 			jQuery.ajax({
@@ -465,13 +466,13 @@ function isGeneCategory(catId)  {
 function getSearchKeywordList()   {
 
 	var keywords = new Array();
-	
+
 	for (var j=0; j<currentSearchTerms.length; j++)	{
-		var fields = currentSearchTerms[j].split(";");		
-	    var keyword = fields[2];			
+		var fields = currentSearchTerms[j].split(";");
+	    var keyword = fields[2];
 		keywords.push(keyword);
 	}
-	
+
 	return keywords;
 }
 
@@ -484,14 +485,14 @@ function removeSearchTerm(ctrl)	{
 	var idx = currentSearchTerms.indexOf(currentSearchTermID);
 	if (idx > -1)	{
 		currentSearchTerms.splice(idx, 1);
-		
+
 		// check if there are any remaining terms for this category; remove category from list if none
 		var fields = currentSearchTermID.split(";");
 		var category = fields[0];
 		clearCategoryIfNoTerms(category);
 
 	}
-	
+
 	// Call back to the server to clear the search filter (session scope)
 	jQuery.ajax({
 		type:"POST",
@@ -506,10 +507,10 @@ function removeSearchTerm(ctrl)	{
       showSearchTemplate();
 	  showSearchResults();
 	}
-	
+
 	//Remove selected status from filter browser for this item
 	unselectFilterItem(fields[2]);
-	
+
 }
 
 //Clear the tree, results along with emptying the two arrays that store categories and search terms.
@@ -518,28 +519,28 @@ function clearSearch()	{
 	jQuery.ajax({
 		url:resetNodesRwgURL
 	});
-	
+
 	openAnalyses = []; //all analyses will be closed, so clear this array
-	
-	
+
+
 	jQuery("#search-ac").val("");
-	
+
 	currentSearchTerms = new Array();
 	currentCategories = new Array();
 	currentSearchOperators = new Array();
-	
+
 	// Change the category picker back to ALL and set autocomplete to not have a category (ALL by default)
 	document.getElementById("search-categories").selectedIndex = 0;
 	jQuery('#search-ac').autocomplete('option', 'source', sourceURL);
 
 	showSearchTemplate();
 	showSearchResults(); //reload the full search results
-	
+
 }
 
 //update a node's count (not including children)
 function updateNodeIndividualFacetCount(node, count) {
-	// only add facet counts if not a category 
+	// only add facet counts if not a category
 	if (!node.data.isCategory)   {
 		// if count is passed in as -1, reset the facet count to the initial facet count
 		if (count > -1)  {
@@ -548,28 +549,28 @@ function updateNodeIndividualFacetCount(node, count) {
 	    else  {
 	    	node.data.facetCount = node.data.initialFacetCount;
 	    }
-	    node.data.title = node.data.termName + " (" + node.data.facetCount + ")";	
+	    node.data.title = node.data.termName + " (" + node.data.facetCount + ")";
 	}
 	else  {
 	    node.data.facetCount = -1;
-	    node.data.title = node.data.termName;	
+	    node.data.title = node.data.termName;
 	}
 }
 
 //Remove the category from current categories list if there are no terms left that belong to it
 function clearCategoryIfNoTerms(category)  {
-	
+
 	var found = false;
 	for (var j=0; j<currentSearchTerms.length; j++)	{
 		var fields2 = currentSearchTerms[j].split(";");
 		var category2 = fields2[0];
-		
+
 		if (category == category2)  {
-			found = true; 
+			found = true;
 			break;
 		}
 	}
-	
+
 	if (!found)  {
 		var index = currentCategories.indexOf(category);
 		currentCategories.splice(index, 1);
@@ -631,30 +632,30 @@ jQuery(document).ready(function() {
 	jQuery('#sidebartoggle').click(function() {
 		toggleSidebar();
     });
-	
-	
-	
+
+
+
 	jQuery('#filter-browser').on('click', '.filtertitle', function () {
 		jQuery('.filtercontent[name="' + jQuery(this).attr('name') + '"]').toggle('fast');
 	});
-	
-	
+
+
 	jQuery('#filter-browser').on('click', '.filteritem', function () {
 		var selecting = !jQuery(this).hasClass('selected');
 		jQuery(this).toggleClass('selected');
-		
+
 		var name = jQuery(this).attr('name');
 		var id = jQuery(this).attr('id');
 		var category = jQuery('.filtertitle[name="' + name + '"]').text();
 		var value = jQuery(this).text();
-		
+
 		//If selecting this filter, add it to the list of current filters
 		if (selecting) {
 			var searchParam={id:id,
 			        display:category,
 			        keyword:value,
 			        category:name};
-			
+
 			addSearchTerm(searchParam);
 		}
 		else {
@@ -664,7 +665,7 @@ jQuery(document).ready(function() {
 			removeSearchTerm(element[0]);
 		}
 	});
-	
+
     jQuery('body').on('mouseenter', '.folderheader', function() {
 		jQuery(this).find('.foldericonwrapper').fadeIn(150);
 	});
@@ -677,10 +678,10 @@ jQuery(document).ready(function() {
 		var id = jQuery(this).attr('name');
 		jQuery(this).removeClass("foldericon").removeClass("addcart").removeClass("link").text("Added to cart");
 		jQuery('#cartcount').hide();
-		
+
 		jQuery.ajax({
 			url:exportAddURL,
-			data: {id: id},			
+			data: {id: id},
 			success: function(response) {
 				jQuery('#cartcount').show().text(response);
 			},
@@ -697,12 +698,12 @@ jQuery(document).ready(function() {
 			ids.push(jQuery(nameelements[i]).attr('name'));
 			jQuery(nameelements[i]).removeClass("foldericon").removeClass("addcart").removeClass("link").text("Added to cart");
 		}
-		
+
 		jQuery('#cartcount').hide();
-		
+
 		jQuery.ajax({
 			url:exportAddURL,
-			data: {id: ids.join(",")},			
+			data: {id: ids.join(",")},
 			success: function(response) {
 				jQuery('#cartcount').show().text(response);
 			},
@@ -711,10 +712,10 @@ jQuery(document).ready(function() {
 			}
 		});
 	});
-    
+
     jQuery('body').on('click', '.foldericon.deletefile', function() {
 		var id = jQuery(this).attr('name');
-		
+
 		if (confirm("Are you sure you want to delete this file?")) {
 			jQuery.ajax({
 				url:deleteFileURL,
@@ -740,7 +741,7 @@ jQuery(document).ready(function() {
 	    var id = jQuery(this).closest(".folderheader").attr('name');
     	showDetailDialog(id);
 	});
-	
+
 	jQuery('#metadata-viewer').on('click', '.editmetadata', function() {
 
     	var id = jQuery(this).attr('name');
@@ -750,7 +751,7 @@ jQuery(document).ready(function() {
 
 		jQuery.ajax({
 			url:editMetaDataURL,
-			data: {folderId: id},			
+			data: {folderId: id},
 			success: function(response) {
 				jQuery('#editMetadata').html(response).removeClass('ajaxloading');
 			},
@@ -760,9 +761,9 @@ jQuery(document).ready(function() {
 			}
 		});
 	});
-	
+
     jQuery('#box-search').on('click', '.andor', function() {
-    	
+
     	if (jQuery(this).attr('id') == 'globaloperator') {
     		//For global switch, just alter the class - this is picked up later
     	    if (jQuery(this).hasClass("or")) {
@@ -798,7 +799,7 @@ jQuery(document).ready(function() {
 
 		jQuery.ajax({
 			url:createAssayURL,
-			data: {folderId: id},			
+			data: {folderId: id},
 			success: function(response) {
 				jQuery('#createAssay').html(response).removeClass('ajaxloading');
 			},
@@ -819,7 +820,7 @@ jQuery(document).ready(function() {
 
 		jQuery.ajax({
 			url:createAnalysisURL,
-			data: {folderId: id},			
+			data: {folderId: id},
 			success: function(response) {
 				jQuery('#createAnalysis').html(response).removeClass('ajaxloading');
 			},
@@ -840,7 +841,7 @@ jQuery(document).ready(function() {
 
 		jQuery.ajax({
 			url:createFolderURL + "?",
-			data: {folderId: id},			
+			data: {folderId: id},
 			success: function(response) {
 				jQuery('#createFolder').html(response).removeClass('ajaxloading');
 			},
@@ -850,12 +851,12 @@ jQuery(document).ready(function() {
 			}
 		});
 	});
-	
+
 	jQuery('#metadata-viewer').on('click', '.deletefolder', function() {
 
     	var id = jQuery(this).attr('name');
     	var parent = jQuery(this).data('parent');
-    	
+
     	if (confirm("Are you sure you want to delete this folder and the files and folders beneath it?")) {
 			jQuery.ajax({
 				url:deleteFolderURL,
@@ -873,7 +874,7 @@ jQuery(document).ready(function() {
     	}
 	});
 	jQuery('#metadata-viewer').on('click', '.uploadfiles', function() {
-	    var id = jQuery(this).attr('name'); 
+	    var id = jQuery(this).attr('name');
 	    jQuery('#uploadtitle').html("<p>Upload files into folder "+jQuery('#parentFolderName').val()+"</p>");
 	    jQuery('#parentFolderId').val(id);
 	    jQuery('#uploadFilesOverlay').fadeIn();
@@ -893,9 +894,9 @@ jQuery(document).ready(function() {
             setUploderEndPoint(id);
 	    }
 	});
-	  
+
 	jQuery('body').on('click', '#closeupload', function() {
-	      jQuery('#uploadFilesOverlay').fadeOut();  
+	      jQuery('#uploadFilesOverlay').fadeOut();
 	});
 
 	jQuery('#metadata-viewer').on('click', '.deletestudy', function () {
@@ -963,7 +964,7 @@ jQuery(document).ready(function() {
 
 		jQuery.ajax({
 			url:createStudyURL,
-			data: {folderId: id},			
+			data: {folderId: id},
 			success: function(response) {
 				jQuery('#createStudy').html(response).removeClass('ajaxloading');
 			},
@@ -975,7 +976,7 @@ jQuery(document).ready(function() {
 	});
 
 	jQuery('#welcome-viewer').on('click', '.addprogram', function() {
-		
+
 	   	var id = jQuery(this).attr('name');
 
 		jQuery('#createProgramOverlay').fadeIn();
@@ -984,7 +985,7 @@ jQuery(document).ready(function() {
 
 		jQuery.ajax({
 			url:createProgramURL,
-			data: {folderId: id},			
+			data: {folderId: id},
 			success: function(response) {
 				jQuery('#createProgram').html(response).removeClass('ajaxloading');
 			},
@@ -999,12 +1000,12 @@ jQuery(document).ready(function() {
 
     	var row = jQuery(this).closest("tr");
 	    var id = row.attr('name');
-	   
+
 	    jQuery('#cartcount').hide();
-	    
+
 		jQuery.ajax({
 			url:exportRemoveURL,
-			data: {id: id},			
+			data: {id: id},
 			success: function(response) {
 				row.remove();
 				jQuery('#cartcount').show().text(response);
@@ -1028,12 +1029,12 @@ jQuery(document).ready(function() {
 		if (ids.length == 0) {return false;}
 
 		window.location = exportURL + "?id=" + ids.join(',');
-		   
+
 	    jQuery('#cartcount').hide();
-	    
+
 		jQuery.ajax({
 			url:exportRemoveURL,
-			data: {id: ids.join(',')},			
+			data: {id: ids.join(',')},
 			success: function(response) {
 				for(j=0; j<ids.length; j++){
 					jQuery(checkboxes[j]).closest("tr").remove();
@@ -1049,34 +1050,34 @@ jQuery(document).ready(function() {
 	});
 
 	jQuery('body').on('click', '#closeexport', function() {
-		jQuery('#exportOverlay').fadeOut();	
+		jQuery('#exportOverlay').fadeOut();
     });
-    
+
    jQuery('body').on('click', '#closefilter', function() {
-		jQuery('#filter-browser').fadeOut();	
+		jQuery('#filter-browser').fadeOut();
     });
-    
+
    jQuery('body').on('click', '#closeedit', function() {
-		jQuery('#editMetadataOverlay').fadeOut();	
+		jQuery('#editMetadataOverlay').fadeOut();
     });
 
    jQuery('body').on('click', '#closeassay', function() {
-		jQuery('#createAssayOverlay').fadeOut();	
+		jQuery('#createAssayOverlay').fadeOut();
    });
 
    jQuery('body').on('click', '#closeanalysis', function() {
-		jQuery('#createAnalysisOverlay').fadeOut();	
+		jQuery('#createAnalysisOverlay').fadeOut();
   });
 
    jQuery('body').on('click', '#closefolder', function() {
-		jQuery('#createFolderOverlay').fadeOut();	
+		jQuery('#createFolderOverlay').fadeOut();
    });
 
    jQuery('body').on('click', '#closestudy', function() {
-		jQuery('#createStudyOverlay').fadeOut();	
+		jQuery('#createStudyOverlay').fadeOut();
    });
    jQuery('body').on('click', '#closeprogram', function() {
-		jQuery('#createProgramOverlay').fadeOut();	
+		jQuery('#createProgramOverlay').fadeOut();
   });
 
     //Close export and filter overlays on click outside
@@ -1085,16 +1086,16 @@ jQuery(document).ready(function() {
     	if (!jQuery(e.target).closest('#exportOverlay').length
     	    	&& !jQuery(e.target).closest('#cartbutton').length
     	    	&& jQuery(e.target).attr('id') != 'cartbutton') {
-    	
+
 	    	if (jQuery('#exportOverlay').is(':visible')) {
     	    	jQuery('#exportOverlay').fadeOut();
 	    	}
     	}
-    	
+
     	if (!jQuery(e.target).closest('#filter-browser').length
     			&& !jQuery(e.target).closest('#filterbutton').length
     	    	&& jQuery(e.target).attr('id') != 'filter-browser') {
-    	
+
 	    	if (jQuery('#filter-browser').is(':visible')) {
     	    	jQuery('#filter-browser').fadeOut();
 	    	}
@@ -1117,7 +1118,7 @@ jQuery(document).ready(function() {
 
     jQuery('#cartbutton').click(function() {
 		jQuery.ajax({
-			url:exportViewURL,		
+			url:exportViewURL,
 			success: function(response) {
 				jQuery('#exportOverlay').html(response);
 			},
@@ -1126,15 +1127,15 @@ jQuery(document).ready(function() {
 		});
 		jQuery('#exportOverlay').fadeToggle();
 	});
-	
+
 	jQuery('#filterbutton').click(function() {
 		jQuery('#filter-browser').fadeToggle();
 	});
-	
+
     addSelectCategories();
     addFilterCategories();
     addSearchAutoComplete();
-    
+
     //Trigger a search immediately if RWG. Dataset Explorer does this on Ext load
     loadSearchFromSession();
     if (searchPage == 'RWG') {
@@ -1156,21 +1157,21 @@ function incrementeDocumentCount(folderId) {
 function loadSearchFromSession() {
 	var sessionFilters = sessionSearch.split(",,,");
 	var sessionOperatorStrings = sessionOperators.split(";");
-	
+
 	//This pre-populates the categories array with the search operators - our saved terms will
 	//then have the correct operator automatically applied
 	for (var i=0; i < sessionOperatorStrings.length; i++) {
 		var operatorPair = sessionOperatorStrings[i].split(",");
 		var cat = operatorPair[0];
 		var op = operatorPair[1];
-		
+
 		if (cat != null && cat != "") {
 			currentCategories.push(cat);
 			currentSearchOperators.push(op);
 		}
 	}
-	
-	
+
+
 	for (var i = 0; i < sessionFilters.length; i++) {
 		var item = sessionFilters[i];
 		if (item != undefined && item != "") {
@@ -1180,22 +1181,22 @@ function loadSearchFromSession() {
 			addSearchTerm(searchParam, true, true);
 		}
 	}
-	
+
 	showSearchTemplate();
 }
 
 function updateFolder(id) {
-	
+
 	var imgExpand = "#imgExpand_"  + id;
 	var src = jQuery(imgExpand).attr('src').replace('folderplus.png', 'ajax-loader-flat.gif').replace('folderminus.png', 'ajax-loader-flat.gif');
 	jQuery(imgExpand).attr('src',src);
-	
+
 	jQuery.ajax({
 		url:folderContentsURL,
 		data: {id: id, auto: false},
 		success: function(response) {
 			jQuery('#' + id + '_detail').html(response).addClass('gtb1').addClass('analysesopen').attr('data', true);
-			
+
 			//check if the object has children
 			if(jQuery('#' + id + '_detail .search-results-table .folderheader').size() > 0){
 				jQuery(imgExpand).attr('src', jQuery(imgExpand).attr('src').replace('ajax-loader-flat.gif', 'folderminus.png'));
@@ -1210,7 +1211,7 @@ function updateFolder(id) {
 }
 
 function checkSearchLog() {
-	
+
 	if (jQuery('#searchlog').size() > 0) {
 		jQuery.ajax({
 			url:searchLogURL,
@@ -1242,7 +1243,7 @@ function goWelcome() {
 function displayResultsNumber(){
 	if(resultNumber!=""){
 		var jsonNumbers = JSON.parse(resultNumber);
-		
+
 		jQuery('#welcome-viewer').empty();
 		jQuery('#metadata-viewer').empty();
 		var htmlResults="<div style='margin: 10px;padding: 10px;'><h3 class='rdc-h3'>Search results by type</h3>";
@@ -1273,7 +1274,7 @@ function createUploader() {
       callbacks: {
         onSubmit: function(id, fileName) {
             var folderName = jQuery('#folderName').val();
-              
+
             jQuery('#uploadtable').append('<tr id="file-' + id + '" class="alert" style="margin: 20px 0 0">'+
                 '<td id="parent">'+folderName+'</td>'+
                 '<td id="name">'+fileName+'</td>'+
@@ -1302,7 +1303,7 @@ function createUploader() {
 
               var folderId=responseJSON.folderId;
               incrementeDocumentCount(folderId);
-              
+
               if(folderId == jQuery('#parentFolderId').val()){
                 jQuery('#metadata-viewer').empty().addClass('ajaxloading');
                 jQuery('#metadata-viewer').load(folderDetailsURL + '?id=' + folderId, {}, function() {
@@ -1313,7 +1314,7 @@ function createUploader() {
               jQuery('#file-' + id + " #status").html('Error: '+responseJSON.error);
                 jQuery('#file-' + id + " #progress").html('');
           }
-          
+
         }
       }
     });
