@@ -15,7 +15,6 @@
 	padding: 6px;
 	position: fixed;
 	right: 0;
-	top: 100;
 	text-decoration: none !important;
 	white-space: nowrap;
 	z-index: 15000;
