@@ -85,11 +85,11 @@ span.utilMenuSeparator {
 		<ul id="utilitiesMenuList">
 			<li><a href="#" onclick="jQuery('#utilitiesMenu').hide();
 			popupWindow('${grailsApplication.config.com.recomdata.adminHelpURL}', '_help')">Help</a></li>
-			<g:if test="${grailsApplication.config.com.recomdata.containsKey("bugreportURL")}">
+%{-- 			<g:if test="${grailsApplication.config.com.recomdata.containsKey("bugreportURL")}">
 				<li><a href="#" onclick="jQuery('#utilitiesMenu').hide();
 				window.open('${grailsApplication.config.com.recomdata.bugreportURL}')">Report a Bug</a></li>
 			</g:if>
-			<li><a onclick="jQuery('#utilitiesMenu').hide();"
+ --}%			<li><a onclick="jQuery('#utilitiesMenu').hide();"
 			       href="mailto:${grailsApplication.config.com.recomdata.contactUs}">Contact Us</a></li>
 			<li><a href="#" onclick="jQuery('#utilitiesMenu').hide();
 			alert('${grailsApplication.config.com.recomdata.appTitle}', 'Build Version: ${buildNumber} - ${buildId}')">About</a>

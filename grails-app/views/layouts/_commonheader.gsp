@@ -1,3 +1,27 @@
+<style>
+#atlwdg-trigger {
+	background-color: #f5f5f5;
+	border-bottom: none;
+	border-radius: 2px 0 0 0;
+	border-right: none;
+	border: 1px solid #ccc;
+	bottom: 0;
+	box-shadow: -1px -1px 2px rgba(0, 0, 0, 0.5);
+	color: #444 !important;
+	display: block;
+	font-weight: bold;
+	font: 13px 'Helvetica',arial,clean,sans-serif;
+	margin: 0;
+	padding: 6px;
+	position: fixed;
+	right: 0;
+	top: 100;
+	text-decoration: none !important;
+	white-space: nowrap;
+	z-index: 15000;
+}
+</style>
+
 <%@ page import="grails.plugin.springsecurity.SpringSecurityUtils" %>
 <g:set var='config' value="${grailsApplication.config}"/>
 <g:set var='tabsConfig' value="${config.ui.tabs}"/>
@@ -76,5 +100,7 @@
 	    });
    });
 </r:script>
-<!-- The below script fragment provided by JIRA to report bugs at jira.transmartfoundation.org -->
-<script src="https://jira.transmartfoundation.org/s/8c444fcd9d47fdf56ca2f75ec1e9fd15-T/en_GBh7pwdp/70120/0cff1430a886a90ec539aa112db8aee1/2.0.8/_/download/batch/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector.js?locale=en-GB&collectorId=8d56c6a7"></script>
+%{--<!-- The below script fragment provided by JIRA to report bugs at jira.transmartfoundation.org -->--}%
+%{-- <script src="https://jira.transmartfoundation.org/s/8c444fcd9d47fdf56ca2f75ec1e9fd15-T/en_GBh7pwdp/70120/0cff1430a886a90ec539aa112db8aee1/2.0.8/_/download/batch/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector.js?locale=en-GB&collectorId=8d56c6a7"></script> --}%
+
+<a href="mailto:${grailsApplication.config.com.recomdata.contactUs}" id="atlwdg-trigger">Report a problem</a>
