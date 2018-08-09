@@ -67,7 +67,6 @@ import static org.transmart.authorization.QueriesResourceAuthorizationDecorator.
 import static org.transmartproject.db.ontology.AbstractAcrossTrialsOntologyTerm.ACROSS_TRIALS_TABLE_CODE
 import static org.transmartproject.db.ontology.AbstractAcrossTrialsOntologyTerm.ACROSS_TRIALS_TOP_TERM_NAME
 
-//@CompileStatic
 @Slf4j('logger')
 class I2b2HelperService implements InitializingBean {
 
@@ -978,11 +977,10 @@ class I2b2HelperService implements InitializingBean {
 			// All children should be leaf categorical values
 			boolean any = item.children.any { OntologyTerm it ->
 				if (xTrialsCaseFlag) {
-					!isLeafConceptKey((AcrossTrialsOntologyTerm) it)
+					!isLeafConceptKey(it)
 				}
 				else {
-					!isLeafConceptKey((AcrossTrialsOntologyTerm) it) ||
-							nodeXmlRepresentsValueConcept(((AbstractI2b2Metadata) it).metadataxml)
+					!isLeafConceptKey(it) || nodeXmlRepresentsValueConcept(it.metadataxml)
 				}
 			}
 
