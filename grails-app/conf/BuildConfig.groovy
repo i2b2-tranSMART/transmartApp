@@ -120,6 +120,7 @@ grails.project.dependency.resolution = {
 			compile ':transmart-core:'            + tmVersion
 			compile ':transmart-custom:'          + tmVersion
 			compile ':transmart-fractalis:'       + tmVersion
+			compile ':transmart-gnome:'           + tmVersion
 			compile ':transmart-gwas:'            + tmVersion
 			compile ':transmart-java:'            + tmVersion
 			compile ':transmart-legacy-db:'       + tmVersion
