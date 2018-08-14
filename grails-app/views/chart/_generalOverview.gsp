@@ -7,6 +7,13 @@
 			</div>
 		</td>
 	</tr>
+	<g:if test="${subsets[1].exists}">
+	<tr>
+		<td colspan="2" align="center">
+			<div style='font-size:10pt;color:blue;'>Query Number: ${subsets[1].instance}</div>
+		</td>
+	</tr>
+	</g:if>
 	<tr>
 		<td width="50%" align="center" valign="top" style="padding: 10px">
 			<br/><br/>
