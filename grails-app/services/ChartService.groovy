@@ -55,8 +55,6 @@ class ChartService {
 	@Autowired private I2b2HelperService i2b2HelperService
 	HighDimensionResourceService highDimensionResourceService
 
-	List<String> keyCache = [] // TODO not thread safe
-
 	Map<Object, Map> getSubsetsFromRequest(GrailsParameterMap params) {
 		String result_instance_id1 = params.result_instance_id1 ?: null
 		String result_instance_id2 = params.result_instance_id2 ?: null

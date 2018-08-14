@@ -120,8 +120,6 @@ class ChartController {
 
 		concept_key = concept_key ?: null
 
-		chartService.keyCache << concept_key
-
 		Map concepts = [:]
 		concepts[concept_key] = chartService.getConceptAnalysis(
 				i2b2HelperService.getConceptKeyForAnalysis(concept_key),
@@ -139,13 +137,11 @@ class ChartController {
 		accessLogService.report 'DatasetExplorer-Basic Statistics',
 				'RID1:' + params.result_instance_id1 + ' RID2:' + params.result_instance_id2
 
-		chartService.keyCache.clear()
-
 		session.removeAttribute 'gridtable'
 
 		Map<Object, Map> subsets = chartService.computeChartsForSubsets(
 				chartService.getSubsetsFromRequest(params))
-		def concepts = chartService.getConceptsForSubsets(subsets)
+		Map<String, Map> concepts = chartService.getConceptsForSubsets(subsets)
 		concepts.putAll chartService.getHighDimensionalConceptsForSubsets(subsets)
 
 		render template: 'summaryStatistics', model: [
