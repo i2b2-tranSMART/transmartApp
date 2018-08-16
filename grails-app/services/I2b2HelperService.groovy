@@ -42,7 +42,6 @@ import org.transmartproject.core.ontology.ConceptsResource
 import org.transmartproject.core.ontology.OntologyTerm
 import org.transmartproject.db.i2b2data.ConceptDimension
 import org.transmartproject.db.i2b2data.ObservationFact
-import org.transmartproject.db.ontology.AbstractI2b2Metadata
 import org.transmartproject.db.ontology.AcrossTrialsOntologyTerm
 import org.transmartproject.db.ontology.I2b2
 import org.transmartproject.db.querytool.QtPatientSetCollection
@@ -123,6 +122,9 @@ class I2b2HelperService implements InitializingBean {
 
 	@Value('${com.recomdata.datasetExplorer.plinkExcutable:}')
 	private String plinkExecutable
+
+	@Value('${edu.harvard.transmart.gridview.expandFolderIntoColumns:false}')
+	private boolean expandFolderIntoColumns
 
 	private List<String> censorFlagList
 	private List<String> survivalDataList
@@ -935,8 +937,8 @@ class I2b2HelperService implements InitializingBean {
 		// prevents display errors in GridView (drop down menu, columns not showing or cells not being filled).
 
 		String columnId = encodeAsSHA1(conceptKey)
-		String columnname = conceptKey.split('\\\\')[-1].replace(' ', '_')
-		String columntooltip = keyToPath(conceptKey).replaceAll('[^a-zA-Z0-9_\\-\\\\]+', '_')
+		String columnName = conceptKey.split('\\\\')[-1].replace(' ', '_')
+		String columnTooltip = keyToPath(conceptKey).replaceAll('[^a-zA-Z0-9_\\-\\\\]+', '_')
 
 		if (leafConceptFlag) {
 			logger.debug '----------------- this is a Leaf Node'
@@ -949,7 +951,7 @@ class I2b2HelperService implements InitializingBean {
 				table.putColumn 'subject', new ExportColumn('subject', 'Subject', '', 'string')
 			}
 			if (table.getColumn(columnId) == null) {
-				table.putColumn columnId, new ExportColumn(columnId, columnname, '', columnType, columntooltip)
+				table.putColumn columnId, new ExportColumn(columnId, columnName, '', columnType, columnTooltip)
 			}
 
 			if (xTrialsCaseFlag) {
@@ -991,77 +993,118 @@ class I2b2HelperService implements InitializingBean {
 
 			logger.debug '----------------- all folder child nodes are categorical leaf nodes'
 
-			String columnType = 'string'
-
-			// add the subject and columnid column to the table if its not there
+			// add the subject column to the table if it's not there
 			if (table.getColumn('subject') == null) {
 				table.putColumn 'subject', new ExportColumn('subject', 'Subject', '', 'string')
 			}
-			if (table.getColumn(columnId) == null) {
-				table.putColumn columnId, new ExportColumn(columnId, columnname, '', columnType, columntooltip)
-			}
 
-			if (xTrialsCaseFlag) {
-				logger.trace '----------------- this is Folder Node - xTrials case'
-				for (OntologyTerm child in item.children) {
-					logger.trace 'Child key code: {}', child.key
-					conceptKey = child.key
-					insertAcrossTrialsConceptDataIntoTable columnId, conceptKey, resultInstanceId, table
-				}
-			}
-			else {
-				logger.debug '----------------- this is Folder Node - single study case'
-
-				// Store the concept paths to query
-				List<String> paths = item.children*.fullName
-
-				// Find the concept codes for the given children
-				List<ConceptDimension> concepts = findAllByConceptPathInList(paths)
-				logger.trace 'Children concepts: {}', concepts*.conceptCode
-
-				// Determine the patients to query
-				List<Long> patientIds = QtPatientSetCollection.executeQuery('''
-						SELECT q.patient.id
-						FROM QtPatientSetCollection q
-						WHERE q.resultInstance.id = ?''',
-						[resultInstanceId.toLong()]) as List<Long>
-
-				// If nothing is found, return
-				if (!concepts || !patientIds) {
-					logger.debug 'no concept; no parentIds'
-					return
-				}
-
-				// After that, retrieve all data entries for the children
-				List<Object[]> results = ObservationFact.executeQuery('''
-						SELECT o.patient.id, o.textValue
-						FROM ObservationFact o
-						WHERE conceptCode IN (:conceptCodes)
-						AND o.patient.id in (:patientIds)''',
-						[conceptCodes: concepts*.conceptCode, patientIds: patientIds]) as List<Object[]>
-
-				logger.trace 'results length: {}', results.length
-
-				for (Object[] result in results) {
-					// If I already have this subject mark it in the subset column as belonging to both subsets
-					String subject = result[0]
-					String value = result[1] ?: 'Y'
-					if (table.containsRow(subject)) /*should contain all subjects already if I ran the demographics first*/ {
-						table.getRow(subject).put columnId, value.toString()
-					}
-					else {
-						// fill the row
-						ExportRowNew newrow = new ExportRowNew()
-						newrow.put 'subject', subject
-						newrow.put columnId, value.toString()
-						table.putRow subject, newrow
-					}
-				}
-			}
+			addFolderConceptDataToTable table, conceptKey, resultInstanceId, item, xTrialsCaseFlag
 		}
 
 		logger.debug '----------------- end addConceptDataToTable >>>>>> >>>>>> >>>>>>'
 		table
+	}
+
+	private void addFolderConceptDataToTable(ExportTableNew table, String conceptKey, String resultInstanceId,
+	                                         OntologyTerm item, boolean xTrialsCaseFlag) {
+
+		String columnId = encodeAsSHA1(conceptKey)
+		if (!expandFolderIntoColumns || xTrialsCaseFlag) {
+			if (table.getColumn(columnId) == null) {
+				String columnName = conceptKey.split('\\\\')[-1].replace(' ', '_')
+				String columnTooltip = keyToPath(conceptKey).replaceAll('[^a-zA-Z0-9_\\-\\\\]+', '_')
+				table.putColumn columnId, new ExportColumn(columnId, columnName, '', 'string', columnTooltip)
+			}
+		}
+
+		if (!xTrialsCaseFlag) {
+			logger.debug '----------------- this is Folder Node - single study case'
+			addSingleTrialFolderConceptDataToTable table, resultInstanceId, item, expandFolderIntoColumns, columnId
+			return
+		}
+
+		logger.trace '----------------- this is Folder Node - xTrials case'
+		for (OntologyTerm child in item.children) {
+			logger.trace 'Child key code: {}', child.key
+			conceptKey = child.key
+			insertAcrossTrialsConceptDataIntoTable columnId, conceptKey, resultInstanceId, table
+		}
+	}
+
+	private void addSingleTrialFolderConceptDataToTable(ExportTableNew table, String resultInstanceId,
+	                                                    OntologyTerm item, boolean expandFolderIntoColumns,
+	                                                    String folderColumnId) {
+		// Store the concept paths to query
+		List<String> paths = item.children*.fullName
+
+		// Find the concept codes for the given children
+		List<ConceptDimension> concepts = findAllByConceptPathInList(paths)
+
+		Collection<String> conceptCodes = []
+		Map<String, String> columnIds = [:]
+		for (ConceptDimension concept in concepts) {
+			conceptCodes << concept.conceptCode
+
+			if (expandFolderIntoColumns) {
+				String conceptPath = concept.conceptPath
+				String columnId = encodeAsSHA1(conceptPath)
+				columnIds[concept.conceptCode] = columnId
+
+				if (table.getColumn(columnId) == null) {
+					String columnName = conceptPath.split('\\\\')[-1].replace(' ', '_')
+					String columnTooltip = conceptPath.replaceAll('[^a-zA-Z0-9_\\-\\\\]+', '_')
+					table.putColumn columnId, new ExportColumn(columnId, columnName, '', 'string', columnTooltip)
+				}
+			}
+			else {
+				columnIds[concept.conceptCode] = folderColumnId
+			}
+		}
+
+		logger.trace 'Children concepts: {}', conceptCodes
+
+		// Determine the patients to query
+		List<Long> patientIds = QtPatientSetCollection.executeQuery('''
+				SELECT q.patient.id
+				FROM QtPatientSetCollection q
+				WHERE q.resultInstance.id = ?''',
+				[resultInstanceId.toLong()]) as List<Long>
+
+		// If nothing is found, return
+		if (!concepts || !patientIds) {
+			logger.debug 'no concept; no parentIds'
+			return
+		}
+
+		// After that, retrieve all data entries for the children
+		List<Object[]> results = ObservationFact.executeQuery('''
+				SELECT o.patient.id, o.textValue, o.conceptCode
+				FROM ObservationFact o
+				WHERE o.conceptCode IN (:conceptCodes)
+				AND o.patient.id in (:patientIds)''',
+				[conceptCodes: conceptCodes, patientIds: patientIds]) as List<Object[]>
+
+		logger.trace 'results length: {}', results.length
+
+		for (Object[] result in results) {
+			// If I already have this subject mark it in the subset column as belonging to both subsets
+			String subject = result[0]
+			String value = result[1] ?: 'Y'
+			String conceptCode = result[2]
+			ExportRowNew row
+			if (table.containsRow(subject)) {
+				// should contain all subjects already if I ran the demographics first
+				row = table.getRow(subject)
+			}
+			else {
+				// fill the row
+				row = new ExportRowNew()
+				row.put 'subject', subject
+				table.putRow subject, row
+			}
+
+			row.put columnIds[conceptCode], value.toString()
+		}
 	}
 
 	@CompileDynamic
