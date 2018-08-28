@@ -126,6 +126,9 @@ class I2b2HelperService implements InitializingBean {
 	@Value('${edu.harvard.transmart.gridview.expandFolderIntoColumns:false}')
 	private boolean expandFolderIntoColumns
 
+	@Value('${edu.harvard.transmart.gridview.blacklist.paths:}')
+	private List<String> blacklistPaths
+
 	private List<String> censorFlagList
 	private List<String> survivalDataList
 
@@ -919,6 +922,10 @@ class I2b2HelperService implements InitializingBean {
 	ExportTableNew addConceptDataToTable(ExportTableNew table, String conceptKey, String resultInstanceId) {
 		checkQueryResultAccess resultInstanceId
 
+		if (pathIsBlacklisted(conceptKey)) {
+			return table
+		}
+
 		logger.debug '----------------- start addConceptDataToTable <<<<<< <<<<<< <<<<<<'
 		logger.trace 'conceptKey = {}', conceptKey
 
@@ -1003,6 +1010,16 @@ class I2b2HelperService implements InitializingBean {
 
 		logger.debug '----------------- end addConceptDataToTable >>>>>> >>>>>> >>>>>>'
 		table
+	}
+
+	private boolean pathIsBlacklisted(String conceptKey) {
+		String path = conceptKey.substring(conceptKey.indexOf('\\', 2) + 1, conceptKey.length())
+		for (String blacklistPath in blacklistPaths) {
+			if (path.startsWith(blacklistPath)) {
+				return true
+			}
+		}
+		false
 	}
 
 	private void addFolderConceptDataToTable(ExportTableNew table, String conceptKey, String resultInstanceId,
