@@ -13,6 +13,7 @@ import org.springframework.util.Assert
 import org.transmart.authorization.QueriesResourceAuthorizationDecorator
 import org.transmartproject.core.dataquery.Patient
 import org.transmartproject.core.ontology.Study
+import org.transmartproject.core.querytool.QueryResult
 import org.transmartproject.core.users.User
 import org.transmartproject.db.dataquery.highdim.HighDimensionResourceService
 import org.transmartproject.db.ontology.StudiesResourceService
@@ -246,15 +247,27 @@ class DataExportService {
 	boolean isUserAllowedToExport(final User user, final List<Long> resultInstanceIds) {
 		assert user
 		assert resultInstanceIds
-		// check that the user has export access in the studies of patients
-		Set<Study> studies = resultInstanceIds.findAll().collect { long id ->
-			queriesResourceAuthorizationDecorator.getQueryResultFromId id
-		}*.patients.
-				inject { Set<Patient> a, Set<Patient> b -> a + b }. // merge two patient sets into one
-				inject([] as Set, { Set<String> trials, Patient p -> trials + p.trial }).
-				collect { String trial -> studiesResourceService.getStudyById trial }
 
-		Study forbiddenExportStudy = studies.find { Study study -> !user.canPerform(EXPORT, study) }
-		!forbiddenExportStudy
+		// check that the user has export access in the studies of patients
+
+		List<QueryResult> queryResults = []
+		for (long id in resultInstanceIds.findAll()) {
+			queryResults << queriesResourceAuthorizationDecorator.getQueryResultFromId(id)
+		}
+
+		Set<Patient> patients = queryResults*.patients.flatten() as Set<Patient> // merge two patient sets into one
+		Set<String> trials = patients*.trial as Set
+		Set<Study> studies = []
+		for (String trial in trials) {
+			studies << studiesResourceService.getStudyById(trial)
+		}
+
+		for (Study study in studies) {
+			if (!user.canPerform(EXPORT, study)) {
+				return false
+			}
+		}
+
+		true
 	}
 }
