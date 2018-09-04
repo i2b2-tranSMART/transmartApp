@@ -1094,13 +1094,14 @@ class I2b2HelperService implements InitializingBean {
 		}
 
 		// After that, retrieve all data entries for the children
-		List<Object[]> results = ObservationFact.executeQuery('''
-				SELECT o.patient.id, o.textValue, o.conceptCode
-				FROM ObservationFact o
-				WHERE o.conceptCode IN (:conceptCodes)
-				AND o.patient.id in (:patientIds)''',
-				[conceptCodes: conceptCodes, patientIds: patientIds]) as List<Object[]>
 
+		Map args = [:]
+		String hql = 'SELECT o.patient.id, o.textValue, o.conceptCode FROM ObservationFact o WHERE ('
+		hql += hqlBatched(splitIntoBatches(conceptCodes), args, 'o.conceptCode', 'conceptCodes')
+		hql += ') AND ('
+		hql += hqlBatched(splitIntoBatches(patientIds), args, 'o.patient.id', 'patientIds')
+		hql += ')'
+		List<Object[]> results = ObservationFact.executeQuery(hql, args) as List<Object[]>
 		logger.trace 'results length: {}', results.length
 
 		for (Object[] result in results) {
@@ -1122,6 +1123,29 @@ class I2b2HelperService implements InitializingBean {
 
 			row.put columnIds[conceptCode], value.toString()
 		}
+	}
+
+	private List<List> splitIntoBatches(List things, int max = 1000) {
+		assert max > 0
+		List<List> split = []
+		List current
+		for (Iterator iter = things.iterator(); iter.hasNext(); ) {
+			if (current == null || current.size() == max) {
+				current = new ArrayList(Math.min(things.size(), max))
+				split << current
+			}
+			current << iter.next()
+		}
+		split
+	}
+
+	private String hqlBatched(List batches, Map args, String column, String keyPrefix) {
+		List parts = []
+		for (int i = 0; i < batches.size(); i++) {
+			parts << column + ' IN (:' + keyPrefix + '_' + i + ')'
+			args[keyPrefix + '_' + i] = batches[i]
+		}
+		parts.join ' OR '
 	}
 
 	@CompileDynamic
