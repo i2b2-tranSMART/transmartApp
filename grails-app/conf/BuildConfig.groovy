@@ -41,6 +41,8 @@ grails.project.dependency.resolution = {
 		dm.configureRepositories delegate
 	}
 
+	String tmVersion = '18.1-SNAPSHOT'
+
 	dependencies {
 		compile 'axis:axis:1.4' // for GeneGo web services
 		compile 'com.google.guava:guava:18.0'
@@ -64,7 +66,7 @@ grails.project.dependency.resolution = {
 		compile('org.springframework.security.extensions:spring-security-saml2-core:1.0.0.RELEASE') {
 			excludes 'bcprov-jdk15', 'spring-security-config', 'spring-security-core', 'spring-security-web', 'xercesImpl'
 		}
-		compile 'org.transmartproject:transmart-core-api:18.1-SNAPSHOT'
+		compile 'org.transmartproject:transmart-core-api:' + tmVersion
 
 		runtime 'com.jcraft:jsch:0.1.42'
 		runtime 'com.lowagie:itext:2.0.8', { transitive = false }
@@ -108,7 +110,6 @@ grails.project.dependency.resolution = {
 
 		//test ":code-coverage:1.2.6" // Doesn't work with forked tests yet
 
-		String tmVersion = '18.1-SNAPSHOT'
 		if (!dm) {
 			compile ':biomart-domain:'            + tmVersion
 			compile ':blend4j-plugin:'            + tmVersion
