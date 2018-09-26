@@ -11,6 +11,7 @@ import org.springframework.security.web.context.SecurityContextPersistenceFilter
 import org.springframework.util.Assert
 import org.transmart.plugin.shared.SecurityService
 import org.transmartproject.security.OAuth2SyncService
+import transmartapp.LoggingService
 
 import javax.servlet.ServletContext
 import java.util.logging.Level
@@ -19,13 +20,14 @@ import java.util.logging.Level
 class BootStrap {
 
 	GrailsApplication grailsApplication
+	LoggingService loggingService
 	OAuth2SyncService OAuth2SyncService
 	SecurityContextPersistenceFilter securityContextPersistenceFilter
 	SecurityService securityService
 
 	def init = { ServletContext servletContext ->
 		configureJwt()
-		configureGroovySqlLogging()
+		configureLogging()
 		configureSecurity()
 		checkConfigFine()
 		fixupConfig servletContext
@@ -129,10 +131,12 @@ class BootStrap {
 		RememberMeAuthenticationToken.metaClass.getJwtToken = { -> securityService.jwtToken() }
 	}
 
-	private void configureGroovySqlLogging() {
+	private void configureLogging() {
 		if (grailsApplication.config.grails.logging.jul.usebridge) {
 			Sql.LOG.level = Level.FINE
 		}
+
+		loggingService.duplicateSymlinkedAppenders()
 	}
 
 	private void configureSecurity() {
