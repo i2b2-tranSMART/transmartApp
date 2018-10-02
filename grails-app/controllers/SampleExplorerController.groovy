@@ -2,6 +2,7 @@ import grails.converters.JSON
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.beans.factory.annotation.Value
 import org.transmartproject.db.log.AccessLogService
+import org.codehaus.groovy.grails.web.json.JSONObject
 
 /**
  * @author MMcDuffie
@@ -168,33 +169,23 @@ class SampleExplorerController implements InitializingBean {
 	 * For the samples specified we want to gather all the data residing in SOLR for them.
 	 */
 	def bioBank() {
-//
-//		List<String> fullColumnList = fieldMapping.columns*.dataIndex
-//		Map columnPrettyNameMapping = loadFieldPrettyNameMapping()
-//
-//		Map results = solrService.pullResultsBasedOnJson(request.JSON.SearchJSON,
-//				fullColumnList.join(',').replace('"', ''),
-//				true, 'sampleExplorer')
-//
-//		render template: 'BioBankList', model: [
-//				samples: results.results,
-//				columnPrettyNameMapping: columnPrettyNameMapping]
-		//explorerType = request.JSON.explorerType
 		List<String> fullColumnList = [];
 
 		for (column in loadEntireFieldList().columns) {fullColumnList.push(column.dataIndex)}
 		log.debug("FullColumnList: " + fullColumnList);
 
 		def columnPrettyNameMapping = loadFieldPrettyNameMapping()
-		log.debug("Column Pretty Name Mapping: " + columnPrettyNameMapping);
+		log.debug("Column Pretty Name Mapping: " + columnPrettyNameMapping)
+
+		// remove result_instance_id as this is a query for single result row
+		JSONObject requestJSON = request.JSON.SearchJSON
+		requestJSON.remove("result_instance_id")
 
 		//This will be the hash to store our results.
-		Map resultMap = solrService.pullResultsBasedOnJson(request.JSON.SearchJSON,fullColumnList.join(",").replace("\"",""), true, 'sampleExplorer')
-
+		Map resultMap = solrService.pullResultsBasedOnJson(requestJSON,fullColumnList.join(",").replace("\"",""), true, 'sampleExplorer')
 		log.debug("bioBank.ResultsHash: " + resultMap.results)
-		//Render the BioBank data.
-		render(template:"BioBankList", model:[samples:resultMap.results, columnPrettyNameMapping:columnPrettyNameMapping]);
 
+		render(template:"BioBankList", model:[samples:resultMap.results, columnPrettyNameMapping:columnPrettyNameMapping]);
 	}
 
 	def sampleContactScreen() {

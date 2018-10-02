@@ -45,8 +45,7 @@ class SolrService {
 		def tempMap = [:]
 
 		for (currentTerm in fieldMap.columns) {
-
-			Map args = [path: '/solr/' + coreName + '/select/',
+            Map args = [path: '/solr/' + coreName + '/select/',
 			            query: [q: solrQuery,
 			                    facet: 'true',
 			                    'facet.field': currentTerm.dataIndex,
@@ -140,23 +139,19 @@ class SolrService {
 		if (solrQuery == '(())') {
 			return [results: []]
 		}
-
-		//Construct the rest of the query based on the columns we want back and the number of rows we want.
-		solrQuery += '&fl=' + resultColumns + '&sort=id desc&rows=' + solrMaxRows
-
 		logger.debug 'pullResultsBasedOnJson - solr Query to be run: {}', solrQuery
 
-		//We want [results:[{'Pathology':'blah','Tissue':'blah'},{'Pathology':'blah','Tissue':'blah'}]]
-
-		//This will be the hash to store our results.
-		Map results = [:]
-
 		Map args = [path: '/solr/' + coreName + '/select/',
-		            query: [q: solrQuery]]
+		            query: [q: solrQuery,
+                            "rows": solrMaxRows,
+                            "fl": resultColumns,
+                            "sort": "id desc"]]
 		def xml = querySolr(args)
 
+        //We want [results:[{'Pathology':'blah','Tissue':'blah'},{'Pathology':'blah','Tissue':'blah'}]]
 
-		print "Result doc: " + xml.result.doc.size()
+        //This will be the hash to store our results.
+        Map results = [:]
 		for (resultDoc in xml.result.doc) {
 			//This string will hold the text for each column in the output.
 			String resultConcat = ""
@@ -164,8 +159,6 @@ class SolrService {
 			for (stringResult in resultDoc.str) {
 				//If this isn't the first column add a seperator.
 				if(resultConcat!="") resultConcat+="|"
-				//Add tag name : tag value to the hash key.
-				print "STRING NAME: " + stringResult.@name.toString()
 				resultConcat += stringResult.@name.toString() + tokenizerDelimiter + stringResult.toString()
 			}
 			for (longResult in resultDoc.long) {
@@ -195,13 +188,11 @@ class SolrService {
 			results[resultConcat]++
 		}
 
-
 		//This will be the final hash we pass out of this function.
 		Map finalHash = ['results':[]];
 
 		//Now that we have this ugly hash we have to convert it to a meaningful hash that can be parsed into JSON.
 		for (result in results) {
-
 
 			//We build a hash with an entry for each field, and the value for that field.
 			def tempHash = [:];
@@ -222,28 +213,6 @@ class SolrService {
 			finalHash['results'].add(tempHash);
 
 		}
-//		{ hashKey ->
-//
-//			//We build a hash with an entry for each field, and the value for that field.
-//			def tempHash = [:];
-//
-//			//For each of the keys break on the "|" character.
-//			hashKey.key.toString().tokenize("|").each
-//			{
-//				//Within each "|" there is a funky set of characters that delimits the field:value.
-//				def keyValueBreak = it.tokenize(tokenizerDelimiter);
-//
-//				//Add the key/value to the hash.
-//				tempHash[keyValueBreak[0]] = keyValueBreak[1];
-//			}
-//
-//			//Each value of the parent hash is actually a count of how many of items matching the key were found.
-//			tempHash['count'] = hashKey.value;
-//
-//			//Add this category to the final hash.
-//			finalHash['results'].add(tempHash);
-//		}
-
 		//Return the results hash.
 		return finalHash
 	}
