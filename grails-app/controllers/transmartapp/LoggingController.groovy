@@ -1,8 +1,7 @@
 package transmartapp
 
 import groovy.util.logging.Slf4j
-import org.apache.log4j.Level
-import org.apache.log4j.LogManager
+import org.springframework.beans.factory.annotation.Autowired
 import org.transmart.plugin.custom.RequiresLevel
 import org.transmart.plugin.custom.UserLevel
 
@@ -12,24 +11,25 @@ import org.transmart.plugin.custom.UserLevel
 @Slf4j('logger')
 class LoggingController {
 
-	private static final Map<String, Level> LOG_LEVELS = [
-			ALL:   Level.ALL,
-			TRACE: Level.TRACE,
-			DEBUG: Level.DEBUG,
-			INFO:  Level.INFO,
-			WARN:  Level.WARN,
-			ERROR: Level.ERROR,
-			FATAL: Level.FATAL,
-			OFF:   Level.OFF].asImmutable()
+	@Autowired private LoggingService loggingService
 
 	@RequiresLevel(UserLevel.ADMIN)
 	def index() {
-		[allLevels: LOG_LEVELS.keySet()]
+		[allLevels: loggingService.LOG_LEVELS.keySet(),
+		 files: loggingService.getFiles(),
+		 loggers: loggingService.loggersAndLevels()]
 	}
 
 	@RequiresLevel(UserLevel.ADMIN)
 	def setLogLevel(String logger, String level) {
-		LogManager.getLogger(logger).level = LOG_LEVELS[level]
+		loggingService.setLogLevel logger, level
 		redirect action: 'index'
+	}
+
+	@RequiresLevel(UserLevel.ADMIN)
+	def downloadFile(String id) {
+		if (!loggingService.downloadFile(id, response)) {
+			redirect action: 'index'
+		}
 	}
 }

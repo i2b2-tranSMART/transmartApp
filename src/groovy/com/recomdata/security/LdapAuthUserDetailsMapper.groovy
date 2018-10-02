@@ -159,7 +159,7 @@ class LdapAuthUserDetailsMapper implements UserDetailsContextMapper {
 			return null
 		}
 
-		Collection<? extends GrantedAuthority> collectedAuthorities = new HashSet<? extends GrantedAuthority>()
+		Collection<? extends GrantedAuthority> collectedAuthorities = new HashSet<>()
 		collectedAuthorities.addAll(authorities)
 		collectedAuthorities.addAll(collectAuthoritiesForRoleAttributes(ctx))
 		collectedAuthorities.addAll(collectDatabaseAuthorities(user))

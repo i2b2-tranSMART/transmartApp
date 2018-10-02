@@ -76,7 +76,7 @@ class SearchKeywordService {
 
 		for (Map filtercat in filtercats) {
 
-			Set<Map> choices = new TreeSet<Map>(new Comparator<Map>() {
+			Set<Map> choices = new TreeSet<>(new Comparator<Map>() {
 				int compare(Map m1, Map m2) {
 					m1.name.compareTo m2.name
 				}

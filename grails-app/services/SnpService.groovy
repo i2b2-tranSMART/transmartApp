@@ -628,7 +628,7 @@ class SnpService {
 
 	Map<String, SortedMap<Long, Map<Long, GeneWithSnp>>> mergeGeneWithSnpMap(Collection<Map<String, SortedMap<Long, Map<Long, GeneWithSnp>>>> mapList) {
 
-		Map<Long, GeneWithSnp> geneMap = new TreeMap<Long, GeneWithSnp>()
+		Map<Long, GeneWithSnp> geneMap = new TreeMap<>()
 		for (Map<String, SortedMap<Long, Map<Long, GeneWithSnp>>> map in mapList) {
 			if (!map) {
 				continue
@@ -900,7 +900,7 @@ class SnpService {
 			return chromSet
 		}
 
-		SortedMap<Integer, String> chromIndexMap = new TreeMap<Integer, String>()
+		SortedMap<Integer, String> chromIndexMap = new TreeMap<>()
 		for (String chrom in chromSet) {
 			for (int i = 0; i < allChroms.length; i++) {
 				if (chrom == allChroms[i]) {

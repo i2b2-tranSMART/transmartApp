@@ -8,13 +8,9 @@
 			</button>
 			<g:render template='/layouts/navbar_logo'/>
 		</div>
-		<g:if test="${instanceType == 'pmsdn' || isTOS}">
+		<g:if test="${isTOS}">
 		<div id="navbar" class="navbar-collapse collapse">
 			<ul class="nav navbar-nav navbar-right">
-				<g:if test="${instanceType == 'pmsdn'}">
-				<li><g:link controller='login' action='reginfo'>Registration Steps</g:link></li>
-				<li><g:link controller='login' action='tos'>Terms Of Service</g:link></li>
-				</g:if>
 				<g:if test="${isTOS}">
 				<li><g:link controller='login' action='tos'>Terms Of Service</g:link></li>
 				</g:if>
