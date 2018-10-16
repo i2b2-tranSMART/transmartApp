@@ -62,10 +62,13 @@ class LoginController {
 	 * Default action; redirects to 'defaultTargetUrl' if logged in, /login/auth otherwise.
 	 */
 	def index() {
+        logger.debug("index() starting")
 		if (springSecurityService.isLoggedIn()) {
+            logger.debug("index() logged in, redirecting to "+defaultTargetUrl)
 			redirect uri: defaultTargetUrl
 		}
 		else {
+            logger.debug("index() not logged in, redirect to /auth")
 			redirect action: 'auth', params: params
 		}
 	}
@@ -79,6 +82,8 @@ class LoginController {
 	 * Show the login page.
 	 */
 	def auth() {
+		logger.debug("auth() starting")
+
 		nocache response
 
 		boolean forcedFormLogin = request.queryString
@@ -99,19 +104,22 @@ class LoginController {
 				logger.info 'can not find the user: {}', guestUserName
 			}
 		}
-
+        logger.debug("auth() calling authModel()")
 		authModel()
+        logger.debug("auth() finished")
 	}
 
 	/**
 	 * Show denied page.
 	 */
 	def denied() {
+        logger.debug("denied() starting")
 		if (springSecurityService.isLoggedIn() &&
 				authenticationTrustResolver.isRememberMe(SCH.context?.authentication)) {
 			// have cookie but the page is guarded with IS_AUTHENTICATED_FULLY
 			redirect action: 'full', params: params
 		}
+        logger.debug("denied() finished")
 	}
 
 	/**
@@ -173,6 +181,7 @@ class LoginController {
 	}
 
 	private Map authModel() {
+		logger.debug("authModel() starting")
 		[postUrl     : request.contextPath + postUrl,
 		 hasCookie   : authenticationTrustResolver.isRememberMe(SCH.context?.authentication),
 		 adminEmail  : adminEmail,
