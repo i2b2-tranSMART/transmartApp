@@ -145,6 +145,7 @@ dm?.with {
 	configureInternalPlugin 'test',    'transmart-core-db-tests'
 	configureInternalPlugin 'compile', 'transmart-gwas'
 	configureInternalPlugin 'compile', 'transmart-java'
+    configureInternalPlugin 'compile', 'spring-security-pic-sure'
 	configureInternalPlugin 'compile', 'biomart-domain'
 	configureInternalPlugin 'compile', 'search-domain'
 	configureInternalPlugin 'compile', 'folder-management'
