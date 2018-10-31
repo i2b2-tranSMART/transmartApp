@@ -109,11 +109,10 @@ grails.project.dependency.resolution = {
 		runtime ':resources:1.2.14'
 
 		//test ":code-coverage:1.2.6" // Doesn't work with forked tests yet
-
 		if (!dm) {
 			compile ':biomart-domain:'            + tmVersion
 			compile ':blend4j-plugin:'            + tmVersion
-//			compile ':dalliance-plugin:'          + tmVersion
+			//compile ':dalliance-plugin:'          + tmVersion
 			compile ':folder-management:'         + tmVersion
 			compile ':rdc-rmodules:'              + tmVersion
 			compile ':search-domain:'             + tmVersion
@@ -129,8 +128,8 @@ grails.project.dependency.resolution = {
 			compile ':transmart-mydas:'           + tmVersion
 			compile ':transmart-rest-api:'        + tmVersion
 			compile ':transmart-shared:'          + tmVersion
-//			compile ':transmart-xnat-importer:'   + tmVersion
-//			compile ':xnat-viewer:'               + tmVersion
+			//compile ':transmart-xnat-importer:'   + tmVersion
+			//compile ':xnat-viewer:'               + tmVersion
 			test ':transmart-core-db-tests:'      + tmVersion
 		}
 		else {
@@ -145,7 +144,6 @@ dm?.with {
 	configureInternalPlugin 'test',    'transmart-core-db-tests'
 	configureInternalPlugin 'compile', 'transmart-gwas'
 	configureInternalPlugin 'compile', 'transmart-java'
-    configureInternalPlugin 'compile', 'spring-security-pic-sure'
 	configureInternalPlugin 'compile', 'biomart-domain'
 	configureInternalPlugin 'compile', 'search-domain'
 	configureInternalPlugin 'compile', 'folder-management'
