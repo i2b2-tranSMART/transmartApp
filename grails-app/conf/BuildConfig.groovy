@@ -79,13 +79,13 @@ grails.project.dependency.resolution = {
 		runtime 'xerces:xercesImpl:2.9.1'
 
 		// you can remove whichever you're not using
-		runtime 'org.postgresql:postgresql:9.3-1100-jdbc4'
+		//runtime 'org.postgresql:postgresql:9.3-1100-jdbc4'
 		runtime 'com.oracle:ojdbc7:12.1.0.1'
 
-		test 'org.gmock:gmock:0.9.0-r435-hyve2', { transitive = false }
-		test 'org.grails:grails-datastore-test-support:1.0.2-grails-2.4'
-		test 'org.hamcrest:hamcrest-core:1.3'
-		test 'org.hamcrest:hamcrest-library:1.3'
+		//test 'org.gmock:gmock:0.9.0-r435-hyve2', { transitive = false }
+		//test 'org.grails:grails-datastore-test-support:1.0.2-grails-2.4'
+		//test 'org.hamcrest:hamcrest-core:1.3'
+		//test 'org.hamcrest:hamcrest-library:1.3'
 	}
 
 	plugins {
@@ -99,8 +99,8 @@ grails.project.dependency.resolution = {
 		compile ':rest-client-builder:2.1.1'
 		compile ':scaffolding:2.1.2'
 		compile ':spring-security-core:2.0.0'
-		compile ':spring-security-kerberos:1.0.0'
-		compile ':spring-security-ldap:2.0.0'
+		//compile ':spring-security-kerberos:1.0.0'
+		//compile ':spring-security-ldap:2.0.0'
 		compile ':spring-security-oauth2-provider:2.0-RC5'
 
 		runtime ':jquery-ui:1.10.4'
@@ -113,25 +113,25 @@ grails.project.dependency.resolution = {
 		if (!dm) {
 			compile ':biomart-domain:'            + tmVersion
 			compile ':blend4j-plugin:'            + tmVersion
-//			compile ':dalliance-plugin:'          + tmVersion
-			compile ':folder-management:'         + tmVersion
+			//compile ':dalliance-plugin:'          + tmVersion
+			//compile ':folder-management:'         + tmVersion
 			compile ':rdc-rmodules:'              + tmVersion
 			compile ':search-domain:'             + tmVersion
 			compile ':spring-security-auth0:'     + tmVersion
 			compile ':transmart-core:'            + tmVersion
 			compile ':transmart-custom:'          + tmVersion
-			compile ':transmart-fractalis:'       + tmVersion
+			compile ':transmart-fractalis:'       + '18.1-beta17-SNAPSHOT'
 			compile ':transmart-gnome:'           + tmVersion
 			compile ':transmart-gwas:'            + tmVersion
 			compile ':transmart-java:'            + tmVersion
-			compile ':transmart-legacy-db:'       + tmVersion
-			compile ':transmart-metacore-plugin:' + tmVersion
-			compile ':transmart-mydas:'           + tmVersion
+			//compile ':transmart-legacy-db:'       + tmVersion
+			//compile ':transmart-metacore-plugin:' + tmVersion
+			//compile ':transmart-mydas:'           + tmVersion
 			compile ':transmart-rest-api:'        + tmVersion
 			compile ':transmart-shared:'          + tmVersion
-//			compile ':transmart-xnat-importer:'   + tmVersion
-//			compile ':xnat-viewer:'               + tmVersion
-			test ':transmart-core-db-tests:'      + tmVersion
+			//compile ':transmart-xnat-importer:'   + tmVersion
+			//compile ':xnat-viewer:'               + tmVersion
+			//test ':transmart-core-db-tests:'      + tmVersion
 		}
 		else {
 			dm.internalDependencies delegate
@@ -142,18 +142,18 @@ grails.project.dependency.resolution = {
 dm?.with {
 	configureInternalPlugin 'compile', 'rdc-rmodules'
 	configureInternalPlugin 'runtime', 'transmart-core'
-	configureInternalPlugin 'test',    'transmart-core-db-tests'
+	//configureInternalPlugin 'test',    'transmart-core-db-tests'
 	configureInternalPlugin 'compile', 'transmart-gwas'
 	configureInternalPlugin 'compile', 'transmart-java'
 	configureInternalPlugin 'compile', 'biomart-domain'
 	configureInternalPlugin 'compile', 'search-domain'
-	configureInternalPlugin 'compile', 'folder-management'
-	configureInternalPlugin 'compile', 'transmart-legacy-db'
-	configureInternalPlugin 'runtime', 'dalliance-plugin'
-	configureInternalPlugin 'runtime', 'transmart-mydas'
+	//configureInternalPlugin 'compile', 'folder-management'
+	//configureInternalPlugin 'compile', 'transmart-legacy-db'
+	//configureInternalPlugin 'runtime', 'dalliance-plugin'
+	//configureInternalPlugin 'runtime', 'transmart-mydas'
 	configureInternalPlugin 'runtime', 'transmart-rest-api'
 	configureInternalPlugin 'runtime', 'blend4j-plugin'
-	configureInternalPlugin 'runtime', 'transmart-metacore-plugin'
+	//configureInternalPlugin 'runtime', 'transmart-metacore-plugin'
 }
 
 dm?.inlineInternalDependencies grails, grailsSettings
