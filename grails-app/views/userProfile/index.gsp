@@ -27,7 +27,7 @@
 		<label class="tabLabel" for="tab3">Access Level</label>
 
 		<input class="profileTab" id="tab4" type="radio" name="tabs">
-		<label class="tabLabel" for="tab4">IRCT Token</label>
+		<label class="tabLabel" for="tab4">API Token</label>
 
 		<section id="content1">
 			<g:form action="save">

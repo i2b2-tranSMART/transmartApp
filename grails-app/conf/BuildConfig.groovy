@@ -82,10 +82,10 @@ grails.project.dependency.resolution = {
 		runtime 'org.postgresql:postgresql:9.3-1100-jdbc4'
 		runtime 'com.oracle:ojdbc7:12.1.0.1'
 
-		test 'org.gmock:gmock:0.9.0-r435-hyve2', { transitive = false }
-		test 'org.grails:grails-datastore-test-support:1.0.2-grails-2.4'
-		test 'org.hamcrest:hamcrest-core:1.3'
-		test 'org.hamcrest:hamcrest-library:1.3'
+		//test 'org.gmock:gmock:0.9.0-r435-hyve2', { transitive = false }
+		//test 'org.grails:grails-datastore-test-support:1.0.2-grails-2.4'
+		//test 'org.hamcrest:hamcrest-core:1.3'
+		//test 'org.hamcrest:hamcrest-library:1.3'
 	}
 
 	plugins {
@@ -112,7 +112,7 @@ grails.project.dependency.resolution = {
 		if (!dm) {
 			compile ':biomart-domain:'            + tmVersion
 			compile ':blend4j-plugin:'            + tmVersion
-			//compile ':dalliance-plugin:'          + tmVersion
+			compile ':dalliance-plugin:'          + tmVersion
 			compile ':folder-management:'         + tmVersion
 			compile ':rdc-rmodules:'              + tmVersion
 			compile ':search-domain:'             + tmVersion
@@ -128,9 +128,9 @@ grails.project.dependency.resolution = {
 			compile ':transmart-mydas:'           + tmVersion
 			compile ':transmart-rest-api:'        + tmVersion
 			compile ':transmart-shared:'          + tmVersion
-			//compile ':transmart-xnat-importer:'   + tmVersion
-			//compile ':xnat-viewer:'               + tmVersion
-			test ':transmart-core-db-tests:'      + tmVersion
+			compile ':transmart-xnat-importer:'   + tmVersion
+			compile ':xnat-viewer:'               + tmVersion
+			//test ':transmart-core-db-tests:'      + tmVersion
 		}
 		else {
 			dm.internalDependencies delegate
@@ -141,7 +141,7 @@ grails.project.dependency.resolution = {
 dm?.with {
 	configureInternalPlugin 'compile', 'rdc-rmodules'
 	configureInternalPlugin 'runtime', 'transmart-core'
-	configureInternalPlugin 'test',    'transmart-core-db-tests'
+	//configureInternalPlugin 'test',    'transmart-core-db-tests'
 	configureInternalPlugin 'compile', 'transmart-gwas'
 	configureInternalPlugin 'compile', 'transmart-java'
 	configureInternalPlugin 'compile', 'biomart-domain'
