@@ -99,8 +99,8 @@ grails.project.dependency.resolution = {
 		compile ':rest-client-builder:2.1.1'
 		compile ':scaffolding:2.1.2'
 		compile ':spring-security-core:2.0.0'
-		//compile ':spring-security-kerberos:1.0.0'
-		//compile ':spring-security-ldap:2.0.0'
+		compile ':spring-security-kerberos:1.0.0'
+		compile ':spring-security-ldap:2.0.0'
 		compile ':spring-security-oauth2-provider:2.0-RC5'
 
 		runtime ':jquery-ui:1.10.4'
@@ -113,24 +113,24 @@ grails.project.dependency.resolution = {
 		if (!dm) {
 			compile ':biomart-domain:'            + tmVersion
 			compile ':blend4j-plugin:'            + tmVersion
-			//compile ':dalliance-plugin:'          + tmVersion
-			//compile ':folder-management:'         + tmVersion
+			compile ':dalliance-plugin:'          + tmVersion
+			compile ':folder-management:'         + tmVersion
 			compile ':rdc-rmodules:'              + tmVersion
 			compile ':search-domain:'             + tmVersion
 			compile ':spring-security-auth0:'     + tmVersion
 			compile ':transmart-core:'            + tmVersion
 			compile ':transmart-custom:'          + tmVersion
-			compile ':transmart-fractalis:'       + '18.1-beta17-SNAPSHOT'
+			compile ':transmart-fractalis:'       + tmVersion
 			compile ':transmart-gnome:'           + tmVersion
 			compile ':transmart-gwas:'            + tmVersion
 			compile ':transmart-java:'            + tmVersion
-			//compile ':transmart-legacy-db:'       + tmVersion
-			//compile ':transmart-metacore-plugin:' + tmVersion
-			//compile ':transmart-mydas:'           + tmVersion
+			compile ':transmart-legacy-db:'       + tmVersion
+			compile ':transmart-metacore-plugin:' + tmVersion
+			compile ':transmart-mydas:'           + tmVersion
 			compile ':transmart-rest-api:'        + tmVersion
 			compile ':transmart-shared:'          + tmVersion
-			//compile ':transmart-xnat-importer:'   + tmVersion
-			//compile ':xnat-viewer:'               + tmVersion
+			compile ':transmart-xnat-importer:'   + tmVersion
+			compile ':xnat-viewer:'               + tmVersion
 			//test ':transmart-core-db-tests:'      + tmVersion
 		}
 		else {
@@ -147,13 +147,13 @@ dm?.with {
 	configureInternalPlugin 'compile', 'transmart-java'
 	configureInternalPlugin 'compile', 'biomart-domain'
 	configureInternalPlugin 'compile', 'search-domain'
-	//configureInternalPlugin 'compile', 'folder-management'
-	//configureInternalPlugin 'compile', 'transmart-legacy-db'
-	//configureInternalPlugin 'runtime', 'dalliance-plugin'
-	//configureInternalPlugin 'runtime', 'transmart-mydas'
+	configureInternalPlugin 'compile', 'folder-management'
+	configureInternalPlugin 'compile', 'transmart-legacy-db'
+	configureInternalPlugin 'runtime', 'dalliance-plugin'
+	configureInternalPlugin 'runtime', 'transmart-mydas'
 	configureInternalPlugin 'runtime', 'transmart-rest-api'
 	configureInternalPlugin 'runtime', 'blend4j-plugin'
-	//configureInternalPlugin 'runtime', 'transmart-metacore-plugin'
+	configureInternalPlugin 'runtime', 'transmart-metacore-plugin'
 }
 
 dm?.inlineInternalDependencies grails, grailsSettings
