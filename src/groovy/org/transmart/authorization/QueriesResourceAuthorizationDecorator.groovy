@@ -52,6 +52,15 @@ class QueriesResourceAuthorizationDecorator implements QueriesResource, Authoriz
 		delegate.runQuery definition, username
 	}
 
+	QueryResult runQuery(QueryDefinition definition, User cuser) throws InvalidRequestException {
+		if (!cuser.canPerform(BUILD_COHORT, definition)) {
+			throw new AccessDeniedException('Denied ' + cuser.username +
+					' access for building cohort based on ' + definition)
+		}
+
+		delegate.runQuery definition, cuser.username
+	}
+
 	QueryResult getQueryResultFromId(Long id) throws NoSuchResourceException {
 		QueryResult res = delegate.getQueryResultFromId(id)
 

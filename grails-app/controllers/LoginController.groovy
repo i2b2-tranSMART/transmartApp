@@ -1,5 +1,7 @@
+import com.recomdata.security.PSAMATokenAuthenticator
 import grails.plugin.springsecurity.SpringSecurityService
 import grails.plugin.springsecurity.SpringSecurityUtils
+import grails.util.Holders
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.authentication.AccountExpiredException
@@ -7,12 +9,19 @@ import org.springframework.security.authentication.AuthenticationTrustResolver
 import org.springframework.security.authentication.CredentialsExpiredException
 import org.springframework.security.authentication.DisabledException
 import org.springframework.security.authentication.LockedException
+import org.springframework.security.core.Authentication
 import org.springframework.security.core.AuthenticationException
+import org.springframework.security.core.CredentialsContainer
+import org.springframework.security.core.GrantedAuthority
+import org.springframework.security.core.authority.GrantedAuthorityImpl
+import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.context.SecurityContextHolder as SCH
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.web.WebAttributes
+import org.transmart.plugin.shared.security.Roles
 import org.transmartproject.db.log.AccessLogService
 import org.transmartproject.security.BruteForceLoginLockService
 
@@ -25,7 +34,7 @@ class LoginController {
 	SpringSecurityService springSecurityService
 	UserDetailsService userDetailsService
 
-	@Value('${com.recomdata.administrator:}')
+	@Value('${com.recomdata.adminEmail:}')
 	private String adminEmail
 
 	@Value('${com.recomdata.appTitle:}')
@@ -55,23 +64,77 @@ class LoginController {
 	@Value('${org.transmart.security.samlEnabled:false}')
 	private boolean samlEnabled
 
-	private String postUrl = SpringSecurityUtils.securityConfig.apf.filterProcessesUrl
+    @Value('${org.transmart.security.oauthEnabled:true}')
+    private boolean oauth_enabled
+
+    @Value('${org.transmart.security.oauth.service_url:}')
+    private String oauth_service_url
+
+    @Value('${org.transmart.security.oauth.service_token:}')
+    private String oauth_service_token
+
+	@Value('${org.transmart.security.oauth.application_id:}')
+	private String oauth_application_id
+
+
+	@Value('${org.transmart.security.oauth.login_endpoint:}')
+    private String oauth_login_endpoint
+
+    private String postUrl = SpringSecurityUtils.securityConfig.apf.filterProcessesUrl
 	private String defaultTargetUrl = SpringSecurityUtils.securityConfig.successHandler.defaultTargetUrl
+    protected static final GrantedAuthority PUBLIC_USER = new SimpleGrantedAuthority(Roles.PUBLIC_USER.authority)
 
 	/**
 	 * Default action; redirects to 'defaultTargetUrl' if logged in, /login/auth otherwise.
 	 */
 	def index() {
         logger.debug("index() starting")
+
 		if (springSecurityService.isLoggedIn()) {
             logger.debug("index() logged in, redirecting to "+defaultTargetUrl)
 			redirect uri: defaultTargetUrl
 		}
 		else {
-            logger.debug("index() not logged in, redirect to /auth")
-			redirect action: 'auth', params: params
+            if (oauth_enabled) {
+                String oauthRedirectionURL = oauth_service_url+oauth_login_endpoint+'?redirection_url='+createLink(action: "callback", controller:"login", absolute: true)
+                logger.debug 'index() redirect back to {}', oauthRedirectionURL
+                redirect url: oauthRedirectionURL
+            } else {
+                // Use regular Grails authentication
+                logger.debug("index() not logged in, redirect to /auth")
+                redirect action: 'auth', params: params
+            }
 		}
 	}
+
+    def callback() {
+        logger.debug '/callback starting'
+        def errorMessage = ''
+        try {
+            logger.debug '/callback service url {}', oauth_service_url
+            logger.debug '/callback service token {}', oauth_service_token
+            com.recomdata.security.PSAMATokenAuthenticator psamaAuthenticator =
+                    new com.recomdata.security.PSAMATokenAuthenticator(params.token, oauth_application_id, oauth_service_url, oauth_service_token)
+            logger.debug '/callback Configured new psamaAuthenticator'
+
+            if (psamaAuthenticator.authenticated) {
+                logger.debug '/callback PSAMA authenticated the user'
+                SecurityContextHolder.getContext().setAuthentication(psamaAuthenticator)
+                logger.debug '/callback Saved to SecurityContextHolder'
+                redirect action: 'index'
+                return
+            } else {
+                errorMessage = psamaAuthenticator.whyDeniedToAuthenticate()
+            }
+
+        } catch (Exception e) {
+            logger.error '/callback Exception {}', e.getMessage()
+            errorMessage = e.getMessage()
+        }
+
+        logger.debug '/callback denied PSAMA login'
+        redirect action: 'denied', model: [ error: errorMessage]
+    }
 
 	def forceAuth() {
 		session.invalidate()
@@ -87,7 +150,7 @@ class LoginController {
 		nocache response
 
 		boolean forcedFormLogin = request.queryString
-		logger.info 'User is forcing the form login? : {}', forcedFormLogin
+		logger.debug 'auth() User is forcing the form login? : {}', forcedFormLogin
 
 		// if enabled guest and not forced login
 		if (guestAutoLogin && !forcedFormLogin) {

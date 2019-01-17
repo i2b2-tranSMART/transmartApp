@@ -13,13 +13,17 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.transmart.plugin.shared.security.AuthUserDetails
+import org.transmartproject.core.exceptions.AccessDeniedException
+import org.transmartproject.core.users.ProtectedOperation
+import org.transmartproject.core.users.ProtectedResource
+import org.transmartproject.core.users.User
 import org.transmartproject.security.BruteForceLoginLockService
 
 /**
  * @author mmcduffie
  */
 @Slf4j('logger')
-class AuthUserDetailsService implements GrailsUserDetailsService, InitializingBean {
+class AuthUserDetailsService implements User, GrailsUserDetailsService, InitializingBean {
 
 	/**
 	 * Some Spring Security classes (e.g. RoleHierarchyVoter) expect at least
@@ -33,7 +37,36 @@ class AuthUserDetailsService implements GrailsUserDetailsService, InitializingBe
 	private String usernamePropertyName
 	private Class<?> userClass
 
-	@Transactional(readOnly=true, noRollbackFor=[IllegalArgumentException, UsernameNotFoundException])
+    private Closure<User> lazyUser = { ->
+        if (!springSecurityService.isLoggedIn()) {
+            logger.warn 'User is not logged in; throwing'
+            throw new AccessDeniedException('User is not logged in')
+        }
+
+        this
+    }
+    @Lazy private User delegate = lazyUser()
+
+    Long getId() {
+        delegate.id
+    }
+
+    @Override
+	String getRealName() {
+		delegate.realName
+	}
+
+    @Override
+    String getUsername() {
+        delegate.username
+    }
+
+    @Override
+    boolean canPerform(ProtectedOperation protectedOperation, ProtectedResource protectedResource) {
+        delegate.canPerform protectedOperation, protectedResource
+    }
+
+    @Transactional(readOnly=true, noRollbackFor=[IllegalArgumentException, UsernameNotFoundException])
 	UserDetails loadUserByUsername(String username, boolean loadRoles = true) throws UsernameNotFoundException {
 		try {
 			loadUserByProperty usernamePropertyName, username, loadRoles, true
@@ -81,7 +114,6 @@ class AuthUserDetailsService implements GrailsUserDetailsService, InitializingBe
 
 	void afterPropertiesSet() {
 		usernamePropertyName = SpringSecurityUtils.securityConfig.userLookup.usernamePropertyName
-		userClass = grailsApplication.getDomainClass(
-				SpringSecurityUtils.securityConfig.userLookup.userDomainClassName).clazz
+		userClass = grailsApplication.getDomainClass(SpringSecurityUtils.securityConfig.userLookup.userDomainClassName).clazz
 	}
 }

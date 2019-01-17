@@ -1,8 +1,10 @@
 package org.transmart.ontology
 
 import grails.converters.JSON
+import grails.plugin.springsecurity.SpringSecurityService
 import org.transmart.authorization.QueriesResourceAuthorizationDecorator
 import org.transmart.marshallers.QueryResultConverter
+import org.transmart.plugin.shared.SecurityService
 import org.transmartproject.core.exceptions.InvalidRequestException
 import org.transmartproject.core.querytool.QueryDefinition
 import org.transmartproject.core.querytool.QueryResult
@@ -14,6 +16,7 @@ class QueryToolController {
 	QueryDefinitionXmlService queryDefinitionXmlService
 	QueriesResourceAuthorizationDecorator queriesResourceAuthorizationDecorator
 	User currentUserBean
+    SecurityService securityService
 
 	/**
 	 * Creates a query definition and runs it. The input format is a subset
@@ -23,9 +26,8 @@ class QueryToolController {
 	 */
 	def runQueryFromDefinition() {
 		QueryDefinition definition = queryDefinitionXmlService.fromXml(request.reader)
-		String username = currentUserBean.username
 
-		QueryResult result = queriesResourceAuthorizationDecorator.runQuery(definition, username)
+		QueryResult result = queriesResourceAuthorizationDecorator.runQuery(definition, (User) securityService.principal())
 		render(QueryResultConverter.convert(result) as JSON)
 	}
 
