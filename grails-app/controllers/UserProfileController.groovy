@@ -123,13 +123,15 @@ class UserProfileController {
 		(auth0Enabled ? auth0Service.jwtToken() : securityService.jwtToken()) ?: 'Unable to retrieve token.'
 	}
 
-	private AuthUser getOAuthUser(AuthUserDetails currentUserDetails) {
+	private Map getOAuthUser(AuthUserDetails currentUserDetails) {
 		// Get the current user, but NOT from the database, but rather from the SpringSecurityContext
 		// Basically, just return the principal
-        AuthUser user = new AuthUser()
-        user.userRealName = currentUserDetails.userRealName?:'unknown real name data'
-        user.email = currentUserDetails.email?:'no e-mail'
-        user.username = currentUserDetails.username?:'no username provided'
-		return user
+        [
+				userRealName : currentUserDetails.userRealName?:'unknown real name data',
+				email : currentUserDetails.email?:'no e-mail',
+				username : currentUserDetails.username?:'no username provided',
+                firstname: 'FirstName',
+                lastname: 'LastName'
+        ]
 	}
 }
