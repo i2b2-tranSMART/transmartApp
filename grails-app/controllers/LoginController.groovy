@@ -1,8 +1,10 @@
 import com.recomdata.security.PSAMATokenAuthenticator
+import grails.converters.JSON
 import grails.plugin.springsecurity.SpringSecurityService
 import grails.plugin.springsecurity.SpringSecurityUtils
 import grails.util.Holders
 import groovy.util.logging.Slf4j
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.authentication.AccountExpiredException
 import org.springframework.security.authentication.AuthenticationTrustResolver
@@ -21,6 +23,7 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.web.WebAttributes
+import org.transmart.plugin.custom.CustomizationConfig
 import org.transmart.plugin.shared.security.Roles
 import org.transmartproject.db.log.AccessLogService
 import org.transmartproject.security.BruteForceLoginLockService
@@ -64,7 +67,7 @@ class LoginController {
 	@Value('${org.transmart.security.samlEnabled:false}')
 	private boolean samlEnabled
 
-    @Value('${org.transmart.security.oauthEnabled:true}')
+    @Value('${org.transmart.security.oauthEnabled:false}')
     private boolean oauth_enabled
 
     @Value('${org.transmart.security.oauth.service_url:}')
@@ -76,7 +79,6 @@ class LoginController {
 	@Value('${org.transmart.security.oauth.application_id:}')
 	private String oauth_application_id
 
-
 	@Value('${org.transmart.security.oauth.login_endpoint:}')
     private String oauth_login_endpoint
 
@@ -84,56 +86,98 @@ class LoginController {
 	private String defaultTargetUrl = SpringSecurityUtils.securityConfig.successHandler.defaultTargetUrl
     protected static final GrantedAuthority PUBLIC_USER = new SimpleGrantedAuthority(Roles.PUBLIC_USER.authority)
 
+    @Autowired private CustomizationConfig customizationConfig
+
+	def about() {
+		def details = [
+                params: params
+        ]
+
+        def configDetails = 'options: [security|custom|com|edu|org]'
+        switch (params.config) {
+            case 'security':
+                configDetails = SpringSecurityUtils.securityConfig;
+                break;
+            case 'custom':
+                configDetails = applicationContext.customizationConfig;
+                break;
+            case 'com':
+                configDetails = grailsApplication.config.com;
+                break;
+            case 'edu':
+                configDetails = grailsApplication.config.edu;
+                break;
+            case 'org':
+                configDetails = grailsApplication.config.org.transmart.security;
+                break;
+        }
+        details.config = configDetails
+
+        render details as JSON
+	}
+
 	/**
 	 * Default action; redirects to 'defaultTargetUrl' if logged in, /login/auth otherwise.
 	 */
 	def index() {
-        logger.debug("index() starting")
+        logger.debug '/index starting'
 
 		if (springSecurityService.isLoggedIn()) {
-            logger.debug("index() logged in, redirecting to "+defaultTargetUrl)
+            logger.debug '/index logged in, redirecting to {}', defaultTargetUrl
 			redirect uri: defaultTargetUrl
 		}
 		else {
             if (oauth_enabled) {
                 String oauthRedirectionURL = oauth_service_url+oauth_login_endpoint+'?redirection_url='+createLink(action: "callback", controller:"login", absolute: true)
-                logger.debug 'index() redirect back to {}', oauthRedirectionURL
+                logger.debug '/index redirect back to {}', oauthRedirectionURL
                 redirect url: oauthRedirectionURL
             } else {
                 // Use regular Grails authentication
-                logger.debug("index() not logged in, redirect to /auth")
+                logger.debug '/index not logged in, redirect to /auth'
                 redirect action: 'auth', params: params
             }
 		}
 	}
 
+	def testCalc() {
+		long result = 1000 * 60 * 60 * 24 * 365;
+		return result
+	}
+
     def callback() {
-        logger.debug '/callback starting'
-        def errorMessage = ''
-        try {
-            logger.debug '/callback service url {}', oauth_service_url
-            logger.debug '/callback service token {}', oauth_service_token
-            com.recomdata.security.PSAMATokenAuthenticator psamaAuthenticator =
-                    new com.recomdata.security.PSAMATokenAuthenticator(params.token, oauth_application_id, oauth_service_url, oauth_service_token)
-            logger.debug '/callback Configured new psamaAuthenticator'
+        logger.debug '/callback starting, params: {}', params
 
-            if (psamaAuthenticator.authenticated) {
-                logger.debug '/callback PSAMA authenticated the user'
-                SecurityContextHolder.getContext().setAuthentication(psamaAuthenticator)
-                logger.debug '/callback Saved to SecurityContextHolder'
-                redirect action: 'index'
-                return
-            } else {
-                errorMessage = psamaAuthenticator.whyDeniedToAuthenticate()
+        if (params.token == null || params.token == '') {
+            logger.debug '/callback missing `token` parameter'
+            flash.error ='No token received from OAuth provider service.'
+        } else {
+
+            try {
+                logger.debug '/callback service url {}', oauth_service_url
+                logger.debug '/callback service token {}', oauth_service_token
+                com.recomdata.security.PSAMATokenAuthenticator psamaAuthenticator =
+                        new com.recomdata.security.PSAMATokenAuthenticator(params.token, oauth_application_id, oauth_service_url, oauth_service_token)
+                logger.debug '/callback Configured new psamaAuthenticator'
+
+                if (psamaAuthenticator.authenticated) {
+                    logger.debug '/callback PSAMA authenticated the user'
+                    SecurityContextHolder.getContext().setAuthentication(psamaAuthenticator)
+                    logger.debug '/callback Saved to SecurityContextHolder'
+                    redirect action: 'index'
+                    return
+                } else {
+                    def errorMessage = psamaAuthenticator.whyDeniedToAuthenticate()
+                    flash.error errorMessage
+                    logger.error '/callback PSAMA could not authenticate, because {}', errorMessage
+                }
+
+            } catch (Exception e) {
+                logger.error '/callback Exception {}', e.getMessage()
+                flash.error = e.getMessage()
             }
-
-        } catch (Exception e) {
-            logger.error '/callback Exception {}', e.getMessage()
-            errorMessage = e.getMessage()
+            logger.debug '/callback denied PSAMA login'
+            redirect action: 'denied'
         }
-
-        logger.debug '/callback denied PSAMA login'
-        redirect action: 'denied', model: [ error: errorMessage]
     }
 
 	def forceAuth() {
@@ -172,17 +216,32 @@ class LoginController {
         logger.debug("auth() finished")
 	}
 
+    private void listParams(Enumeration<String> list, String label) {
+        while (list.hasMoreElements()) {
+            String key = list.nextElement()
+            logger.debug '/denied \trequest.{}Name {}', label, key
+        }
+
+    }
 	/**
 	 * Show denied page.
 	 */
 	def denied() {
-        logger.debug("denied() starting")
-		if (springSecurityService.isLoggedIn() &&
+        logger.debug '/denied starting'
+
+        // TODO: Not sure why this `if` statement is here?! This step is already on the `denied login` path!
+        if (springSecurityService.isLoggedIn() &&
 				authenticationTrustResolver.isRememberMe(SCH.context?.authentication)) {
 			// have cookie but the page is guarded with IS_AUTHENTICATED_FULLY
 			redirect action: 'full', params: params
 		}
-        logger.debug("denied() finished")
+
+        def errMessage = 'Unauthorized request'
+        if (session.getAttribute('authentication_denied_message')) {
+            errMessage = (String) session.getAttribute('authentication_denied_message')
+        }
+        logger.debug '/denied finished, {}', errMessage
+        [errorMessage: errMessage]
 	}
 
 	/**
