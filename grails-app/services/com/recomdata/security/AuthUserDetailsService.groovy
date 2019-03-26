@@ -113,7 +113,10 @@ class AuthUserDetailsService implements User, GrailsUserDetailsService, Initiali
 	}
 
 	void afterPropertiesSet() {
+		logger.info 'Loading usernamePropertyName object from {}', SpringSecurityUtils.securityConfig.userLookup.usernamePropertyName
 		usernamePropertyName = SpringSecurityUtils.securityConfig.userLookup.usernamePropertyName
+
+		logger.info 'Loading userClass object from {}', SpringSecurityUtils.securityConfig.userLookup.userDomainClassName
 		userClass = grailsApplication.getDomainClass(SpringSecurityUtils.securityConfig.userLookup.userDomainClassName).clazz
 	}
 }

@@ -139,11 +139,6 @@ class LoginController {
 		}
 	}
 
-	def testCalc() {
-		long result = 1000 * 60 * 60 * 24 * 365;
-		return result
-	}
-
     def callback() {
         logger.debug '/callback starting, params: {}', params
 

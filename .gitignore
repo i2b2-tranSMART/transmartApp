@@ -17,3 +17,6 @@ System.out
 target
 target-eclipse
 Thumbs.db
+logs
+build.sh
+deploy.sh
