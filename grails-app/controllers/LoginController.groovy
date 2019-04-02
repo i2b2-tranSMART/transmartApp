@@ -28,6 +28,8 @@ import org.transmart.plugin.shared.security.Roles
 import org.transmartproject.db.log.AccessLogService
 import org.transmartproject.security.BruteForceLoginLockService
 
+import static java.lang.String.join
+
 @Slf4j('logger')
 class LoginController {
 
@@ -70,17 +72,17 @@ class LoginController {
     @Value('${org.transmart.security.oauthEnabled:false}')
     private boolean oauth_enabled
 
-    @Value('${org.transmart.security.oauth.service_url:}')
-    private String oauth_service_url
-
     @Value('${org.transmart.security.oauth.service_token:}')
     private String oauth_service_token
 
 	@Value('${org.transmart.security.oauth.application_id:}')
 	private String oauth_application_id
 
-	@Value('${org.transmart.security.oauth.login_endpoint:}')
+    @Value('${org.transmart.security.oauth.login_endpoint:}')
     private String oauth_login_endpoint
+
+    @Value('${org.transmart.security.oauth.tokeninspect_endpoint:}')
+    private String oauth_tokeninspect_endpoint
 
     private String postUrl = SpringSecurityUtils.securityConfig.apf.filterProcessesUrl
 	private String defaultTargetUrl = SpringSecurityUtils.securityConfig.successHandler.defaultTargetUrl
@@ -128,7 +130,8 @@ class LoginController {
 		}
 		else {
             if (oauth_enabled) {
-                String oauthRedirectionURL = oauth_service_url+oauth_login_endpoint+'?redirection_url='+createLink(action: "callback", controller:"login", absolute: true)
+                String oauthRedirectionURL = join('', [oauth_login_endpoint,'?redirection_url='
+                        ,createLink(action: "callback_processor", controller:"login", absolute: true)])
                 logger.debug '/index redirect back to {}', oauthRedirectionURL
                 redirect url: oauthRedirectionURL
             } else {
@@ -137,6 +140,14 @@ class LoginController {
                 redirect action: 'auth', params: params
             }
 		}
+	}
+
+	def callback_processor() {
+        [
+                isPsamaEnabled: oauth_enabled,
+                mysesison:session
+        ]
+
 	}
 
     def callback() {
@@ -148,10 +159,14 @@ class LoginController {
         } else {
 
             try {
-                logger.debug '/callback service url {}', oauth_service_url
-                logger.debug '/callback service token {}', oauth_service_token
+                logger.debug '/callback inspect user token'
                 com.recomdata.security.PSAMATokenAuthenticator psamaAuthenticator =
-                        new com.recomdata.security.PSAMATokenAuthenticator(params.token, oauth_application_id, oauth_service_url, oauth_service_token)
+                        new com.recomdata.security.PSAMATokenAuthenticator(
+								params.token,
+								oauth_application_id,
+                                oauth_tokeninspect_endpoint,
+								oauth_service_token
+						)
                 logger.debug '/callback Configured new psamaAuthenticator'
 
                 if (psamaAuthenticator.authenticated) {

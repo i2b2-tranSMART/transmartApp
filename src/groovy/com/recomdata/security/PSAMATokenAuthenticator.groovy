@@ -29,18 +29,18 @@ class PSAMATokenAuthenticator implements Authentication, CredentialsContainer {
     Collection<GrantedAuthority> authorities = []
     Boolean authenticated = false
 
-    String oauth_service_url
+    String tokeninspectURL
     String oauth_service_token
     String oauth_application_id
     String errorMessage
 
-    public PSAMATokenAuthenticator(String userToken, String oauth_application_id, String oauth_service_url, String oauth_service_token) {
+    public PSAMATokenAuthenticator(String userToken, String oauth_application_id, String tokeninspectURL, String oauth_service_token) {
         logger.debug '_constructor Starting'
-        this.oauth_service_url = oauth_service_url
+        this.tokeninspectURL = tokeninspectURL
         this.oauth_service_token = oauth_service_token
         this.oauth_application_id = oauth_application_id
 
-        logger.debug '_constructor serviceURL: {}', this.oauth_service_url
+        logger.debug '_constructor tokeninspectURL: {}', this.tokeninspectURL
         logger.debug '_constructor serviceToken: {}', this.oauth_service_token
         logger.debug '_constructor oauthApplication: {}', this.oauth_application_id
         logger.debug '_constructor userToken: {}', userToken
@@ -60,16 +60,13 @@ class PSAMATokenAuthenticator implements Authentication, CredentialsContainer {
 
             // Build privileges list, if any exists
             Collection<GrantedAuthority> tmRoleList = []
-            if (userObject.getJSONArray("privileges").length() == 0) {
-                throw new RuntimeException('The user has no privilege to access this application')
+            if (userObject.getJSONArray("roles").length() == 0) {
+                throw new RuntimeException('The user has no "roles" to access this application')
             } else {
-                // Convert OAuthProvider privileges to i2b2/tranSmart auhtorities
-                JSONArray pa = userObject.getJSONArray("privileges")
+                // Convert OAuthProvider roles to i2b2/tranSmart auhtorities
+                JSONArray pa = userObject.getJSONArray("roles")
                 for(int i=0;i<pa.length();i++) {
-                    if (!pa.getString(i).startsWith('ROLE_')) {
-                        // Only use privileges that does not start with ROLE (don't ask!!!)
                         tmRoleList.add(new SimpleGrantedAuthority('ROLE_' + pa.getString(i)))
-                    }
                 }
                 logger.debug '_constructor `tmRoleList` collection is now {}', tmRoleList
             }
@@ -94,6 +91,7 @@ class PSAMATokenAuthenticator implements Authentication, CredentialsContainer {
             this.authenticated = true
             this.authorities = tmRoleList
             logger.debug '_constructor finished authenticating by user'
+
         } catch (Exception e) {
             logger.error '_constructor Exception {}', e.getMessage()
             this.errorMessage = e.getMessage()
@@ -132,7 +130,7 @@ class PSAMATokenAuthenticator implements Authentication, CredentialsContainer {
         logger.debug 'getUserByToken() starting, with userToken:{}', userToken
 
         // Using a service (based on the configured URL) for token introspection
-        String tokenintrospectionURL = this.oauth_service_url + '/picsureauth/token/inspect' //?applicationId='+this.oauth_application_id
+        String tokenintrospectionURL = this.tokeninspectURL + '?applicationId='+this.oauth_application_id
         logger.debug 'getUserByToken() token introspection url: {}', tokenintrospectionURL
 
         JSONObject tokenInfo = null
@@ -140,7 +138,6 @@ class PSAMATokenAuthenticator implements Authentication, CredentialsContainer {
             Resty resty = new Resty()
             logger.debug 'getUserByToken() using service token {}', this.oauth_service_token
             resty.withHeader('Authorization','Bearer ' + this.oauth_service_token)
-
             logger.debug 'getUserByToken() using user token {}', userToken
             tokenInfo = resty.json(tokenintrospectionURL, Resty.content(new JSONObject(token: userToken))).toObject()
 

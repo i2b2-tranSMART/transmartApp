@@ -41,7 +41,7 @@ class CurrentUserBeanFactoryBean implements FactoryBean<User> {
         // no need to look it up in the database, and rather take it from the SpringSecurity context.
 		if (oauth_enabled) {
 			// No need to fetch from the database, just return the principal
-			user = securityService.principal()
+			user = (User) securityService.principal()
 		} else {
 			// Fetch the user from the database
 			user = usersResource.getUserFromUsername(securityService.currentUsername())

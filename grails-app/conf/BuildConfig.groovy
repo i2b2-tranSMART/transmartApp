@@ -30,10 +30,6 @@ grails.project.dependency.resolution = {
 			mavenLocal()
 			grailsCentral()
 			mavenCentral()
-			mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/libs-snapshots'
-			mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/libs-releases'
-			mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/plugins-releases'
-			mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/plugins-snapshots'
 			mavenRepo 'https://repo.transmartfoundation.org/content/repositories/public/'
 		}
 	}
@@ -59,10 +55,14 @@ grails.project.dependency.resolution = {
 		compile 'org.apache.solr:solr-solrj:5.4.1'
 		compile 'org.jfree:jfreechart:1.0.19'
 		compile 'org.jfree:jfreesvg:2.1'
-		compile 'org.codehaus.groovy.modules.http-builder:http-builder:0.5.2', {
+
+		//compile 'org.rosuda.REngine:REngine:2.1.0'
+        //compile 'org.rosuda:Rserve:1.7.3'
+
+        compile 'org.codehaus.groovy.modules.http-builder:http-builder:0.5.2', {
 			excludes 'groovy', 'nekohtml', 'httpclient', 'httpcore'
 		}
-		compile 'org.rosuda:Rserve:1.7.3'
+
 		compile('org.springframework.security.extensions:spring-security-saml2-core:1.0.0.RELEASE') {
 			excludes 'bcprov-jdk15', 'spring-security-config', 'spring-security-core', 'spring-security-web', 'xercesImpl'
 		}
@@ -79,7 +79,7 @@ grails.project.dependency.resolution = {
 		runtime 'xerces:xercesImpl:2.9.1'
 
 		// you can remove whichever you're not using
-		runtime 'org.postgresql:postgresql:9.3-1100-jdbc4'
+		//runtime 'org.postgresql:postgresql:9.3-1100-jdbc4'
 		runtime 'com.oracle:ojdbc7:12.1.0.1'
 
 		//test 'org.gmock:gmock:0.9.0-r435-hyve2', { transitive = false }
@@ -95,7 +95,7 @@ grails.project.dependency.resolution = {
 		compile ':cache-ehcache:1.0.5'
 		compile ':codenarc:0.21'
 		compile ':hibernate:3.6.10.19'
-		compile ':quartz:1.0.2'
+		compile 'org.grails.plugins:quartz:1.0'
 		compile ':rest-client-builder:2.1.1'
 		compile ':scaffolding:2.1.2'
 		compile ':spring-security-core:2.0.0'
@@ -141,7 +141,7 @@ grails.project.dependency.resolution = {
 dm?.with {
 	configureInternalPlugin 'compile', 'rdc-rmodules'
 	configureInternalPlugin 'runtime', 'transmart-core'
-	//configureInternalPlugin 'test',    'transmart-core-db-tests'
+	configureInternalPlugin 'test',    'transmart-core-db-tests'
 	configureInternalPlugin 'compile', 'transmart-gwas'
 	configureInternalPlugin 'compile', 'transmart-java'
 	configureInternalPlugin 'compile', 'biomart-domain'
