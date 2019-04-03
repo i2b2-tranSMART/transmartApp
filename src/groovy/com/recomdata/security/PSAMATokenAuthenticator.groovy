@@ -60,11 +60,11 @@ class PSAMATokenAuthenticator implements Authentication, CredentialsContainer {
 
             // Build privileges list, if any exists
             Collection<GrantedAuthority> tmRoleList = []
-            if (userObject.getJSONArray("roles").length() == 0) {
-                throw new RuntimeException('The user has no "roles" to access this application')
+            if (userObject.getJSONArray("privileges").length() == 0) {
+                throw new RuntimeException('The user has no "privileges" to access this application')
             } else {
                 // Convert OAuthProvider roles to i2b2/tranSmart auhtorities
-                JSONArray pa = userObject.getJSONArray("roles")
+                JSONArray pa = userObject.getJSONArray("privileges")
                 for(int i=0;i<pa.length();i++) {
                         tmRoleList.add(new SimpleGrantedAuthority('ROLE_' + pa.getString(i)))
                 }

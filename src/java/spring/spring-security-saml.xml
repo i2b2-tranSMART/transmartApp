@@ -160,7 +160,6 @@
     <bean id="samlLogoutFilter" class="org.springframework.security.saml.SAMLLogoutFilter">
         <constructor-arg ref="successLogoutHandler"/>
         <constructor-arg ref="logoutHandler"/>
-        <constructor-arg ref="logoutHandler"/>
     </bean>
 
     <!-- Filter processing incoming logout messages -->
