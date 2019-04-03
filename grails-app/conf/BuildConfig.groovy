@@ -141,7 +141,7 @@ grails.project.dependency.resolution = {
 dm?.with {
 	configureInternalPlugin 'compile', 'rdc-rmodules'
 	configureInternalPlugin 'runtime', 'transmart-core'
-	configureInternalPlugin 'test',    'transmart-core-db-tests'
+	//configureInternalPlugin 'test',    'transmart-core-db-tests'
 	configureInternalPlugin 'compile', 'transmart-gwas'
 	configureInternalPlugin 'compile', 'transmart-java'
 	configureInternalPlugin 'compile', 'biomart-domain'
