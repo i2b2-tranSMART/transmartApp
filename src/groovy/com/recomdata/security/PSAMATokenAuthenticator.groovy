@@ -66,7 +66,7 @@ class PSAMATokenAuthenticator implements Authentication, CredentialsContainer {
                 // Convert OAuthProvider roles to i2b2/tranSmart auhtorities
                 JSONArray pa = userObject.getJSONArray("privileges")
                 for(int i=0;i<pa.length();i++) {
-                        tmRoleList.add(new SimpleGrantedAuthority('ROLE_' + pa.getString(i)))
+                        tmRoleList.add(new SimpleGrantedAuthority('ROLE_' + pa.getString(i).replace("TM_","")))
                 }
                 logger.debug '_constructor `tmRoleList` collection is now {}', tmRoleList
             }

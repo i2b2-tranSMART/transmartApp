@@ -37,7 +37,7 @@ open http://localhost/transmart
 
 ```
 
-# create docker image locally
+# create runnable docker image locally
 
 To create an docker image, that runs the generated .war file, in Tomcat, and can be included in a stack with other components (for example, in the [pic-sure reference stack](https://github.com/hms-dbmi/pic-sure-i2b2-transmart)), you can create a `transmart-runner` image (the name is just for example purposes).
 
@@ -46,6 +46,17 @@ docker build --tag transmart-runner --file Dockerfile-transmart-runner .
 
 ```
 
+Now, you should have a docker image in your local registry, called `transmart-runner:latest`
+
+```
+[install]$ docker images transmart-runner
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+transmart-runner    latest              a5b8e1416c01        16 minutes ago      320MB
+
+
+```
+
+# publish the local image to Docker Hub
 Later, if desired, you can `push` this image from your host machine to the DockerHub, to share your version of the application with others.
 
 ```
