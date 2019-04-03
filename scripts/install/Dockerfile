@@ -17,4 +17,5 @@ ENV GRADLE_HOME=/root/gradle-4.9
 ENV PATH=${GRAILS_HOME}/bin:${GRADLE_HOME}/bin:${PATH}
 
 RUN ./build_plugins.sh && \
-		./build_app.sh
+    ./build_app.sh i2b2tm-130_pic-sure-auth
+    

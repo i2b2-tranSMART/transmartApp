@@ -14,7 +14,7 @@ It might be required to build the application on the local machine. The requirem
 # Note, if this script is ran from inside a repo, it will clone 
 # the repo again! in the current directory, which might not be 
 # the desired outcome.
-./build_app.sh
+./build_app.sh i2b2tm-130_pic-sure-auth
 		
 ```
 
