@@ -1,0 +1,37 @@
+FROM tomcat:8.0-jre8-alpine AS production
+
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh \
+    #
+    # see: https://github.com/docker-library/openjdk/issues/73
+    # see: https://hub.docker.com/r/neduekwunife/openjdk8-jre-alpine-with-fontconfig/
+    # add font ttf-dejavu
+    #
+    && apk add --update ttf-dejavu \
+    && rm -rf /var/cache/apk/* \
+    #
+    # remove default webapps
+    && rm -rf /usr/local/tomcat/webapps/examples \
+    && rm -rf /usr/local/tomcat/webapps/docs \
+    #
+    # create configuration directory
+    && mkdir -p /root/.grails/transmartConfig
+
+# dockerfile author
+LABEL maintainer="avillach_lab_developers@googlegroups.com"
+
+# tomcat variables
+ENV CATALINA_OPTS "$CATALINA_OPTS -Xms512m -Xmx2g -Djava.awt.headless=true -XX:+UseConcMarkSweepGC"
+# required for ttf-dejavu install
+ENV LANG en_US.UTF-8
+
+# Copy the freshly built .war file into this container
+COPY --from=transmart-builder /root/transmartApp/target/transmart.war $CATALINA_HOME/webapps/transmart.war
+
+# With nginx as our front-end, make sure scheme protocol and IP is forwarded to tomcat - Andre
+#COPY server.xml $CATALINA_HOME/conf/
+
+# temporary hack: disable HTTP request validation -Andre
+# see https://hms-dbmi.atlassian.net/browse/I2B2TM-24
+#RUN sed -i 's/#\(tomcat\.util\.http\.parser\.HttpParser\.requestTargetAllow\).*$/\1=|{}/g' conf/catalina.properties
+
+ENTRYPOINT ["./bin/catalina.sh", "run"]
