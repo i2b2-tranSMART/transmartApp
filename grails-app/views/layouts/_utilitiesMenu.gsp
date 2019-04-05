@@ -97,7 +97,12 @@ span.utilMenuSeparator {
 			<li class="utilMenuSeparator"><span class="utilMenuSeparator">&nbsp;</span></li>
 			<g:userProfile/>
 			<li><a href="${createLink(controller: 'changeMyPassword', action: 'show')}">Change My Password</a></li>
-			<li><a href="${createLink(controller: 'login', action: 'forceAuth')}">Log Out</a></li>
+			<g:if test="${grailsApplication.config.org.transmart.security.oauthEnabled}">
+				<li><a href="/psamaui/logout">PSAMA Log Out</a></li>
+			</g:if>
+			<g:else>
+				<li><a href="${createLink(controller: 'login', action: 'forceAuth')}">Log Out</a></li>
+			</g:else>
 		</ul>
 	</div>
 </th>
