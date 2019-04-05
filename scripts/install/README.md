@@ -32,14 +32,14 @@ docker build --tag transmart-builder . > build.log
 After the build (which might take up to 20 minutes) completes. You can either run the container and configure/execute the application directly from it, or just copy the .war file out of it into the host environment.
 
 ```
-docker run --it -p 80:8080 transmart-build sh
+docker run --it -p 80:8080 transmart-builder sh
 open http://localhost/transmart
 
 ```
 
 # create runnable docker image locally
 
-To create an docker image, that runs the generated .war file, in Tomcat, and can be included in a stack with other components (for example, in the [pic-sure reference stack](https://github.com/hms-dbmi/pic-sure-i2b2-transmart)), you can create a `transmart-runner` image (the name is just for example purposes).
+To create a docker image, that runs the generated .war file, in Tomcat, and can be included in a stack with other components (for example, in the [pic-sure reference stack](https://github.com/hms-dbmi/pic-sure-i2b2-transmart)), you can create a `transmart-runner` image (the name is just for example purposes).
 
 ```
 docker build --tag transmart-runner --file Dockerfile-transmart-runner .
