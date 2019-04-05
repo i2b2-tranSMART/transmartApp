@@ -101,7 +101,7 @@ span.utilMenuSeparator {
 				<li><a href="/psamaui/logout">PSAMA Log Out</a></li>
 			</g:if>
 			<g:else>
-				<li><a href="${createLink(controller: 'login', action: 'forceAuth')}">Log Out</a></li>
+				<li><a href="${createLink(controller: 'login', action: 'forceAuth')}">TM Log Out</a></li>
 			</g:else>
 		</ul>
 	</div>
