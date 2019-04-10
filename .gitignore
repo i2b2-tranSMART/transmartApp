@@ -20,3 +20,4 @@ Thumbs.db
 logs
 build.sh
 deploy.sh
+scripts/install/*.war

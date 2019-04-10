@@ -8,6 +8,9 @@
 # is `03a2f8ad2`, the image generated will be
 # tagged as `dbmi/i2b2transmart:master.03a2f8ad2`
 
+# Get the freshly built .war file
+cp ../../target/transmart.war ./
+
 CURRENT_BRANCH=$(git branch | grep "*" | cut -d " " -f 2)
 CURRENT_COMMIT=$(git log | head -1 | cut -d " " -f 2 | cut -c1-10)
 
