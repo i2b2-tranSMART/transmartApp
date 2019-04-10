@@ -25,7 +25,8 @@ ENV CATALINA_OPTS "$CATALINA_OPTS -Xms512m -Xmx2g -Djava.awt.headless=true -XX:+
 ENV LANG en_US.UTF-8
 
 # Copy the freshly built .war file into this container
-COPY --from=transmart-builder /root/transmartApp/target/transmart.war $CATALINA_HOME/webapps/transmart.war
+#COPY --from=transmart-builder /root/transmartApp/target/transmart.war $CATALINA_HOME/webapps/transmart.war
+COPY transmart.war $CATALINA_HOME/webapps/transmart.war
 
 # With nginx as our front-end, make sure scheme protocol and IP is forwarded to tomcat - Andre
 #COPY server.xml $CATALINA_HOME/conf/

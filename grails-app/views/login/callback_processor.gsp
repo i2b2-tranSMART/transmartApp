@@ -12,7 +12,7 @@
         <div style="font-size: 200%; margin-top: 20px; color: orange">Processing login information.</div><br />
 
         <script>
-            window.location='callback?token='+local_storage.id_token;
+            window.location='callback?token='+localStorage.id_token;
         </script>
          ${flash.error}
 	</div>
