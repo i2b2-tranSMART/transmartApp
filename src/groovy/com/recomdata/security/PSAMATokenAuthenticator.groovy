@@ -33,9 +33,12 @@ class PSAMATokenAuthenticator implements Authentication, CredentialsContainer {
     String oauth_service_token
     String oauth_application_id
     String errorMessage
+    String userToken
 
     public PSAMATokenAuthenticator(String userToken, String oauth_application_id, String tokeninspectURL, String oauth_service_token) {
         logger.debug '_constructor Starting'
+
+        this.userToken = userToken
         this.tokeninspectURL = tokeninspectURL
         this.oauth_service_token = oauth_service_token
         this.oauth_application_id = oauth_application_id
@@ -124,6 +127,10 @@ class PSAMATokenAuthenticator implements Authentication, CredentialsContainer {
         if (this.credentials instanceof CredentialsContainer) {
             ((CredentialsContainer)this.credentials).eraseCredentials();
         }
+    }
+
+    public String getJwtToken() {
+        this.userToken;
     }
 
     JSONObject getUserByToken(String userToken) {

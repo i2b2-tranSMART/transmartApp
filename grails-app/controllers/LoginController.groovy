@@ -199,12 +199,12 @@ class LoginController {
 	 * Show the login page.
 	 */
 	def auth() {
-		logger.debug("auth() starting")
+		logger.debug("/auth starting")
 
 		nocache response
 
 		boolean forcedFormLogin = request.queryString
-		logger.debug 'auth() User is forcing the form login? : {}', forcedFormLogin
+		logger.debug '/auth User is forcing the form login? : {}', forcedFormLogin
 
 		// if enabled guest and not forced login
 		if (guestAutoLogin && !forcedFormLogin) {
@@ -212,7 +212,7 @@ class LoginController {
 
 			try {
 				UserDetails ud = userDetailsService.loadUserByUsername(guestUserName)
-				logger.debug 'We have found user: {}', ud.username
+				logger.debug '/auth We have found user: {}', ud.username
 				springSecurityService.reauthenticate ud.username
 				redirect uri: defaultTargetUrl
 				return
@@ -221,9 +221,9 @@ class LoginController {
 				logger.info 'can not find the user: {}', guestUserName
 			}
 		}
-        logger.debug("auth() calling authModel()")
+        logger.debug("/auth calling authModel()")
 		authModel()
-        logger.debug("auth() finished")
+        logger.debug("/auth finished")
 	}
 
     private void listParams(Enumeration<String> list, String label) {
@@ -312,17 +312,19 @@ class LoginController {
 		response.addHeader('cache-Control', 'private') //IE5.x only
 	}
 
-	private Map authModel() {
-		logger.debug("authModel() starting")
-		[postUrl     : request.contextPath + postUrl,
-		 hasCookie   : authenticationTrustResolver.isRememberMe(SCH.context?.authentication),
-		 adminEmail  : adminEmail,
-		 appTitle    : appTitle,
-		 disclaimer  : disclaimer,
-		 largeLogo   : largeLogo,
-		 providerLogo: providerLogo,
-		 providerName: providerName,
-		 providerUrl : providerUrl,
-		 samlEnabled : samlEnabled]
-	}
+    private Map authModel() {
+        logger.debug("authModel() starting")
+        [
+                postUrl     : request.contextPath + postUrl,
+                hasCookie   : authenticationTrustResolver.isRememberMe(SCH.context?.authentication),
+                adminEmail  : adminEmail,
+                appTitle    : appTitle,
+                disclaimer  : disclaimer,
+                largeLogo   : largeLogo,
+                providerLogo: providerLogo,
+                providerName: providerName,
+                providerUrl : providerUrl,
+                samlEnabled : samlEnabled
+        ]
+    }
 }

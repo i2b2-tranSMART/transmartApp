@@ -630,7 +630,9 @@ Ext.onReady(function () {
 	if (GLOBAL.gridViewEnabled) {
 		resultsTabPanel.add(analysisGridPanel);
 	}
-	resultsTabPanel.add(dataAssociationPanel);
+	if (GLOBAL.advancedWorkflowEnabled) {
+        resultsTabPanel.add(dataAssociationPanel);
+	}
 	if (GLOBAL.dataExportEnabled) {
 		resultsTabPanel.add(analysisDataExportPanel);
 	}

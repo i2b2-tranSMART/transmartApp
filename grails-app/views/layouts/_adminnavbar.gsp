@@ -46,12 +46,22 @@
 		<ul class="navlist">
 			<li>
 				<span class="adminMenuButton">
-					<g:link class='list' controller='authUser' action='list'>User List</g:link>
+                    <g:if test="${grailsApplication.config.org.transmart.security.oauthEnabled}">
+                        <a class='list' href="#" onClick="PSAMASelection()">User List</a>
+                    </g:if>
+                    <g:else>
+                        <g:link class='list' controller='authUser' action='list'>User List</g:link>
+                    </g:else>
 				</span>
 			</li>
 			<li>
 				<span class="adminMenuButton">
-					<g:link class='create' controller='authUser' action='create'>Create User</g:link>
+                    <g:if test="${grailsApplication.config.org.transmart.security.oauthEnabled}">
+                        <a class='create' href="#" onClick="PSAMASelection()">Create User</a>
+                    </g:if>
+                    <g:else>
+                        <g:link class='create' controller='authUser' action='create'>Create User</g:link>
+                    </g:else>
 				</span>
 			</li>
 		</ul>
@@ -228,3 +238,15 @@
 		</ul>
 	</div>
 </div>
+
+<script>
+function PSAMASelection() {
+    var txt;
+    var r = confirm("This function is now handled via PSAMA.\n\nDo you want to proceed?");
+    if (r == true) {
+        console.log("Redirect here to PSAMA");
+    } else {
+        console.log("User does not want to go to PSAMA.");
+    }
+}
+</script>

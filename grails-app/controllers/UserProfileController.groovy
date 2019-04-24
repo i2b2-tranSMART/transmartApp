@@ -1,3 +1,4 @@
+import com.auth0.jwt.JWT
 import grails.plugin.springsecurity.SpringSecurityUtils
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -43,7 +44,9 @@ class UserProfileController {
 			 token       : jwtToken(),
 			 instanceType: customizationConfig.instanceType,
 			 instanceName: customizationConfig.instanceName,
-			 level       : customizationService.currentUserLevel()]
+			 level       : customizationService.currentUserLevel(),
+			 claims      : jwtTokenClaims()
+			]
 		} catch (e) {
 			logger.error '/index Exception "{}" in UserProfileController.', e.message, e
 			redirect action: 'basic'
@@ -121,6 +124,11 @@ class UserProfileController {
 
 	private String jwtToken() {
 		(auth0Enabled ? auth0Service.jwtToken() : securityService.jwtToken()) ?: 'Unable to retrieve token.'
+	}
+
+	private String jwtTokenClaims() {
+		logger.debug 'jwtTokenClaims() get current token {}', JWT.decode(jwtToken())
+		JWT.decode(jwtToken())
 	}
 
 	private Map getOAuthUser(AuthUserDetails currentUserDetails) {

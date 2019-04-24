@@ -15,10 +15,12 @@
 			<br/>
 			<g:link controller='user' action='access' class='btn btn-info'>Level 2 Access Request Form</g:link>
 		</transmart:ifLevelOne>
+
 		<transmart:ifLevelTwo>
 			<p>Your current access level is <b>Controlled Data Access (Level 2)</b>.</p>
 			<p>This means that you are able to run <i>summary statistics</i> and <i>advanced statistics</i> queries, you can also see <i>patient level data</i> and <i>download or print</i> the information presented on the resulting pages.</p>
 		</transmart:ifLevelTwo>
+
 		<transmart:ifLevelAdmin>
 			<p>Your current access level is <b>Admin</b>.</p>
 			<p>This means that you are able to run <i>summary statistics</i> and <i>advanced statistics</i> queries, you can also see <i>patient level data</i> and <i>download or print</i> the information presented on the resulting pages.</p>
