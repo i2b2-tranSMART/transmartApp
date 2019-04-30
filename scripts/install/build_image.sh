@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 
 #
 # This script will create a new docker image, labelled dbmi/i2b2transmart and

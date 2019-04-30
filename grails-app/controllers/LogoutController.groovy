@@ -31,8 +31,6 @@ class LogoutController {
 		logger.debug '/logout/psama Starting ...'
         accessLogService.report 'Logout', 'Logging out user and redirecting to PSAMA.'
 
-        HttpServletRequest request = (GrailsWebRequest) RequestContextHolder.currentRequestAttributes().request
-        HttpServletResponse response = (GrailsWebRequest) RequestContextHolder.currentRequestAttributes().response
         Authentication authentication = SecurityContextHolder.context.authentication
         for (LogoutHandler handler in logoutHandlers) {
             handler.logout request, response, authentication
@@ -41,6 +39,6 @@ class LogoutController {
 
         // TODO: This should be parameterized
         redirect url: request.getScheme() + "://" + request.getServerName() + '/psamaui/logout'
-        return
+        response.flushBuffer()
 	}
 }

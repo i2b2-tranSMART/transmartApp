@@ -241,10 +241,10 @@
 
 <script>
 function PSAMASelection() {
-    var txt;
-    var r = confirm("This function is now handled via PSAMA.\n\nDo you want to proceed?");
+    var forwardURL = window.location.hostname + '/psamaui';
+    var r = confirm("This function is now handled via PSAMA. ("+forwardURL+")\n\nDo you want to proceed?");
     if (r == true) {
-        console.log("Redirect here to PSAMA");
+        window.location = forwardURL;
     } else {
         console.log("User does not want to go to PSAMA.");
     }
