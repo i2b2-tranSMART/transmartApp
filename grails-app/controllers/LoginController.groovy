@@ -203,6 +203,10 @@ class LoginController {
 
 		nocache response
 
+		if (oauth_enabled) {
+			redirect action: callback_processor()
+		}
+
 		boolean forcedFormLogin = request.queryString
 		logger.debug '/auth User is forcing the form login? : {}', forcedFormLogin
 

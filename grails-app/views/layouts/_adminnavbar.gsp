@@ -18,23 +18,29 @@
 		<h1 class="panelHeader">
 			Groups
 		</h1>
-		<ul class="navlist">
-			<li>
-				<span class="adminMenuButton">
-					<g:link class='list' controller='userGroup'>Group List</g:link>
-				</span>
-			</li>
-			<li>
-				<span class="adminMenuButton">
-					<g:link class='create' controller='userGroup' action='create'>Create Group</g:link>
-				</span>
-			</li>
-			<li>
-				<span class="adminMenuButton">
-					<g:link class='create' controller='userGroup' action='membership'>Group Membership</g:link>
-				</span>
-			</li>
-		</ul>
+
+		<g:if test="${grailsApplication.config.org.transmart.security.oauthEnabled}">
+			 "Group" management is not available while under PSAMA control.
+		</g:if>
+		<g:else>
+			<ul class="navlist">
+				<li>
+					<span class="adminMenuButton">
+						<g:link class='list' controller='userGroup'>Group List</g:link>
+					</span>
+				</li>
+				<li>
+					<span class="adminMenuButton">
+						<g:link class='create' controller='userGroup' action='create'>Create Group</g:link>
+					</span>
+				</li>
+				<li>
+					<span class="adminMenuButton">
+						<g:link class='create' controller='userGroup' action='membership'>Group Membership</g:link>
+					</span>
+				</li>
+			</ul>
+		</g:else>
 	</div>
 </div>
 
@@ -241,7 +247,7 @@
 
 <script>
 function PSAMASelection() {
-    var forwardURL = window.location.hostname + '/psamaui';
+    var forwardURL = window.location.protocol+"//"+window.location.hostname + '/psamaui';
     var r = confirm("This function is now handled via PSAMA. ("+forwardURL+")\n\nDo you want to proceed?");
     if (r == true) {
         window.location = forwardURL;
