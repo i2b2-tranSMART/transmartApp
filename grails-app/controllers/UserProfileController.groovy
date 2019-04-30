@@ -128,7 +128,7 @@ class UserProfileController {
 
 	private String jwtTokenClaims() {
 		logger.debug 'jwtTokenClaims() get current token {}', JWT.decode(jwtToken())
-		JWT.decode(jwtToken())
+		JWT.decode(jwtToken()).claims.toString()
 	}
 
 	private Map getOAuthUser(AuthUserDetails currentUserDetails) {
