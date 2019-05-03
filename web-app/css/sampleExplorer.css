@@ -348,3 +348,35 @@ table.categoryListCheckbox {
     right:0;
     z-index:100;
 }
+
+div.detailedSampleInformation {
+	margin : 10px;
+	padding : 10px;
+	border-width : 1px;
+	border-color : black;
+	border-style : solid;
+}
+
+div.sampleStatisticsTitle {
+	font-size: 12pt;
+	font-weight: bold;
+	font-family:arial;
+	margin: 10px;
+}
+
+div.sampleStatisticsSubTitle {
+	font-size: 10pt;
+	font-family:arial;
+	margin: 10px;
+}
+
+div.sampleDataBox {
+	width: 500px;
+	text-align: center;
+	margin : 10px;
+	padding : 10px;
+}
+
+div.categorySelectionDiv {
+	margin: 5px;
+}

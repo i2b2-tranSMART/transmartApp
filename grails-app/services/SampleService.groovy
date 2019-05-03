@@ -43,7 +43,7 @@ class SampleService implements InitializingBean {
 		sampleSummary.queryDefinition = writer.toString()
 
 		sampleBreakdownMap.each { String key, String value ->
-			int count = solrService.getFacetCountForField(key, resultInstanceId, 'sample')
+			int count = solrService.getFacetCountForField(key, resultInstanceId, 'sampleExplorer')
 			sampleSummary[value] = count
 			logger.debug 'Finished count for field {} - {}: {}', value, key, count
 		}

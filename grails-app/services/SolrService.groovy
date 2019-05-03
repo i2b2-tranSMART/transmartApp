@@ -1,8 +1,12 @@
 import PatientSampleCollection
 import groovy.util.logging.Slf4j
 import groovyx.net.http.HTTPBuilder
+import org.apache.http.client.HttpResponseException
 import groovyx.net.http.HttpResponseDecorator
+import org.jfree.util.Log
 import org.springframework.beans.factory.annotation.Value
+
+import static groovyx.net.http.ContentType.URLENC
 
 @Slf4j('logger')
 class SolrService {
@@ -37,23 +41,40 @@ class SolrService {
 		// map of {termType: {term : (count)}} that is passed to the view.
 		Map termMap = [:]
 
-		for (currentTerm in fieldMap.columns) {
+		//This holds the map till we can get it into the parent map.
+		def tempMap = [:]
 
-			Map args = [path: '/solr/' + coreName + '/select/',
+		for (currentTerm in fieldMap.columns) {
+            Map args = [path: '/solr/' + coreName + '/select/',
 			            query: [q: solrQuery,
 			                    facet: 'true',
 			                    'facet.field': currentTerm.dataIndex,
 			                    'facet.sort': 'index']]
-			querySolr(args) { xml ->
-				for (outerlst in xml.lst) {
-					if (outerlst.@name == 'facet_counts') {
-						for (innerlst in outerlst.lst) {
-							if (innerlst.@name == 'facet_fields') {
-								for (innermostlst in innerlst.lst) {
-									if (innermostlst.@name == currentTerm.dataIndex) {
-										for (termItem in innermostlst.int) {
-											counts[termItem.@name.toString()] = termItem.toString()
-										}
+//			querySolr(args) { xml ->
+			def xml = querySolr(args)
+			xml.lst.each
+			{ outerlst ->
+
+				//We only want the fact_counts node.
+				if(outerlst.@name=='facet_counts')
+				{
+					//Under this we only want the facet_fields node.
+					outerlst.lst.each
+					{ innerlst ->
+
+						if(innerlst.@name=='facet_fields')
+						{
+							innerlst.lst.each
+							{ innermostlst ->
+
+								//Find the node whose "name" is our term.
+								if(innermostlst.@name==currentTerm.dataIndex)
+								{
+									innermostlst.int.each
+									{ termItem ->
+
+										//To the temp map add an entry with the current term name and the count of documents found.
+										tempMap[termItem.@name.toString()] = termItem.toString()
 									}
 								}
 							}
@@ -61,11 +82,23 @@ class SolrService {
 					}
 				}
 			}
+			//}
 
-			//The term map goes under the current category.
-			termMap[currentTerm.dataIndex] = [counts: counts, displayName: currentTerm.header]
+//			//The term map goes under the current category.
+//			termMap[currentTerm.dataIndex] = [counts: counts, displayName: currentTerm.header]
+//
+//			counts.clear()
+			//The term hash goes under the current category.
+			termMap[currentTerm.dataIndex] = [:]
+			termMap[currentTerm.dataIndex].counts = tempMap
+			termMap[currentTerm.dataIndex].displayName = currentTerm.header
 
-			counts.clear()
+			termMap[currentTerm.dataIndex]['type'] = currentTerm.get('type','string')
+			termMap[currentTerm.dataIndex]['group'] = currentTerm.get('group','string')
+
+
+			//Reinitialize the temporary map variable.
+			tempMap = [:]
 		}
 
 		termMap
@@ -95,10 +128,10 @@ class SolrService {
 	 */
 	Map pullResultsBasedOnJson(json, String resultColumns, boolean enforceEmpty, String coreName) {
 		String solrQuery
+		String tokenizerDelimiter = "`````"
 		if (json.Records) {
 			solrQuery = generateSolrQueryFromJsonDetailed(json, enforceEmpty)
-		}
-		else {
+		} else {
 			solrQuery = generateSolrQueryFromJson(json, enforceEmpty)
 		}
 
@@ -106,65 +139,82 @@ class SolrService {
 		if (solrQuery == '(())') {
 			return [results: []]
 		}
-
-		//Construct the rest of the query based on the columns we want back and the number of rows we want.
-		solrQuery += '&fl=' + resultColumns + '&sort=id desc&rows=' + solrMaxRows
-
 		logger.debug 'pullResultsBasedOnJson - solr Query to be run: {}', solrQuery
 
-		//We want [results:[{'Pathology':'blah','Tissue':'blah'},{'Pathology':'blah','Tissue':'blah'}]]
-
-		Map results = [:]
-
 		Map args = [path: '/solr/' + coreName + '/select/',
-		            query: [q: solrQuery]]
-		querySolr(args) { xml ->
-			for (resultDoc in xml.result.doc) {
+		            query: [q: solrQuery,
+                            "rows": solrMaxRows,
+                            "fl": resultColumns,
+                            "sort": "id desc"]]
+		def xml = querySolr(args)
 
-				// the text for each column in the output.
-				StringBuilder text = new StringBuilder()
+        //We want [results:[{'Pathology':'blah','Tissue':'blah'},{'Pathology':'blah','Tissue':'blah'}]]
 
-				for (it in resultDoc.str) {
-					if (text) {
-						text << '|'
-					}
+        //This will be the hash to store our results.
+        Map results = [:]
+		for (resultDoc in xml.result.doc) {
+			//This string will hold the text for each column in the output.
+			String resultConcat = ""
 
-					//Add tag name : tag value to the map key.
-					text << it.@name << '?:?:?' << it
-				}
-
-				String key = text.toString()
-
-				if (results[key] == null) {
-					results[key] = 0
-				}
-
-				results[key]++
+			for (stringResult in resultDoc.str) {
+				//If this isn't the first column add a seperator.
+				if(resultConcat!="") resultConcat+="|"
+				resultConcat += stringResult.@name.toString() + tokenizerDelimiter + stringResult.toString()
 			}
-		}
-
-		List<Map> resultMaps = []
-
-		Map finalMap = [results: resultMaps]
-
-		//Now that we have this ugly map, convert it to a meaningful map that can be parsed into JSON.
-		for (entry in results) {
-
-			Map map = [:]
-
-			for (String it in entry.key.toString().tokenize('|')) {
-				//Within each '|' there is a funky set of characters that delimits the field:value.
-				List<String> keyValueBreak = it.tokenize('?:?:?')
-				map[keyValueBreak[0]] = keyValueBreak[1]
+			for (longResult in resultDoc.long) {
+				if(resultConcat!="") resultConcat+="|"
+				resultConcat += longResult.@name.toString() + tokenizerDelimiter + longResult.toString()
 			}
 
-			//Each value of the parent map is actually a count of how many of items matching the key were found.
-			map.count = entry.value
+			for (floatResult in resultDoc.float) {
+				if(resultConcat!="") resultConcat+="|"
+				resultConcat += floatResult.@name.toString() + tokenizerDelimiter + floatResult.toString()
+			}
 
-			resultMaps << map
+			for (dateResult in resultDoc.date) {
+				if(resultConcat!="") resultConcat+="|"
+				resultConcat += dateResult.@name.toString() + tokenizerDelimiter + dateResult.toString()
+			}
+
+			for (intResult in resultDoc.int) {
+				if(resultConcat!="") resultConcat+="|"
+				resultConcat += intResult.@name.toString() + tokenizerDelimiter + intResult.toString()
+			}
+
+			//If a hash entry doesn't exist for the data concat'ed together, create one.
+			if(!results[resultConcat]) results[resultConcat] = 0;
+
+			//Increment the hash for our concat'ed string.
+			results[resultConcat]++
 		}
 
-		finalMap
+		//This will be the final hash we pass out of this function.
+		Map finalHash = ['results':[]];
+
+		//Now that we have this ugly hash we have to convert it to a meaningful hash that can be parsed into JSON.
+		for (result in results) {
+
+			//We build a hash with an entry for each field, and the value for that field.
+			def tempHash = [:];
+
+			//For each of the keys break on the "|" character.
+			for (resultKey in result.key.toString().tokenize("|")) {
+				//Within each "|" there is a funky set of characters that delimits the field:value.
+				String[] keyValueBreak = resultKey.split(tokenizerDelimiter)
+
+				//Add the key/value to the hash.
+				tempHash[keyValueBreak[0]] = keyValueBreak[1]
+			}
+
+			//Each value of the parent hash is actually a count of how many of items matching the key were found.
+			tempHash['count'] = result.value;
+
+			//Add this category to the final hash.
+			finalHash['results'].add(tempHash);
+
+		}
+		//Return the results hash.
+		return finalHash
 	}
 
 	/**
@@ -183,22 +233,23 @@ class SolrService {
 			Map args = [path: '/solr/' + coreName + '/suggest',
 			            query: ['spellcheck.q': termPrefix,
 			                    'spellcheck.count': '10']]
-			querySolr(args) { xml ->
-				for (outerlst in xml.lst) {
-					if (outerlst?.@name == 'spellcheck') {
-						for (innerlst in outerlst.lst.lst.arr) {
-							for (termItem in innerlst.str) {
-								rows << [id:  'STR|' + termItem,
-								         source: '',
-								         keyword: termItem.toString(),
-								         synonyms: '',
-								         category: 'STR',
-								         display: 'Term']
-							}
+//			querySolr(args) { xml ->
+			def xml = querySolr(args)
+			for (outerlst in xml.lst) {
+				if (outerlst?.@name == 'spellcheck') {
+					for (innerlst in outerlst.lst.lst.arr) {
+						for (termItem in innerlst.str) {
+							rows << [id:  'STR|' + termItem,
+									 source: '',
+									 keyword: termItem.toString(),
+									 synonyms: '',
+									 category: 'STR',
+									 display: 'Term']
 						}
 					}
 				}
 			}
+//			}
 		}
 
 		result
@@ -232,14 +283,12 @@ class SolrService {
 
 		Map args = [path: '/solr/' + coreName + '/select/',
 		            query: [q: solrQuery]]
-		querySolr(args) { xml ->
-			for (resultDoc in xml.result.doc) {
-				for (it in resultDoc.str) {
-					ids << it.toString()
-				}
+		def xml = querySolr(args)// { xml ->
+		for (resultDoc in xml.result.doc) {
+			for (it in resultDoc.str) {
+				ids << it.toString()
 			}
 		}
-
 		ids
 	}
 
@@ -251,14 +300,12 @@ class SolrService {
 
 		//The luke request handler returns schema data.
 		Map args = [path: '/solr/' + coreName + '/schema?wt=xml']
-		querySolr(args) { xml ->
-			for (xmlField in xml.schema.fields) {
-				if (!(fieldExclusionList.contains(xmlField.name.toString() + '|'))) {
-					names << xmlField.name.toString()
-				}
+		def xml = querySolr(args)// { xml ->
+		for (xmlField in xml.schema.fields) {
+			if (!(fieldExclusionList.contains(xmlField.name.toString() + '|'))) {
+				names << xmlField.name.toString()
 			}
 		}
-
 		names
 	}
 
@@ -316,11 +363,12 @@ class SolrService {
 
 		if (json != '' && json.result_instance_id) {
 			List<String> ids = PatientSampleCollection.executeQuery('''
-				select id
+				select patientId
 				from PatientSampleCollection
 				where resultInstanceId=:resultInstanceId''',
 				[resultInstanceId: json.result_instance_id])
-			solrQuery = idListForSampleSpecificQuery(solrQuery, ids)
+			//solrQuery = idListForSampleSpecificQuery(solrQuery, ids)
+			solrQuery = patientNumListForSampleSpecificQuery(solrQuery,ids)
 		}
 
 		solrQuery
@@ -415,6 +463,37 @@ class SolrService {
 		solrQuery + idValuesForSpecificSampleQuery.join(' OR ') + ')'
 	}
 
+	/**
+	 * Updates solrQuery parameter with list of patient numbers based on result instance id
+	 * @param solrQuery
+	 * @param patientNumValuesForSpecificSampleQuery
+	 * @return
+	 */
+	private patientNumListForSampleSpecificQuery(solrQuery,patientNumValuesForSpecificSampleQuery)
+	{
+		if(patientNumValuesForSpecificSampleQuery.size() == 0)
+		{
+			solrQuery = " PATIENT_NUM:(0) "
+		}
+		else
+		{
+			if(solrQuery == "(())")
+			{
+				solrQuery = " PATIENT_NUM:("
+			}
+			else
+			{
+				solrQuery += " AND PATIENT_NUM:("
+			}
+
+			solrQuery += patientNumValuesForSpecificSampleQuery.join(" OR ")
+			solrQuery += ")"
+		}
+
+		return solrQuery
+
+	}
+
 	private String escapeCharList(String stringToEscapeIn) {
 		for (String s in ESCAPE_CHARS) {
 			stringToEscapeIn = stringToEscapeIn.replace(s, '\\' + s)
@@ -436,15 +515,15 @@ class SolrService {
 
 	int getFacetCountForField(String columnToRetrieve, String resultInstanceId, String coreName) {
 
-		List<String> sampleIds = PatientSampleCollection.executeQuery('''
+		List<String> samplePatientNums = PatientSampleCollection.executeQuery('''
 				select id
 				from PatientSampleCollection
 				where resultInstanceId=:resultInstanceId''',
 				[resultInstanceId: resultInstanceId])
 		int count = 0
 
-		if (sampleIds) {
-			String solrQuery = 'id:(' + sampleIds.join(' OR ') + ')'
+		if (samplePatientNums?.size() > 0) {
+			String solrQuery = 'PATIENT_NUM:(' + samplePatientNums.join(' OR ') + ')'
 
 			logger.debug 'getFacetMapForField - {} - solr Query to be run: {}', columnToRetrieve, solrQuery
 
@@ -455,16 +534,15 @@ class SolrService {
 			                    'facet.field': columnToRetrieve,
 			                    'facet.limit': '-1',
 			                    'facet.mincount': '1']]
-			querySolr(args) { xml ->
-				for (outerlst in xml.lst) {
-					if (outerlst.@name == 'facet_counts') {
-						for (innerlst in outerlst.lst) {
-							if (innerlst.@name == 'facet_fields') {
-								for (innermostItem in innerlst.lst) {
-									for (countValue in innermostItem.int) {
-										if (countValue.toString() != '0') {
-											count++
-										}
+			def xml = querySolr(args) //{ xml ->
+			for (outerlst in xml.lst) {
+				if (outerlst.@name == 'facet_counts') {
+					for (innerlst in outerlst.lst) {
+						if (innerlst.@name == 'facet_fields') {
+							for (innermostItem in innerlst.lst) {
+								for (countValue in innermostItem.int) {
+									if (countValue.toString() != '0') {
+										count++
 									}
 								}
 							}
@@ -472,19 +550,81 @@ class SolrService {
 					}
 				}
 			}
+
 		}
 
 		count
 	}
 
-	private void querySolr(Map args, Closure handler) {
-		new HTTPBuilder(solrServerUrl).get(args) { HttpResponseDecorator response, xml ->
-			//We should probably do something with the status.
-			if (response.status != '200') {
-				logger.error 'Response status from solr web service call: {}', response.status
-			}
+	private querySolr(Map args) {
+        //Create the http object we will use to retrieve the faceted counts.
+        def http = new HTTPBuilder(solrServerUrl)
+        //http.auth.basic(username, password)
+		Map postArgs = [path: args.get('path'),
+					 body: args.get('query'),
+					 requestContentType: URLENC]
 
-			handler(xml)
+		try {
+			http.post(postArgs) { HttpResponseDecorator response, xml ->
+				//We should probably do something with the status.
+				if (response.status != '200') {
+					logger.error 'Response status from solr web service call: {}', response.status
+				}
+				return xml
+			}
 		}
+        catch (HttpResponseException e){
+            if (e.getStatusCode() == 401)
+                throw new HttpResponseException(e.getStatusCode(), "Not authorized.")
+            else
+                throw e;
+        }
+		catch (Exception e) {
+			logger.error 'Error running query', e
+		}
+
+
+	}
+
+	/**
+	 * This method will make post request to Apache Solr server
+	 * @param path
+	 * @param body Map with params to send
+	 * @return XML object from response
+	 */
+	def postToSolr(path, body)
+	{
+		//String username = grailsApplication.config.com.recomdata.solr.username
+		//String password = grailsApplication.config.com.recomdata.solr.password
+
+		//Create the http object we will use to retrieve the faceted counts.
+		def http = new HTTPBuilder(solrServerUrl)
+		//http.auth.basic(username, password)
+
+		def xmlResponse
+		try
+		{
+			def html = http.post(
+					path: path,
+					body: [
+							body
+					],
+					requestContentType: URLENC,
+					header: [Accept: 'application/xml'] )
+					{ resp, xml ->
+
+						if(resp.status!="200")
+							Log.debug("Response status from solr web service call: ${resp.status}")
+
+						xmlResponse = xml;
+					}
+		}
+		catch (Exception e){
+			if (e.getStatusCode() == 401)
+				throw new HttpResponseException(e.getStatusCode(), "Not authorized.")
+			else
+				throw e;
+		}
+		return xmlResponse;
 	}
 }
