@@ -30,10 +30,7 @@ grails.project.dependency.resolution = {
 			mavenLocal()
 			grailsCentral()
 			mavenCentral()
-			mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/libs-snapshots'
-			mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/libs-releases'
-			mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/plugins-releases'
-			mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/plugins-snapshots'
+
 			mavenRepo 'https://repo.transmartfoundation.org/content/repositories/public/'
 		}
 	}
@@ -82,10 +79,10 @@ grails.project.dependency.resolution = {
 		runtime 'org.postgresql:postgresql:9.3-1100-jdbc4'
 		runtime 'com.oracle:ojdbc7:12.1.0.1'
 
-		test 'org.gmock:gmock:0.9.0-r435-hyve2', { transitive = false }
-		test 'org.grails:grails-datastore-test-support:1.0.2-grails-2.4'
-		test 'org.hamcrest:hamcrest-core:1.3'
-		test 'org.hamcrest:hamcrest-library:1.3'
+		//test 'org.gmock:gmock:0.9.0-r435-hyve2', { transitive = false }
+		//test 'org.grails:grails-datastore-test-support:1.0.2-grails-2.4'
+		//test 'org.hamcrest:hamcrest-core:1.3'
+		//test 'org.hamcrest:hamcrest-library:1.3'
 	}
 
 	plugins {
@@ -131,7 +128,7 @@ grails.project.dependency.resolution = {
 			compile ':transmart-shared:'          + tmVersion
 //			compile ':transmart-xnat-importer:'   + tmVersion
 //			compile ':xnat-viewer:'               + tmVersion
-			test ':transmart-core-db-tests:'      + tmVersion
+			//test ':transmart-core-db-tests:'      + tmVersion
 		}
 		else {
 			dm.internalDependencies delegate
