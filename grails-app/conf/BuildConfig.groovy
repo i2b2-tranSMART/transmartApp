@@ -95,7 +95,7 @@ grails.project.dependency.resolution = {
 		compile ':cache-ehcache:1.0.5'
 		compile ':codenarc:0.21'
 		compile ':hibernate:3.6.10.19'
-		compile 'org.grails.plugins:quartz:1.0'
+		compile 'org.grails.plugins:quartz:1.0.2'
 		compile ':rest-client-builder:2.1.1'
 		compile ':scaffolding:2.1.2'
 		compile ':spring-security-core:2.0.0'
