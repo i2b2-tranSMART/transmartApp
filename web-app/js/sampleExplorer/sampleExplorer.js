@@ -133,131 +133,60 @@ function loadDataSetGrid()
         proxy: dataStoreProxy,
         reader: dataStoreReader,
         sortInfo:{field: 'count', direction: "ASC"}
+    })
+
+    //This draws the actual grid panel to the DIV on the screen.
+    GLOBAL.resultGridPanel = new Ext.grid.GridPanel({
+        id: 'resultsGridPanel',
+        title: createValuesString(GLOBAL.SearchJSON),
+        renderTo: "divDataSetResults",
+        layout : 'fit',
+        width : GLOBAL.resultsGridWidth,
+        height : GLOBAL.resultsGridHeight,
+        enableDragDrop : true,
+        ddGroup : 'resultsGridPanel-dd',
+        ddText : 'Place this row.',
+        style: 'margin: 30px auto',
+        store: listingGroupedStore,
+        colModel: dataSetColModel,
+        stripeRows: true,
+        view: new Ext.grid.GroupingView({
+            forceFit:true,
+            startCollapsed: true,
+            groupTextTpl: '{text} ({[values.rs.length]} {[values.rs.length > 1 ? "Items" : "Item"]})',
+            hideGroupedColumn: false
+        }),
+        viewConfig: {
+            forceFit: true
+        },
+        tbar:['->',
+            {
+                text:'Sample Contact Information',
+                tooltip:'Sample Contact Information',
+                id:'sampleContactInfo',
+                hidden: true,
+                handler : function()
+                {
+                    gatherSampleContactInformation();
+                }
+            },
+            {
+                text:'Collapse All',
+                tooltip:'Collapse All',
+                handler : function()
+                {
+                    GLOBAL.resultGridPanel.view.collapseAllGroups();
+                }
+            },
+            {
+                text:'Expand All',
+                tooltip:'Expand All',
+                handler : function()
+                {
+                    GLOBAL.resultGridPanel.view.expandAllGroups();
+                }
+            }]
     });
-
-
-    //Fix this. Out of patience for now.
-    if(GLOBAL.explorerType == "sampleExplorer")
-    {
-        //This draws the actual grid panel to the DIV on the screen.
-        GLOBAL.resultGridPanel = new Ext.grid.GridPanel({
-            id: 'resultsGridPanel',
-            title: createValuesString(GLOBAL.SearchJSON),
-            renderTo: "divDataSetResults",
-            layout : 'fit',
-            width : GLOBAL.resultsGridWidth,
-            height : GLOBAL.resultsGridHeight,
-            enableDragDrop : true,
-            ddGroup : 'resultsGridPanel-dd',
-            ddText : 'Place this row.',
-            style: 'margin: 30px auto',
-            store: listingGroupedStore,
-            colModel: dataSetColModel,
-            stripeRows: true,
-            view: new Ext.grid.GroupingView({
-                forceFit:true,
-                startCollapsed: true,
-                groupTextTpl: '{text} ({[values.rs.length]} {[values.rs.length > 1 ? "Items" : "Item"]})',
-                hideGroupedColumn: false
-            }),
-            viewConfig: {
-                forceFit: true
-            },
-            tbar:['->',
-                {
-                    text:'Sample Contact Information',
-                    tooltip:'Sample Contact Information',
-                    handler : function()
-                    {
-                        gatherSampleContactInformation();
-                    }
-                },
-                {
-                    text:'Collapse All',
-                    tooltip:'Collapse All',
-                    handler : function()
-                    {
-                        GLOBAL.resultGridPanel.view.collapseAllGroups();
-                    }
-                },
-                {
-                    text:'Expand All',
-                    tooltip:'Expand All',
-                    handler : function()
-                    {
-                        GLOBAL.resultGridPanel.view.expandAllGroups();
-                    }
-                }]
-        });
-    }
-    else
-    {
-        //This draws the actual grid panel to the DIV on the screen.
-        GLOBAL.resultGridPanel = new Ext.grid.GridPanel({
-            id: 'resultsGridPanel',
-            title: createValuesString(GLOBAL.SearchJSON),
-            renderTo: "divDataSetResults",
-            layout : 'fit',
-            width : GLOBAL.resultsGridWidth,
-            height : GLOBAL.resultsGridHeight,
-            enableDragDrop : true,
-            ddGroup : 'resultsGridPanel-dd',
-            ddText : 'Place this row.',
-            style: 'margin: 30px auto',
-            store: listingGroupedStore,
-            colModel: dataSetColModel,
-            stripeRows: true,
-            view: new Ext.grid.GroupingView({
-                forceFit:true,
-                startCollapsed: true,
-                groupTextTpl: '{text} ({[values.rs.length]} {[values.rs.length > 1 ? "Items" : "Item"]})',
-                hideGroupedColumn: false
-            }),
-            viewConfig: {
-                forceFit: true
-            },
-            tbar:['->',
-                {
-                    text:'Collapse All',
-                    tooltip:'Collapse All',
-                    handler : function()
-                    {
-                        GLOBAL.resultGridPanel.view.collapseAllGroups();
-                    }
-                },
-                {
-                    text:'Expand All',
-                    tooltip:'Expand All',
-                    handler : function()
-                    {
-                        GLOBAL.resultGridPanel.view.expandAllGroups();
-                    }
-                }]
-        });
-
-    }
-
-
-    /*
-     //*************************************
-     GLOBAL.tabs = new Ext.TabPanel({
-     renderTo: 'site_content',
-     activeTab : 0,
-     deferredRender: false,
-     autoTabs : false,
-     layoutOnTabChange: true,
-     items : [{}]
-     });
-     //*************************************
-     */
-    //addTabbedSubset();
-    //addTabbedSubset();
-    //addTabbedSubset();
-    //GLOBAL.tabs.setActiveTab(1);
-
-    //This one line of code is the product of 8 hours of fidgeting. In order for the tabs to display properly I had to initialize an empty items collection. This leaves a weird empty tab that needs to be removed.
-    //I might just be missing some kind of rendering event for the tab panel but for now we'll just initialize and remove the extra.
-    //GLOBAL.tabs.remove(0);
 }
 
 function renderDSELink(val)

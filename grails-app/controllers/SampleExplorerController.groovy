@@ -2,6 +2,7 @@ import grails.converters.JSON
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.beans.factory.annotation.Value
 import org.transmartproject.db.log.AccessLogService
+import org.codehaus.groovy.grails.web.json.JSONObject
 
 /**
  * @author MMcDuffie
@@ -41,7 +42,7 @@ class SampleExplorerController implements InitializingBean {
 	def showCohortSamples() {
 		render view: 'sampleExplorer', model: [
 				sampleRequestType : 'cohort',
-				columnData        : fieldMapping as JSON,
+				columnData        : verifyGridFieldList() as JSON,
 				result_instance_id: params.result_instance_id]
 	}
 
@@ -60,7 +61,7 @@ class SampleExplorerController implements InitializingBean {
 	def showTopLevelListPage() {
 		// Call the solr service to get a map that looks like category:[item:count].
 		// We pass in an empty string because we want all the documents in the solr search.
-		Map termMap = solrService.facetSearch('', verifyFieldList(), 'sample')
+		Map termMap = solrService.facetSearch('', verifyFieldList(), 'sampleExplorer')
 
 		render template: 'searchTopLevel', model: [termsMap: termMap]
 	}
@@ -76,7 +77,7 @@ class SampleExplorerController implements InitializingBean {
 	 */
 	def showWestPanelSearch() {
 		// looks like category:[item:count].
-		Map termMap = solrService.facetSearch(request.JSON.SearchJSON, fieldMapping, 'sample')
+		Map termMap = solrService.facetSearch(request.JSON.SearchJSON, fieldMapping, 'sampleExplorer')
 
 		render template: 'categorySearchWithCheckboxes', model: [
 				termsMap: termMap,
@@ -118,7 +119,7 @@ class SampleExplorerController implements InitializingBean {
 			selectedResultColumns = request.JSON.SearchJSON.GridColumnList.join(',').replace('"', '')
 		}
 
-		Map results = solrService.pullResultsBasedOnJson(request.JSON.SearchJSON, selectedResultColumns, false, 'sample')
+		Map results = solrService.pullResultsBasedOnJson(request.JSON.SearchJSON, selectedResultColumns, false, 'sampleExplorer')
 
 		render(results as JSON)
 	}
@@ -168,17 +169,23 @@ class SampleExplorerController implements InitializingBean {
 	 * For the samples specified we want to gather all the data residing in SOLR for them.
 	 */
 	def bioBank() {
+		List<String> fullColumnList = [];
 
-		List<String> fullColumnList = fieldMapping.columns*.dataIndex
-		Map columnPrettyNameMapping = loadFieldPrettyNameMapping()
+		for (column in loadEntireFieldList().columns) {fullColumnList.push(column.dataIndex)}
+		log.debug("FullColumnList: " + fullColumnList);
 
-		Map results = solrService.pullResultsBasedOnJson(request.JSON.SearchJSON,
-				fullColumnList.join(',').replace('"', ''),
-				true, 'sample')
+		def columnPrettyNameMapping = loadFieldPrettyNameMapping()
+		log.debug("Column Pretty Name Mapping: " + columnPrettyNameMapping)
 
-		render template: 'BioBankList', model: [
-				samples: results.results,
-				columnPrettyNameMapping: columnPrettyNameMapping]
+		// remove result_instance_id as this is a query for single result row
+		JSONObject requestJSON = request.JSON.SearchJSON
+		requestJSON.remove("result_instance_id")
+
+		//This will be the hash to store our results.
+		Map resultMap = solrService.pullResultsBasedOnJson(requestJSON,fullColumnList.join(",").replace("\"",""), true, 'sampleExplorer')
+		log.debug("bioBank.ResultsHash: " + resultMap.results)
+
+		render(template:"BioBankList", model:[samples:resultMap.results, columnPrettyNameMapping:columnPrettyNameMapping]);
 	}
 
 	def sampleContactScreen() {
@@ -251,6 +258,17 @@ class SampleExplorerController implements InitializingBean {
 		render([SampleIdList: result.sort { it.key }] as JSON)
 	}
 
+	/**
+	 * This method checks to make sure the list of fields we want to use are in session. If they aren't, it adds them to the session.
+	 */
+	def verifyGridFieldList =
+	{
+		//This field list might get modified later and contains only the fields being display in the gridpanel.
+		//if(!session['gridFieldList']) session['gridFieldList'] = loadEntireFieldList()
+
+		return loadEntireFieldList()
+	}
+
 	private Map verifyFieldList() {
 		//This field list always has all the fields we want to display.
 		List columnConfigsToRemove = []
@@ -276,6 +294,18 @@ class SampleExplorerController implements InitializingBean {
 		}
 
 		map
+	}
+
+	def loadEntireFieldList = {
+
+		//Pull the field map from the configuration file.
+		def one = grailsApplication.config.sampleExplorer.fieldMapping
+
+		def fullColumnList = grailsApplication.config.sampleExplorer.fieldMapping.clone()
+
+		if(!fullColumnList) throw new Exception("Field Mapping Configuration not set!")
+
+		return fullColumnList
 	}
 
 	void afterPropertiesSet() {
