@@ -21,18 +21,28 @@ function dataSelectionCheckboxChanged(ctl) {
 }
 
 function setDataAssociationAvailableFlag(el, success, response, options) {
+	console.log("setDataAssociationAvailableFlag() starting...");
+
+    console.log("setDataAssociationAvailableFlag() success:"+success);
 	if (!success) {
+        console.log("setDataAssociationAvailableFlag() loading panels");
+
 		var dataAssociationPanel = Ext.getCmp('dataAssociationPanel');
 		var resultsTabPanel = Ext.getCmp('resultsTabPanel');
 		resultsTabPanel.remove(dataAssociationPanel);
 		resultsTabPanel.doLayout();
+        console.log("setDataAssociationAvailableFlag() loaded panels");
 	} else {
+        console.log("setDataAssociationAvailableFlag() call "+pageInfo.basePath+"/dataAssociation/loadScripts");
 		Ext.Ajax.request({
 			url: pageInfo.basePath+"/dataAssociation/loadScripts",
 			method: 'GET',
 			timeout: '600000',
 			params: Ext.urlEncode({}),
 			success: function (result, request) {
+                console.log("setDataAssociationAvailableFlag() XHR loadScripts returned ");
+                console.log(result);
+
 				var exp = jQuery.parseJSON(result.responseText);
 				if (exp.success && exp.files.length > 0) {
 					loadScripts(exp.files);
@@ -78,6 +88,7 @@ Ext.Panel.prototype.getBody = function (html) {
 };
 
 Ext.onReady(function () {
+    console.log("onReady() starting...");
 
 	Ext.QuickTips.init();
 
@@ -625,13 +636,20 @@ Ext.onReady(function () {
 		}
 	});
 
+	console.log("loading panels....");
+
 	resultsTabPanel.add(queryPanel);
 	resultsTabPanel.add(analysisPanel);
+
+	// Hide the AdvancedWorkflow tab
+	//resultsTabPanel.add(dataAssociationPanel);
+
+	if (true) {
+        resultsTabPanel.add(fractalisPanel);
+	}
+
 	if (GLOBAL.gridViewEnabled) {
 		resultsTabPanel.add(analysisGridPanel);
-	}
-	if (GLOBAL.advancedWorkflowEnabled) {
-        resultsTabPanel.add(dataAssociationPanel);
 	}
 	if (GLOBAL.dataExportEnabled) {
 		resultsTabPanel.add(analysisDataExportPanel);
@@ -650,6 +668,7 @@ Ext.onReady(function () {
 	}
 
 	function loadResources(resources, bootstrap) {
+	    console.log("loadResources() starting");
 		var scripts = [];
 		for (var i = 0, iLength = resources.length; i < iLength; i++) {
 			var aFile = resources[i];
@@ -660,24 +679,32 @@ Ext.onReady(function () {
 			}
 		}
 		if (scripts.length > 0) {
+		    console.log("loadResources() load scripts");
 			dynamicLoad.loadScriptsSequential(scripts, bootstrap);
 		} else {
+            console.log("loadResources() just call `bootstrap()`");
 			bootstrap();
 		}
+        console.log("loadResources() finished");
 	}
 
 	function loadResourcesByUrl(url, bootstrap) {
+        console.log("loadResourcesByUrl() starting");
+
 		return jQuery.post(url, function(data) {
 			if (data.success) {
+                console.log("loadResourcesByUrl() from URL:"+url);
 				loadResources(data.files, bootstrap);
 			}
 		}, "json").fail(function() {
-			console.error("Cannot load resources for " + url);
+			console.error("loadResourcesByUrl() Cannot load resources for " + url);
 		});
 	}
 
 	var pluginPromises = []; // contain { promise: , bootstrap: }
 	function loadPlugin(pluginName, scriptsUrl, bootstrap, legacy) {
+        console.log("loadPlugin() starting:"+pluginName);
+
 		var def = jQuery.Deferred();
 		function loadResources() {
 			loadResourcesByUrl(
@@ -691,6 +718,8 @@ Ext.onReady(function () {
 		// if it's a legacy call (hardcoded in datasetExplorer.js),
 		// we need to check whether the plugin is present
 		if (legacy) {
+            console.log("loadPlugin() legacy plugin");
+
 			jQuery.post(pageInfo.basePath + '/pluginDetector/checkPlugin',
 				{pluginName: pluginName })
 				.done(function(data) {
@@ -707,6 +736,7 @@ Ext.onReady(function () {
 					def.reject.apply(def, arguments);
 				});
 		} else {
+            console.log("loadPlugin() calling `loadResources()`");
 			loadResources();
 		}
 
@@ -716,10 +746,10 @@ Ext.onReady(function () {
 		});
 	}
 
-	/* load the legacy hardcoded tabs */
-	loadPlugin('dalliance-plugin', '/Dalliance/loadScripts', function () {
-		loadDalliance(resultsTabPanel);
-	}, true);
+	/* load the legacy hardcoded tabs, labelled "Genome Browser" */
+	//loadPlugin('dalliance-plugin', '/Dalliance/loadScripts', function () {
+	//	loadDalliance(resultsTabPanel);
+	//}, true);
 
 	if (GLOBAL.metacoreAnalyticsEnabled === 'true') {
 		loadPlugin('transmart-metacore-plugin', '/MetacoreEnrichment/loadScripts', function () {

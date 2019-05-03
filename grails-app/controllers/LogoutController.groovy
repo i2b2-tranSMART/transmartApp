@@ -38,7 +38,7 @@ class LogoutController {
         logger.debug '/logout/psama Finished'
 
         // TODO: This should be parameterized
-        redirect url: request.getScheme() + "://" + request.getServerName() + '/psamaui/logout'
+        redirect url: request.getScheme() + "://" + request.getServerName() + '/psamaui/logout?redirection_url=/transmart/'
         response.flushBuffer()
 	}
 }

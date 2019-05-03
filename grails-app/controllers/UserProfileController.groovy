@@ -44,8 +44,7 @@ class UserProfileController {
 			 token       : jwtToken(),
 			 instanceType: customizationConfig.instanceType,
 			 instanceName: customizationConfig.instanceName,
-			 level       : customizationService.currentUserLevel(),
-			 claims      : jwtTokenClaims()
+			 level       : customizationService.currentUserLevel()
 			]
 		} catch (e) {
 			logger.error '/index Exception "{}" in UserProfileController.', e.message, e
@@ -128,7 +127,7 @@ class UserProfileController {
 
 	private String jwtTokenClaims() {
 		logger.debug 'jwtTokenClaims() get current token {}', JWT.decode(jwtToken())
-		JWT.decode(jwtToken()).claims.toString()
+		JWT.decode(jwtToken()).claims.get('exp')
 	}
 
 	private Map getOAuthUser(AuthUserDetails currentUserDetails) {

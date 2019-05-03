@@ -60,17 +60,33 @@
 		</section>
 		<section id="content4">
 			<g:if test="${level > org.transmart.plugin.custom.UserLevel.ONE}">
-				<br/><textarea id="usertoken" rows="10" style="width:100%">${token}</textarea>
-                <div id="tokenclaims">
-
-                    <pre>${claims}</pre>
-
-                </div>
+				<br/><textarea id="usertoken" rows="10" style="width:100%">${token}</textarea><br />
+                <br />
+                <div id="tokenclaims"></div>
 			</g:if>
 			<g:else>Token access it not available for your level of access.</g:else>
 		</section>
 	</div>
 </div>
+
+<script>
+
+    function parseJwt (token) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        return JSON.parse(window.atob(base64));
+    };
+
+    	$(document).ready(function() {
+    	    var tokenClaims = parseJwt(localStorage.id_token);
+    	    var expiration_date = new Date(1970,0,1);
+    	    expiration_date.setSeconds(tokenClaims.exp);
+            $('#tokenclaims').html('ExpirationDate: '+expiration_date);
+		});
+
+
+</script>
+
 
 </body>
 </html>

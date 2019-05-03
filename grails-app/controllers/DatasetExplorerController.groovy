@@ -46,9 +46,6 @@ class DatasetExplorerController {
 	@Value('${ui.tabs.datasetExplorer.gridView.hide:false}')
 	private boolean hideGridView
 
-    @Value('${ui.tabs.datasetExplorer.advancedWorkflow.hide:false}')
-    private boolean hideAdvancedWorkflow
-
 	@Value('${ui.tabs.datasetExplorer.dataExport.hide:false}')
 	private boolean hideDataExport
 
@@ -120,7 +117,6 @@ class DatasetExplorerController {
 		                                        appTitle                : appTitle,
 		                                        hideAcrossTrialsPanel   : hideAcrossTrialsPanel,
 		                                        gridViewEnabled         : canSeeData && !hideGridView,
-												advancedWorkflowEnabled : canSeeData && !hideAdvancedWorkflow,
 		                                        dataExportEnabled       : canSeeData && !hideDataExport,
 		                                        dataExportJobsEnabled   : canSeeData && !hideDataExportJobs,
 		                                        analysisJobsEnabled     : analysisJobsEnabled,
