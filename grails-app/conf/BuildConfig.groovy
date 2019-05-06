@@ -100,7 +100,7 @@ grails.project.dependency.resolution = {
 		compile ':scaffolding:2.1.2'
 		compile ':spring-security-core:2.0.0'
 		compile ':spring-security-kerberos:1.0.0'
-		compile ':spring-security-ldap:2.0.0'
+		//compile ':spring-security-ldap:2.0.0'
 		compile ':spring-security-oauth2-provider:2.0-RC5'
 
 		runtime ':jquery-ui:1.10.4'

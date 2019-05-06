@@ -568,7 +568,7 @@ Ext.onReady(function () {
 	// Export Jobs
 	// ******************
 
-	analysisExportJobsPanel = new Ext.Panel({
+    analysisExportJobsPanel = new Ext.Panel({
 		id: 'analysisExportJobsPanel',
 		title: 'Export Jobs',
 		region: 'center',
@@ -644,10 +644,6 @@ Ext.onReady(function () {
 	// Hide the AdvancedWorkflow tab
 	//resultsTabPanel.add(dataAssociationPanel);
 
-	if (true) {
-        resultsTabPanel.add(fractalisPanel);
-	}
-
 	if (GLOBAL.gridViewEnabled) {
 		resultsTabPanel.add(analysisGridPanel);
 	}
@@ -672,6 +668,8 @@ Ext.onReady(function () {
 		var scripts = [];
 		for (var i = 0, iLength = resources.length; i < iLength; i++) {
 			var aFile = resources[i];
+
+            console.log("loadResources() aFile:"+aFile.path);
 			if (aFile.type === 'script') {
 				scripts.push(aFile.path);
 			} else if (aFile.type === 'stylesheet') {
@@ -703,10 +701,11 @@ Ext.onReady(function () {
 
 	var pluginPromises = []; // contain { promise: , bootstrap: }
 	function loadPlugin(pluginName, scriptsUrl, bootstrap, legacy) {
-        console.log("loadPlugin() starting:"+pluginName);
+		console.log("loadPlugin() starting:"+pluginName);
 
 		var def = jQuery.Deferred();
 		function loadResources() {
+			console.log("loadResources() scriptsURL:"+scriptsUrl);
 			loadResourcesByUrl(
 				pageInfo.basePath + scriptsUrl,
 				function() {
@@ -747,9 +746,9 @@ Ext.onReady(function () {
 	}
 
 	/* load the legacy hardcoded tabs, labelled "Genome Browser" */
-	//loadPlugin('dalliance-plugin', '/Dalliance/loadScripts', function () {
-	//	loadDalliance(resultsTabPanel);
-	//}, true);
+	loadPlugin('dalliance-plugin', '/Dalliance/loadScripts', function () {
+		loadDalliance(resultsTabPanel);
+	}, true);
 
 	if (GLOBAL.metacoreAnalyticsEnabled === 'true') {
 		loadPlugin('transmart-metacore-plugin', '/MetacoreEnrichment/loadScripts', function () {
