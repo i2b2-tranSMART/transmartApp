@@ -20,6 +20,32 @@ function dataSelectionCheckboxChanged(ctl) {
 	}
 }
 
+// Load some additional .js files, that are used throughout the panels (in resultsTabPanel construction)
+function loadAdditionalScripts() {
+    console.log("loadAdditionalScripts() starting");
+
+    Ext.Ajax.request({
+        url: pageInfo.basePath+"/dataAssociation/loadScripts",
+        method: 'GET',
+        timeout: '600000',
+        params: Ext.urlEncode({}),
+        success: function (result, request) {
+            console.log("loadAdditionalScripts XHR loadScripts returned ");
+            console.log(result);
+
+            var exp = jQuery.parseJSON(result.responseText);
+            if (exp.success && exp.files.length > 0) {
+                loadScripts(exp.files);
+            }
+        },
+        failure: function (result, request) {
+            alert("loadAdditionalScripts Unable to process the export: " + result.responseText);
+        }
+    });
+    console.log("loadAdditionalScripts() finished");
+}
+
+
 function setDataAssociationAvailableFlag(el, success, response, options) {
 	console.log("setDataAssociationAvailableFlag() starting...");
 
@@ -34,24 +60,7 @@ function setDataAssociationAvailableFlag(el, success, response, options) {
         console.log("setDataAssociationAvailableFlag() loaded panels");
 	} else {
         console.log("setDataAssociationAvailableFlag() call "+pageInfo.basePath+"/dataAssociation/loadScripts");
-		Ext.Ajax.request({
-			url: pageInfo.basePath+"/dataAssociation/loadScripts",
-			method: 'GET',
-			timeout: '600000',
-			params: Ext.urlEncode({}),
-			success: function (result, request) {
-                console.log("setDataAssociationAvailableFlag() XHR loadScripts returned ");
-                console.log(result);
-
-				var exp = jQuery.parseJSON(result.responseText);
-				if (exp.success && exp.files.length > 0) {
-					loadScripts(exp.files);
-				}
-			},
-			failure: function (result, request) {
-				alert("Unable to process the export: " + result.responseText);
-			}
-		});
+        loadAdditionalScripts();
 	}
 }
 
@@ -643,8 +652,9 @@ Ext.onReady(function () {
 
 	// Hide the AdvancedWorkflow tab
 	//resultsTabPanel.add(dataAssociationPanel);
+    loadAdditionalScripts();
 
-	if (GLOBAL.gridViewEnabled) {
+    if (GLOBAL.gridViewEnabled) {
 		resultsTabPanel.add(analysisGridPanel);
 	}
 	if (GLOBAL.dataExportEnabled) {
