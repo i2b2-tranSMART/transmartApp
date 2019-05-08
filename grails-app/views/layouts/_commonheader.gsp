@@ -95,7 +95,7 @@
 			sessionTimeout: ${config.com.recomdata.sessionTimeout},
 			heartbeatURL: "${createLink([controller: 'userLanding', action: 'checkHeartBeat'])}",
 			heartbeatLaps: ${config.com.recomdata.heartbeatLaps},
-			logoutURL: "${createLink([controller: 'login', action: 'forceAuth'])}"
+			logoutURL: "${grailsApplication.config.org.transmart.security.oauth.url.logout?:createLink([controller: 'login', action: 'forceAuth'])}"
 	    });
    });
 </r:script>

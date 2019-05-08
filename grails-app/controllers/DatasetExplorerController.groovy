@@ -46,6 +46,9 @@ class DatasetExplorerController {
 	@Value('${ui.tabs.datasetExplorer.gridView.hide:false}')
 	private boolean hideGridView
 
+	@Value('${ui.tabs.datasetExplorer.imageView.hide:false}')
+	private boolean hideImageView
+
 	@Value('${ui.tabs.datasetExplorer.dataExport.hide:false}')
 	private boolean hideDataExport
 
