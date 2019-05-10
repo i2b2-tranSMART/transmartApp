@@ -12,10 +12,6 @@
         <div style="font-size: 200%; margin-top: 20px; color: orange">Processing login information.</div><br />
 
         <script>
-				if (GLOBAL.Debug) {
-					console.log(sessionStorage.session);
-					console.log(localStorage);
-				}
         window.location='callback?token='+JSON.parse(sessionStorage.session).token;
         </script>
         ${flash.error}
