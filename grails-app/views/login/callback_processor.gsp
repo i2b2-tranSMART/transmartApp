@@ -12,9 +12,13 @@
         <div style="font-size: 200%; margin-top: 20px; color: orange">Processing login information.</div><br />
 
         <script>
-            window.location='callback?token='+JSON.parse(sessionStorage.session).token;
+				if (GLOBAL.Debug) {
+					console.log(sessionStorage.session);
+					console.log(localStorage);
+				}
+        window.location='callback?token='+JSON.parse(sessionStorage.session).token;
         </script>
-         ${flash.error}
+        ${flash.error}
 	</div>
 </div>
 </body>

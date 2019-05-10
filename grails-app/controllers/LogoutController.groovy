@@ -40,8 +40,9 @@ class LogoutController {
             handler.logout request, response, authentication
         }
         logger.debug '/logout/psama Finished'
-		response.flushBuffer()
+
         redirect url: oauth_logout_endpoint
+		response.flushBuffer()
 
 	}
 }
