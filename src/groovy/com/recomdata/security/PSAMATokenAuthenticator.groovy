@@ -31,21 +31,18 @@ class PSAMATokenAuthenticator implements Authentication, CredentialsContainer {
 
     String tokeninspectURL
     String oauth_service_token
-    String oauth_application_id
     String errorMessage
     String userToken
 
-    public PSAMATokenAuthenticator(String userToken, String oauth_application_id, String tokeninspectURL, String oauth_service_token) {
+    public PSAMATokenAuthenticator(String userToken, String tokeninspectURL, String oauth_service_token) {
         logger.debug '_constructor Starting'
 
         this.userToken = userToken
         this.tokeninspectURL = tokeninspectURL
         this.oauth_service_token = oauth_service_token
-        this.oauth_application_id = oauth_application_id
 
         logger.debug '_constructor tokeninspectURL: {}', this.tokeninspectURL
         logger.debug '_constructor serviceToken: {}', this.oauth_service_token
-        logger.debug '_constructor oauthApplication: {}', this.oauth_application_id
         logger.debug '_constructor userToken: {}', userToken
 
         try {
@@ -137,8 +134,7 @@ class PSAMATokenAuthenticator implements Authentication, CredentialsContainer {
         logger.debug 'getUserByToken() starting, with userToken:{}', userToken
 
         // Using a service (based on the configured URL) for token introspection
-        String tokenintrospectionURL = this.tokeninspectURL + '?applicationId='+this.oauth_application_id
-        logger.debug 'getUserByToken() token introspection url: {}', tokenintrospectionURL
+        logger.debug 'getUserByToken() token introspection url: {}', this.tokeninspectURL
 
         JSONObject tokenInfo = null
         try {
@@ -146,7 +142,7 @@ class PSAMATokenAuthenticator implements Authentication, CredentialsContainer {
             logger.debug 'getUserByToken() using service token {}', this.oauth_service_token
             resty.withHeader('Authorization','Bearer ' + this.oauth_service_token)
             logger.debug 'getUserByToken() using user token {}', userToken
-            tokenInfo = resty.json(tokenintrospectionURL, Resty.content(new JSONObject(token: userToken))).toObject()
+            tokenInfo = resty.json(this.tokeninspectURL, Resty.content(new JSONObject(token: userToken))).toObject()
 
         } catch (Exception e) {
             logger.error 'getUserByToken() exception: {}', e.getMessage()

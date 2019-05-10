@@ -2,6 +2,7 @@ import grails.plugin.springsecurity.SpringSecurityUtils
 import groovy.util.logging.Slf4j
 import org.codehaus.groovy.grails.web.servlet.mvc.GrailsWebRequest
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.logout.LogoutHandler
@@ -18,6 +19,9 @@ import javax.servlet.http.HttpServletResponse
 class LogoutController {
     @Autowired private List<LogoutHandler> logoutHandlers
 	AccessLogService accessLogService
+
+	@Value('${org.transmart.security.oauth.logout_endpoint:}')
+	private String oauth_logout_endpoint
 
 	/**
 	 * Index action. Redirects to the Spring security logout uri.
@@ -36,9 +40,8 @@ class LogoutController {
             handler.logout request, response, authentication
         }
         logger.debug '/logout/psama Finished'
+		response.flushBuffer()
+        redirect url: oauth_logout_endpoint
 
-        // TODO: This should be parameterized
-        redirect url: request.getScheme() + "://" + request.getServerName() + '/psamaui/logout?redirection_url=/transmart/'
-        response.flushBuffer()
 	}
 }

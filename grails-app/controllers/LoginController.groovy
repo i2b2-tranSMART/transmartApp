@@ -75,11 +75,11 @@ class LoginController {
     @Value('${org.transmart.security.oauth.service_token:}')
     private String oauth_service_token
 
-	@Value('${org.transmart.security.oauth.application_id:}')
-	private String oauth_application_id
-
     @Value('${org.transmart.security.oauth.login_endpoint:}')
     private String oauth_login_endpoint
+
+    @Value('${org.transmart.security.oauth.logout_endpoint:}')
+    private String oauth_logout_endpoint
 
     @Value('${org.transmart.security.oauth.tokeninspect_endpoint:}')
     private String oauth_tokeninspect_endpoint
@@ -130,10 +130,8 @@ class LoginController {
 		}
 		else {
             if (oauth_enabled) {
-                String oauthRedirectionURL = join('', [oauth_login_endpoint,'?redirection_url='
-                        ,createLink(action: "callback_processor", controller:"login", absolute: true)])
-                logger.debug '/index redirect back to {}', oauthRedirectionURL
-                redirect url: oauthRedirectionURL
+                logger.debug '/index redirecting to {}', oauth_login_endpoint
+                redirect url: oauth_login_endpoint
             } else {
                 // Use regular Grails authentication
                 logger.debug '/index not logged in, redirect to /auth'
@@ -154,7 +152,7 @@ class LoginController {
         logger.debug '/callback starting, params: {}', params
 
         if (params.token == null || params.token == '') {
-            logger.debug '/callback missing `token` parameter'
+            logger.error '/callback missing `token` parameter'
             flash.error ='No token received from OAuth provider service.'
         } else {
 
@@ -163,8 +161,7 @@ class LoginController {
                 com.recomdata.security.PSAMATokenAuthenticator psamaAuthenticator =
                         new com.recomdata.security.PSAMATokenAuthenticator(
 								params.token,
-								oauth_application_id,
-                                oauth_tokeninspect_endpoint,
+								oauth_tokeninspect_endpoint,
 								oauth_service_token
 						)
                 logger.debug '/callback Configured new psamaAuthenticator'

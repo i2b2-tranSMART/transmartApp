@@ -119,7 +119,8 @@ class BootStrap {
 		// Making sure we have default timeout and heartbeat values
 		// At this point we assume c.recomdata exists
 		if (!config.com.recomdata.containsKey('sessionTimeout')) {
-			config.com.recomdata.sessionTimeout = 3600
+			logger.info 'Could not find sessionTimeout configuration'
+			config.com.recomdata.sessionTimeout = 180
 		}
 		if (!config.com.recomdata.containsKey('heartbeatLaps')) {
 			config.com.recomdata.heartbeatLaps = 60
