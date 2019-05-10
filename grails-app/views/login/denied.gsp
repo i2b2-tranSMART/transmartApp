@@ -16,7 +16,7 @@
 				href="mailto:${grailsApplication.config.com.recomdata.adminEmail}??subject=tranSMART new user request&body=Please, add me as a new user to the tranSMART system.">tranSMART Admin</a>
 		</div>
         <br />
-        <a href="${resource(action: 'index')}">Back to Home</a>
+        <a href="${resource(action: 'index')}/">Back to Home</a>
 	</div>
 </div>
 </body>
