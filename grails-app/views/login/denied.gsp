@@ -7,7 +7,7 @@
 <div style="text-align: center;">
 	<div style="margin: 50px auto 50px auto;">
 		<img style="width: 700px"
-		     src="${grailsApplication.config.com.recomdata.largeLogo?:'/images/transmartlogoHMS.jpg'}" alt="Transmart"/>
+		     src="${grailsApplication.config.com.recomdata.largeLogo?:'/static/transmartlogoHMS.jpg'}" alt="Transmart"/>
 
         <div style="font-size: 200%; margin-top: 20px; color: red">You do not have access to this appliaction</div><br />
 		<div style="color: red; font-size: 120%; display: block">ErrorMessage: ${ errorMessage }</div><br />

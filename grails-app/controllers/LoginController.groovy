@@ -54,7 +54,7 @@ class LoginController {
 	@Value('${com.recomdata.guestUserName:}')
 	private String guestUserName
 
-	@Value('${com.recomdata.largeLogo:/images/transmartlogoHMS.jpg}')
+	@Value('${com.recomdata.largeLogo:/static/transmartlogoHMS.jpg}')
 	private String largeLogo
 
 	@Value('${com.recomdata.providerLogo:}')
