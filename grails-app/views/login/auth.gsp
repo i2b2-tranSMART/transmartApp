@@ -69,8 +69,7 @@
 	<table style="width:auto; border:0px; text-align:center; margin:auto;" align="center">
 		<tr>
 			<td style="text-align:center;vertical-align:middle;margin-left:-40px;padding-top:20px;">
-				<g:link controller='RWG'><img src="${resource(dir: 'images', file: largeLogo)}"
-						alt="Transmart"/></g:link>
+				<g:link controller='RWG'><img src="${largeLogo}" alt="Transmart"/></g:link>
 			</td>
 		</tr>
 		<tr><td>&nbsp;</td></tr>

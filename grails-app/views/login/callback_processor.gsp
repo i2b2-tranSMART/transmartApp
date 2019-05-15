@@ -7,7 +7,7 @@
 <div style="text-align: center;">
 	<div style="margin: 50px auto 50px auto;">
 		<img style="width: 700px"
-		     src="${resource(dir: 'images', file: grailsApplication.config.com.recomdata.largeLogo?:'transmartlogoHMS.jpg')}" alt="Transmart"/>
+		     src="${grailsApplication.config.com.recomdata.largeLogo?:'/images/transmartlogoHMS.jpg'}" alt="Transmart"/>
 
         <div style="font-size: 200%; margin-top: 20px; color: orange">Processing login information.</div><br />
 
