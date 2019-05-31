@@ -114,7 +114,7 @@ grails.project.dependency.resolution = {
 			compile ':blend4j-plugin:'            + tmVersion
 			compile ':dalliance-plugin:'          + tmVersion
 			compile ':folder-management:'         + tmVersion
-			compile ':rdc-rmodules:'              + tmVersion
+			//compile ':rdc-rmodules:'              + tmVersion
 			compile ':search-domain:'             + tmVersion
 			compile ':spring-security-auth0:'     + tmVersion
 			compile ':transmart-core:'            + tmVersion
@@ -139,7 +139,7 @@ grails.project.dependency.resolution = {
 }
 
 dm?.with {
-	configureInternalPlugin 'compile', 'rdc-rmodules'
+	//configureInternalPlugin 'compile', 'rdc-rmodules'
 	configureInternalPlugin 'runtime', 'transmart-core'
 	//configureInternalPlugin 'test',    'transmart-core-db-tests'
 	configureInternalPlugin 'compile', 'transmart-gwas'
