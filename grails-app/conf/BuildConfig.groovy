@@ -56,8 +56,8 @@ grails.project.dependency.resolution = {
 		compile 'org.jfree:jfreechart:1.0.19'
 		compile 'org.jfree:jfreesvg:2.1'
 
-		//compile 'org.rosuda.REngine:REngine:2.1.0'
-        //compile 'org.rosuda:Rserve:1.7.3'
+		compile 'org.rosuda.REngine:REngine:2.1.0'
+        compile 'org.rosuda:Rserve:1.7.3'
 
         compile 'org.codehaus.groovy.modules.http-builder:http-builder:0.5.2', {
 			excludes 'groovy', 'nekohtml', 'httpclient', 'httpcore'
