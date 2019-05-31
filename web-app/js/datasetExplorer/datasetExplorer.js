@@ -526,7 +526,7 @@ Ext.onReady(function () {
 	// Advanced Workflow
 	// ******************
 
-	dataAssociationPanel = new Ext.Panel({
+	/*dataAssociationPanel = new Ext.Panel({
 		id: 'dataAssociationPanel',
 		title: 'Advanced Workflow',
 		region: 'center',
@@ -547,10 +547,10 @@ Ext.onReady(function () {
 		},
 			listeners: {
 			activate: function (p) {
-				/**
+				/!**
 				 * routines when activating advanced workflow tab
 				 * @private
-				 */
+				 *!/
 				var _activateAdvancedWorkflow = function () {
 					activateTab();
 					GLOBAL.Analysis="dataAssociation";
@@ -571,7 +571,7 @@ Ext.onReady(function () {
 			}
 		},
 		collapsible: true
-	});
+	});*/
 
 	// ******************
 	// Export Jobs
@@ -652,7 +652,7 @@ Ext.onReady(function () {
 
 	// Hide the AdvancedWorkflow tab
 	//resultsTabPanel.add(dataAssociationPanel);
-    loadAdditionalScripts();
+    //loadAdditionalScripts();
 
     if (GLOBAL.gridViewEnabled) {
 		resultsTabPanel.add(analysisGridPanel);
