@@ -31,5 +31,5 @@ for PLUGIN_NAME in $PLUGINS
 do
 	./build_plugin_with_grails.sh ${PLUGIN_NAME}
 done
-
+echo "Finished building all plugins."
 exit
