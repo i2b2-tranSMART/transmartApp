@@ -13,8 +13,8 @@ catch (ignored) {}
 
 grails.project.dependency.resolver = 'maven'
 grails.project.fork = [test: forkSettingsOther, run: forkSettingsRun, war: false, console: forkSettingsOther]
-grails.project.source.level = 1.7
-grails.project.target.level = 1.7
+grails.project.source.level = 1.8
+grails.project.target.level = 1.8
 grails.project.war.file = "target/${appName}.war"
 grails.project.work.dir = 'target'
 grails.servlet.version = '3.0'
@@ -57,9 +57,9 @@ grails.project.dependency.resolution = {
 		compile 'org.jfree:jfreesvg:2.1'
 
 		compile 'org.rosuda.REngine:REngine:2.1.0'
-        compile 'org.rosuda:Rserve:1.7.3'
+                compile 'org.rosuda:Rserve:1.7.3'
 
-        compile 'org.codehaus.groovy.modules.http-builder:http-builder:0.5.2', {
+                compile 'org.codehaus.groovy.modules.http-builder:http-builder:0.5.2', {
 			excludes 'groovy', 'nekohtml', 'httpclient', 'httpcore'
 		}
 
